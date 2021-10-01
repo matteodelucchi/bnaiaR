@@ -1,0 +1,31 @@
+Package: bnaiaR
+Type: Package
+Title: Bayesian Network Analysis of Intracranial Aneurysm
+Version: 0.0.0.9000
+Authors@R: person("Matteo", "Delucchi", email = "matteo.delucchi@zhaw.ch",
+  role = c("aut", "cre"))
+Description: Data preparation and analysis of risk factors for intracranial aneurysms. 
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 7.1.2
+Imports: 
+    tidyr,
+    forcats,
+    purrr,
+    ggplot2,
+    lubridate,
+    RMariaDB,
+    stringr,
+    dplyr,
+    tidyselect,
+    correlationfunnel,
+    abn,
+    Rgraphviz,
+    BiocManager
+Depends: 
+    R (>= 3.5.0)
