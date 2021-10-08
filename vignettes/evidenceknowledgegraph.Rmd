@@ -1,0 +1,83 @@
+---
+title: "Evidence Knowledge Graph"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{evidenceknowledgegraph}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(bnlearn)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+```
+
+# Build Evidence Knowledge Graph Structure
+
+```{r evidenceknowledgegraph}
+# Create Evidence graph
+ekg <- empty.graph(names(exp11_dat$abndata))
+arc.set <- data.frame(matrix(c("Ruptured_IA", "location.grouped", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+                               "Ruptured_IA", "Hypertension", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+                               "Ruptured_IA", "Smoking_Current_Former_No", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+
+                               "location.grouped", "IAsize.groups.merged", # 2) IA size at rupture and patient age at rupture were associated with IA location;
+                               "location.grouped", "AgeDiag.group", # 2) IA size at rupture and patient age at rupture were associated with IA location;
+
+                               "Gender", "IAsize.groups.merged", # 5) IAs in females ruptured at smaller sizes and at older age;
+                               "Gender", "AgeDiag.group", # 5) IAs in females ruptured at smaller sizes and at older age;
+
+                               "IAsize.groups.merged", "AgeDiag.group"), # 6) IA size at rupture correlated with patient age
+                             byrow = TRUE,
+                             ncol = 2),
+                      stringsAsFactors = FALSE)
+names(arc.set) <- c("from", "to")
+
+# make undirected arcs:
+inv.arc.set <- data.frame(from = arc.set$to, to = arc.set$from)
+arc.set <- rbind(arc.set, inv.arc.set)
+
+names(arc.set) <- c("from", "to")
+arcs(ekg) <- arc.set
+```
+
+
+```{r display.evidenceknowledgegraph}
+# Display
+graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
+```
+
+## save to package data
+
+```{r save ekg}
+# usethis::use_data(ekg, overwrite = TRUE)
+# devtools::document()
+```
+
+> TODO: Make evidence knowledge graph comparable to locbin and locrisk
+
+> TODO: Make nice layout
