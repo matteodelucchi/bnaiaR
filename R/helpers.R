@@ -340,3 +340,54 @@ prep_exp_data <- function(dat = adb,
     return(list(abndata=abndata, dist=dist, banned=banned, bl=bl))
   }
 }
+
+#' Summarise data processing steps required to plot structure learning metric
+#'
+#' @param eval DataFrame output of network.metrics
+#' @param newnames vector of character strings with names to display in plot.
+#' The order must match to the order of names(eval)!
+#'
+#' @return tibble which can be further processed to plot
+#' @export
+prep.data2plot <- function(eval, newnames = NULL){
+  # Prepare named vector with (old-names, new-names)
+  # specifying names in input df and returned tibble respectively
+  if (is.null(newnames)){
+    NEWNAMES <- c("Algorithm", "tabu list size",
+                  "bootstrap replicates",
+                  "score function", "Network Score", "Network Score Ratio",
+                  "prior", "Threshold arc strength", "no. arcs", "no. sign. arcs",
+                  # "SHD Th=0", "SHD", "SHD Constantinou",
+                  "SHD Th=0", "SHD",
+                  "TP arcs", "TP arcs Th=0",
+                  "FPR arcs", "TPR arcs",
+                  "FPR arcs Th=0", "TPR arcs Th=0",
+                  "ACC arcs", "ACC arcs Th=0",
+                  "Balanced Scoring Function", "Balanced Scoring Function Th=0",
+                  "Balanced Scoring Function norm", "Balanced Scoring Function Th=0 norm",
+                  "Bayesian Factor", "Bayesian Factor Th=0")
+  } else {
+    NEWNAMES <- newnames
+  }
+
+
+  if(length(names(eval)) != length(NEWNAMES)){
+    stop(paste("Names of", quote(eval),"and", quote(newnames), "must have the same length but are", length(names(eval)), "and", length(NEWNAMES), "respectively."))
+  }
+
+  eval.prep <- eval %>%
+    # t() %>%
+    # print() %>%
+    data.table::as.data.table() %>%
+    dplyr::rename(setNames(names(.), NEWNAMES)) %>% # "old-names" = "new-names"
+    dplyr::select_all(~gsub("\\s+|\\.", ".", .)) %>% # replace space and period to "."
+    dplyr::mutate(
+      # prior = case_when(prior == "uniform" ~ 1,
+      #                        prior == "marginal" ~ 2,
+      #                        prior == "vsp" ~ 3,
+      #                        prior == "cs" ~ 4),
+      score.function = case_when(score.function == "bic" ~ 1,
+                                 score.function == "mutual-information" ~ 2,
+                                 score.function == "hybrid" ~ 3))
+  return(eval.prep)
+}
