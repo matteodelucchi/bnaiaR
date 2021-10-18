@@ -451,7 +451,7 @@ postTHINN <- function(mcmc.out.list, thinningsteps){
 #' are logged in, this function returns FALSE.
 #' If running on a system with only the specified user, it returns TRUE.
 #'
-#' @param myuser
+#' @param myuser character string of system user name.
 #'
 #' @return TRUE if only 'myuser' is logged in the current system. FALSE otherwise.
 #' @export

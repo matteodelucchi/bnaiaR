@@ -7,7 +7,7 @@
 amilocal(myuser = "delt")
 }
 \arguments{
-\item{myuser}{}
+\item{myuser}{character string of system user name.}
 }
 \value{
 TRUE if only 'myuser' is logged in the current system. FALSE otherwise.
