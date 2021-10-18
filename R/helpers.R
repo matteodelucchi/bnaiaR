@@ -391,3 +391,135 @@ prep.data2plot <- function(eval, newnames = NULL){
                                  score.function == "hybrid" ~ 3))
   return(eval.prep)
 }
+
+
+#' Burn-in Phase after MCMCABN
+#'
+#' Speed up computation time of mcmcabn() and gain flexibility by removing the
+#' first n steps after the MCMC run.
+#'
+#' @param mcmc.out.list output of mcmcabn()
+#' @param burnin.length int. of number of steps to remove.
+#'
+#' @return Burned mcmcabn() output.
+#' @export
+postBURNin <- function(mcmc.out.list, burnin.length){
+  for (d in 1:length(mcmc.out.list)){
+    mcmc.out.list[[d]]$burnin <- burnin.length
+    mcmc.out.list[[d]]$dags <- mcmc.out.list[[d]]$dags[,,-(1:burnin.length)]
+    mcmc.out.list[[d]]$scores <- mcmc.out.list[[d]]$scores[-(1:burnin.length)]
+    mcmc.out.list[[d]]$alpha <- mcmc.out.list[[d]]$alpha[-(1:burnin.length)]
+    mcmc.out.list[[d]]$method <- mcmc.out.list[[d]]$method[-(1:burnin.length)]
+    mcmc.out.list[[d]]$rejection <- mcmc.out.list[[d]]$rejection[-(1:burnin.length)]
+    mcmc.out.list[[d]]$heating <- mcmc.out.list[[d]]$heating[-(1:burnin.length)]
+  }
+  return(mcmc.out.list)
+}
+
+#' Thinn MCMC sample after MCMCABN
+#'
+#' Speed up computation time of mcmcabn() and gain flexibility by thinning
+#' after the MCMC run.
+#' Thinning keeps all kth step.
+#'
+#' @param mcmc.out.list output of mcmcabn()
+#' @param thinningsteps int. Thinning factor.
+#'
+#' @return Thinned mcmcabn() output.
+#' @export
+postTHINN <- function(mcmc.out.list, thinningsteps){
+  thin <- c(TRUE, rep(FALSE, thinningsteps-1)) # see recycle rules
+  mcmc.out.list.thinned <- mcmc.out.list
+
+  for (d in 1:length(mcmc.out.list.thinned)){
+    if(thinningsteps > mcmc.out.list.thinned[[d]]$iterations){
+      stop(paste0("More thinning steps (", thinningsteps, ") than mcmc iterations (", mcmc.out.list.thinned[[d]]$iterations, ")."))
+    }
+    mcmc.out.list.thinned[[d]]$thinning <- thinningsteps
+    mcmc.out.list.thinned[[d]]$dags <- mcmc.out.list.thinned[[d]]$dags[,,thin]
+    mcmc.out.list.thinned[[d]]$scores <- mcmc.out.list.thinned[[d]]$scores[thin]
+    mcmc.out.list.thinned[[d]]$alpha <- mcmc.out.list.thinned[[d]]$alpha[thin]
+    mcmc.out.list.thinned[[d]]$method <- mcmc.out.list.thinned[[d]]$method[thin]
+    mcmc.out.list.thinned[[d]]$rejection <- mcmc.out.list.thinned[[d]]$rejection[thin]
+  }
+  return(mcmc.out.list.thinned)
+}
+
+#' Am I running local or on some Server?
+#'
+#' If running on some server where other users than the specified username
+#' are logged in, this function returns FALSE.
+#' If running on a system with only the specified user, it returns TRUE.
+#'
+#' @param myuser
+#'
+#' @return TRUE if only 'myuser' is logged in the current system. FALSE otherwise.
+#' @export
+amilocal <- function(myuser="delt"){
+  who <- system("who", intern = T)
+  users <- c()
+  for (i in 1:length(who)){
+    users <- c(users, stringr::str_extract(who[i], "^.{4}"))
+  }
+  if (dim(table(users))==1){
+    cat("running script locally.\n")
+    return(TRUE)
+  } else{
+    cat("Other registered users:\n")
+    print((as.data.frame(table(users))))
+    return(FALSE)
+  }
+}
+
+
+#' Arc strength significance threshold
+#'
+#' Compute the significance threshold for Friedman's confidence.
+#' Deliberately copied and adapted from bnlearn source code on CRAN Github
+#' https://github.com/cran/bnlearn/blob/0e4d3af6ad579b79bc9959e77385ec6b825ca6fc/R/arc.strength.R#L420
+#'
+#' @param strength Arc frequency of consensus DAG.
+#' @param method Currently only "l1" supported.
+#'
+#' @return arc strength threshold
+#' @export
+#'
+#' @examples
+#' \dontrun{dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
+#' arc.stren.sign.threshold <-arc.stren.threshold(dag.mcmc.boot.stren)
+#' # Plot relative arc strength
+#' plot(ecdf(dag.mcmc.boot.stren))
+#' # Draw arc strength threshold
+#' abline(v = arc.stren.sign.threshold, lty=2)
+#' # Draw 50% threshold mark
+#' abline(v=0.5)
+#' }
+arc.stren.threshold = function(strength, method = "l1") {
+
+  # do not blow up with graphs with only 1 node.
+  if (length(strength) == 0)
+    return(0)
+
+  e = ecdf(strength)
+  u = knots(e)
+
+  if (method == "l1") {
+
+    norm = function(p)
+      sum( diff(unique(c(0, u, 1))) * abs(e(unique(c(0, u[u < 1]))) - p))
+
+  }#THEN
+
+  p0 = optimize(f = norm, interval = c(0, 1))$minimum
+
+  # double-check the boundaries, they are legal solutions but optimize() does
+  # not check them.
+  if (norm(1) < norm(p0))
+    p0 = 1
+  if (norm(0) < norm(p0))
+    p0 = 0
+
+  quantile(strength, p0, type = 1, names = FALSE)
+
+}
+
