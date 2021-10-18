@@ -1,0 +1,196 @@
+---
+title: "Model Validation of discrete BN"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{Model Validation of discrete BN}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(parallel)
+library(bnlearn)
+library(forcats)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+```
+
+# Load discrete BNs
+
+discrete_bns was generated in vignette `discrete_BN_SL`.
+
+```{r message=FALSE, warning=FALSE}
+data <- exp11_dat$abndata
+bl <- exp11_dat$bl
+avgnet <- discrete_bns$avgnet
+arcstren <- discrete_bns$arcstren
+str(avgnet)
+```
+
+```{r}
+strength.plot(avgnet[["tabu.th03"]],
+              arcstren[["tabu"]],
+              main = "DAG",
+              sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              shape = "rectangle")
+strength.plot(avgnet[["tabu.bic.custom"]],
+              arcstren[["tabu.bic.custom"]],
+              main = "DAG",
+              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+              shape = "rectangle")
+```
+
+# Cross-validation for predictive accuracy
+
+Predictive accuracy of status.
+
+> TODO: Check if this is correct for non-binary cases!
+
+```{r}
+cv.metrics <- function(xval){
+  OBS = unlist(lapply(unlist(xval, recursive = F), `[[`, "observed"))
+  PRED = unlist(lapply(unlist(xval, recursive = F), `[[`, "predicted"))
+  conf.mat <- table(OBS, PRED)
+  tpr <-conf.mat[1,1]/(conf.mat[1,1]+conf.mat[1,2])
+  fpr <-conf.mat[2,1]/(conf.mat[2,1]+conf.mat[2,2])
+  acc <- (conf.mat[1,1]+conf.mat[2,2])/(conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]+conf.mat[2,2])
+  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc))
+}
+```
+
+```{r}
+xval.rupture.bic <- bn.cv(
+    data = data,
+    bn = avgnet$tabu.th03,
+    method = "hold-out",
+    runs = 50,
+    fit = "mle",
+    loss = "pred",
+    loss.args = list(target = "Ruptured_IA")
+  )
+cv.metrics(xval.rupture.bic)
+
+xval.rupture.bic.custom <- bn.cv(
+    data = data,
+    bn = avgnet$tabu.bic.custom,
+    method = "hold-out",
+    runs = 50,
+    fit = "mle",
+    loss = "pred",
+    loss.args = list(target =  "Ruptured_IA")
+  )
+cv.metrics(xval.rupture.bic.custom)
+```
+
+```{r}
+xval.list.bic <- list()
+for (node in nodes(avgnet$tabu.th03)) {
+  xval <- bn.cv(
+    data = data,
+    bn = avgnet$tabu.th03,
+    method = "hold-out",
+    runs = 50,
+    fit = "mle",
+    loss = "pred",
+    loss.args = list(target = node)
+  )
+  xval.list.bic[[node]] <- list(xval = xval, 
+                            cv.metrics = cv.metrics(xval))
+}
+
+
+xval.list.bic.custom <- list()
+for (node in nodes(avgnet$tabu.th03)) {
+  xval <- bn.cv(
+    data = data,
+    bn = avgnet$tabu.bic.custom,
+    method = "hold-out",
+    runs = 50,
+    fit = "mle",
+    loss = "pred",
+    loss.args = list(target = node)
+  )
+  xval.list.bic.custom[[node]] <- list(xval = xval, 
+                            cv.metrics = cv.metrics(xval))
+}
+accs.bic <- unlist(lapply(unlist(xval.list.bic, recursive = F), `[[`, "acc"))
+summary(accs.bic, na.rm = T)
+accs.bic.custom <- unlist(lapply(unlist(xval.list.bic.custom, recursive = F), `[[`, "acc"))
+summary(accs.bic.custom, na.rm = T)
+```
+
+
+BIC.th03 used three parents (pos.fam.hist, size, location) to predict rupture
+whereas BIC.custom uses only the former two parent nodes to predict ruptue.
+
+We can use a Bayesian predictions that use all available nodes for the prediction.
+
+```{r}
+xval.bic.bayes <- bn.cv(data = data, 
+              bn = avgnet$tabu.th03,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "pred-lw",
+              loss.args = list(target="Ruptured_IA"))
+xval.bic.custom.bayes <- bn.cv(data = data, 
+              bn = avgnet$tabu.bic.custom,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "pred-lw",
+              loss.args = list(target="Ruptured_IA"))
+
+plot(xval.bic.bayes, xval.bic.custom.bayes, xlab = c("BIC.th03", "BIC.custom"))
+cv.metrics(xval.bic.bayes)
+cv.metrics(xval.bic.custom.bayes)
+```
+
+The classification error for rupture between the two score implementations 
+converges. 
+
+```{r}
+xval.bic.logl <- bn.cv(data = data, 
+              bn = avgnet$tabu.th03,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "logl",
+              loss.args = list(target="Ruptured_IA"))
+xval.bic.custom.logl <- bn.cv(data = data, 
+              bn = avgnet$tabu.bic.custom,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "logl",
+              loss.args = list(target="Ruptured_IA"))
+
+plot(xval.bic.logl, xval.bic.custom.logl, xlab = c("BIC.th03", "BIC.custom"))
+```
+```

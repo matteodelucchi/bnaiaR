@@ -1,0 +1,380 @@
+---
+title: "Structure Learning of discrete BN"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{Structure Learning of discrete BN}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(parallel)
+library(bnlearn)
+library(forcats)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+```
+
+# Load Preprocessed Data
+
+```{r message=FALSE, warning=FALSE}
+data <- exp11_dat$abndata
+bl <- exp11_dat$bl
+str(data)
+```
+
+
+```{r}
+arcstren <- list()
+avgnet <- list()
+avgnet.th0 <- list()
+```
+
+# Bootstrap size optimization
+
+We estimate the size of the non-parametric bootstrap replicate stepwise to 
+investigate on the the model performance and number of bootstrap replicates.
+
+Since it is an open question to compare an estimated model to the true unknown model
+(see [(Thesis of Scutari 2011)](https://www.bnlearn.com/about/thesis/thesis.pdf)), 
+we try different measures.
+
+I don't go into detail about all the applied measures at this point. Please 
+look in the help page of the functions in `structureanalysis.R` for more details.
+
+```{r bootstrap eval, echo=FALSE, message=FALSE, warning=FALSE}
+cl = makeCluster(6)
+
+eval <- NULL
+
+for (b in c(100,seq(500, 10000, 1000))) {
+  print("--------------------------------------------------------------------------------")
+  tabusize = 18
+  crt = "bic" # BIC standard
+  priorname = "uniform" # uniform standard
+  algo = "tabu"
+  print(paste("Bootstrap replicates: ", b))
+
+  boot.tabu <- boot.strength(data = data,
+                      R = b,
+                        algorithm = algo,
+                        algorithm.args = list(
+                          tabu = tabusize,
+                          blacklist = bl,
+                          score = crt,
+                          prior = priorname),     # prior distribution to be used with the various Bayesian Dirichlet scores
+                        cluster = cl)
+
+  avg.boot.tabu <- averaged.network(boot.tabu)
+  avg.boot.tabu.th0 <- averaged.network(boot.tabu, threshold = 0)
+
+
+  netmet <- network.metrics(data, avg.boot.tabu, avg.boot.tabu.th0, algo=algo, tabulistsize=tabusize, b=b, trueGraph=ekg, crt=crt, priorname=priorname)
+
+  if (!is.null(eval)){
+    eval <- rbind(eval, netmet)
+  } else{
+    eval <- netmet
+    }
+  }
+stopCluster(cl)
+
+eval.bootstrap.rep.tabu <- eval
+
+eval.bootstrap.rep.tabu.plot.data <- eval.bootstrap.rep.tabu %>%
+  prep.data2plot() %>%
+  select(-c(tabu.list.size, Algorithm)) %>%
+  data.table::melt(id.vars = c("bootstrap.replicates", "score.function", "prior")) %>%
+  mutate(across(5, function(x){round(as.numeric(x),3)})) %>%
+
+  # rearrange order (of bootstrap.replicates) for grouped display (by prior) in graph
+  mutate(bootstrap.replicates = as.integer(bootstrap.replicates)) %>%
+  arrange(desc(bootstrap.replicates), .group_by = TRUE) %>%
+
+  ggplot() +
+  aes(x = bootstrap.replicates, y = value, group = score.function, color = prior)+
+  geom_point() +
+  # geom_text(aes(label=round(value,2)), hjust=0, vjust=2, angle = -45)+
+  geom_line()+
+  facet_grid(c("variable"), scales = "free_y")+
+  # facet_wrap(~variable, scales = "free_y") +
+  # scale_x_continuous(breaks = c(100,500,1000,5000))+
+  theme_minimal()+
+  scale_color_discrete(name = "Prior",
+                       labels = c("Uniform"))+
+#   scale_y_continuous(breaks = function(x, n = 5) {
+#     # Show only integers on y-axis
+#     l <- pretty(x, n)
+#     ifelse(!all(l > 0),
+#       return(l[abs(l %% 1) < .Machine$double.eps ^ 0.5]),
+#       return(l))
+#     })+
+  ggtitle(c("Structure Learning Metrics"),
+        subtitle = paste("Varying Bootstrap Replicas.\nSL Algorithm: ", algo,"\nTabulist size: ", tabusize, "\nScore:", crt)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.text.y = element_text(angle = 0, hjust = 0),
+        panel.background = element_rect(),
+        panel.spacing = unit(1, "lines"))
+```
+
+
+```{r classic bootstrap plot, warning=FALSE, layout="l-screen", out.height=2400, out.width="80%"}
+eval.bootstrap.rep.tabu.plot.data +
+  theme(panel.spacing = unit(0.3, "lines"))
+```
+
+
+The network score is the typical goodness of fit measure of such a model. 
+We do not detect a clear relationship. Therefore, and because of still reasonable
+computation time, we just assume a large number of bootstrap replicates.
+
+# Structure learning algorithm assessment
+
+Analogous to the non-parametric bootstrap size estimate above, it would be 
+interesting to measure the model performance resulting from a set of different
+structure learning algorithms.  
+
+The open issue of measuring the goodness of fit of a model stays the same as 
+when optimizing the number bootstrap replicas: it's very difficult to measure and 
+in practice the network score (mostly BIC) is used to compare model performance.
+
+The results are therefore omitted at this point.
+
+# Structure Learning with TABU search and BIC
+
+For aforementioned reasons, we focus on recent but standard methodologies 
+and parameters.
+
+The final DAG is the averaged structural model resulting from repetitively applying
+the structure learning algorithm TABU on a non-parametric bootstrap sample. 
+
+```{r bootstrap data, echo=FALSE, message=FALSE, warning=FALSE}
+cl = makeCluster(6)
+
+# Structure learning with non-parametric bootstrap framework
+cl = makeCluster(6)
+algo = "tabu"
+b = 10000
+tabusize = 18
+crt = "bic" # BIC standard
+priorname = "uniform" # uniform standard
+boot <- boot.strength(
+  data = data,
+  R = b,
+  algorithm = algo,
+  algorithm.args = list(
+    tabu = tabusize,
+    blacklist = bl,
+    score = crt,
+    prior = priorname
+  ),
+  # prior distribution to be used with the various Bayesian Dirichlet scores
+  cluster = cl
+)
+stopCluster(cl)
+
+arcstren[[algo]] <- boot
+
+avg.boot <- averaged.network(boot)
+avgnet[[algo]] <- avg.boot
+
+avg.boot.th0 <- averaged.network(boot, threshold = 0)
+avgnet.th0[[algo]] <- avg.boot.th0
+
+netmet <- network.metrics(
+  data,
+  estGraph = avg.boot,
+  estGraph.th0 = avg.boot.th0,
+  algo = algo,
+  tabulistsize = ifelse(algo == "tabu", tabusize, NA),
+  b = b,
+  trueGraph = ekg,
+  crt = crt,
+  priorname = priorname
+)
+```
+
+
+```{r}
+plot(arcstren[["tabu"]])
+abline(v=0.3)
+```
+
+
+We see many arcs of low support and no visually clear cut-point to set the arc-strength
+threshold. 
+
+We see can see it is difficult to argue from a statistical point of view
+where to set the threshold and this is a reason why we have the significance 
+threshold as a point of orientation.
+
+The significance threshold is close to the 50% threshold and the structure would
+not change upon increasing to that point.
+
+If it is reasonable one can vary from the proposed significance threshold.
+
+
+```{r cpdag-tabu-strength}
+strength.plot(cpdag(avg.boot, wlbl = TRUE),
+              arcstren[["tabu"]],
+              main = "CPDAG",
+              sub = "SL: tabu\nth.=sign.level",
+              shape = "rectangle")
+```
+
+As already expected from the arc-strength plot, we see a very sparse, partially
+connected CPDAG with no arc directions.
+
+Variables, we know they must have an effect on rupture or at least some other
+variables are not connected.
+
+Eventhough methodologically sound, it is difficult to justify this network from
+a clinical point of view. 
+
+Interestingly all connections from the CPDAG above were found in the [consensus DAG
+above](#mcmcconsensusDAG) as well. 
+
+
+
+If we lower the arc-strength threshold to 30% (dashed line in arc-strength plot. 
+We stay in the allowed range of variation) we result in a fully connected, 
+partially directed CPDAG.
+
+```{r cpdag-tabu-strength-th30, layout="l-page"}
+avgnet[["tabu.th03"]] <- averaged.network(arcstren[["tabu"]], threshold = 0.3)
+
+strength.plot(cpdag(avgnet[["tabu.th03"]], wlbl = TRUE),
+              arcstren[["tabu"]],
+              main = "CPDAG",
+              sub = "SL: tabu\nth.=0.3",
+              shape = "rectangle")
+```
+
+
+```{r}
+# svg(paste0(PLOTPATH, "/dag_tabu_th03.svg"))
+strength.plot(avgnet[["tabu.th03"]],
+              arcstren[["tabu"]],
+              main = "DAG",
+              sub = "SL: tabu\nth.=0.3",
+              shape = "rectangle")
+# dev.off()
+# bnlearn::write.dot(graph = dag.th03, file = paste0(PLOTPATH, "/dag_tabu_th03.dot"))
+# write.csv(arcstren[["tabu"]], file = paste0(PLOTPATH, "/arc_strengths.csv"))
+```
+
+# Structure Learning with TABU search and custom BIC
+
+
+```{r bootstrap bic custom, echo=FALSE, message=FALSE, warning=FALSE}
+cl = makeCluster(6)
+
+# Structure learning with non-parametric bootstrap framework
+cl = makeCluster(6)
+algo = "tabu"
+b = 10000
+tabusize = 18
+crt = "bic" # BIC standard
+priorname = "uniform" # uniform standard
+boot <- boot.strength(
+  data = data,
+  R = b,
+  algorithm = algo,
+  algorithm.args = list(
+    tabu = tabusize,
+    blacklist = bl,
+    score = crt,
+    prior = priorname,
+    k = log(nrow(data)) / 4
+  ),
+  # prior distribution to be used with the various Bayesian Dirichlet scores
+  cluster = cl
+)
+stopCluster(cl)
+
+arcstren[["tabu.bic.custom"]] <- boot
+
+avg.boot <- averaged.network(boot)
+avgnet[["tabu.bic.custom"]] <- avg.boot
+
+avg.boot.th0 <- averaged.network(boot, threshold = 0)
+avgnet.th0[["tabu.bic.custom"]] <- avg.boot.th0
+
+netmet <- network.metrics(
+  data,
+  estGraph = avg.boot,
+  estGraph.th0 = avg.boot.th0,
+  algo = algo,
+  tabulistsize = ifelse(algo == "tabu", tabusize, NA),
+  b = b,
+  trueGraph = ekg,
+  crt = crt,
+  priorname = priorname
+)
+```
+
+
+```{r}
+plot(arcstren[["tabu.bic.custom"]])
+abline(v=0.3)
+```
+
+
+
+```{r cpdag-tabu-strength-bic-custom}
+strength.plot(cpdag(avg.boot, wlbl = TRUE),
+              arcstren[["tabu.bic.custom"]],
+              main = "CPDAG",
+              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+              shape = "rectangle")
+```
+
+
+```{r}
+# svg(paste0(PLOTPATH, "/dag_tabu_th03.svg"))
+strength.plot(avgnet[["tabu.bic.custom"]],
+              arcstren[["tabu.bic.custom"]],
+              main = "DAG",
+              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+              shape = "rectangle")
+# dev.off()
+# bnlearn::write.dot(graph = dag.th03, file = paste0(PLOTPATH, "/dag_tabu_th03.dot"))
+# write.csv(arcstren[["tabu"]], file = paste0(PLOTPATH, "/arc_strengths.csv"))
+```
+
+
+
+## save to package data
+
+```{r save avgnet and arcstren}
+discrete_bns <- list(avgnet = avgnet, 
+                     arcstren = arcstren)
+usethis::use_data(discrete_bns, overwrite = TRUE)
+devtools::document()
+```
