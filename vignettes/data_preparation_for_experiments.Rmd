@@ -38,7 +38,7 @@ library(forcats)
 # Save plots as files? 
 # Warning: Bad layout with knitr. Works well if chunks are run without rendering.
 SAVEPLOTS <- FALSE
-PLOTPATH <- "./"
+PLOTPATH <- Sys.getenv("PLOTPATH")
 ```
 
 # Load Preprocessed Data
