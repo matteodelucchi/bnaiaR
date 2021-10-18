@@ -1,0 +1,80 @@
+---
+title: "Data structure and Characteristics"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{Data structure and Characteristics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(RMariaDB)
+library(forcats)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+```
+
+# Load Preprocessed Data
+
+```{r}
+str(adb.raw)
+```
+
+# Characteristics of whole, harmonized data cohort
+
+no. of patients
+```{r}
+nrow(adb.raw)
+```
+how many had a form of stroke as reason for diagnosis?
+```{r}
+table(adb.raw$Basis.of.recruitment_CaseControl, useNA = "always")
+```
+
+median age at diagnosis?
+```{r}
+summary(adb.raw$age.at.time.of.diagnosis)
+```
+
+median age at rupture?
+```{r}
+summary(adb.raw$age.at.time.of.diagnosis[which(adb.raw$Ruptured_IA=="Yes")])
+```
+
+Compare to Morel et al. 2021: 
+Median age at aneurysm rupture was 52 years (range 10-92), 
+25% of patients were <44 and 75% were <61 years of age.
+
+
+
+```{r}
+
+```
+
