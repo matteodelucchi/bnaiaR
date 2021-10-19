@@ -28,6 +28,8 @@ Imports:
     Rgraphviz,
     BiocManager,
     bnlearn,
-    data.table
+    data.table,
+    igraph,
+    mcmcabn
 Depends: 
     R (>= 3.5.0)

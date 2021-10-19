@@ -15,6 +15,9 @@ You can install the released version of bnaiaR from [Github](https://github.com/
 devtools::install_github("matteodelucchi/bnaiaR")
 ```
 
+In case of installation issues caused by the package `igraph`, check this post:
+[github.com/igraph](https://github.com/igraph/rigraph/issues/275#issuecomment-852000182)
+
 ## Description
 
 ### Data
