@@ -461,31 +461,73 @@ netmet <- network.metrics(
 
 
 ```{r}
-plot(arcstren[["tabu.bic.custom"]])
-abline(v=0.3)
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "arcstren_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  plot(arcstren[["tabu.bic.custom"]])
+  # abline(v = 0.3)
+  dev.off()
+} else {
+  plot(arcstren[["tabu.bic.custom"]])
+  abline(v=0.3)
+}
 ```
 
 
 
 ```{r cpdag-tabu-strength-bic-custom}
-strength.plot(cpdag(avg.boot, wlbl = TRUE),
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(cpdag(avg.boot, wlbl = TRUE),
               arcstren[["tabu.bic.custom"]],
               main = "CPDAG",
               sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
               shape = "rectangle")
+  dev.off()
+} else {
+  strength.plot(cpdag(avg.boot, wlbl = TRUE),
+              arcstren[["tabu.bic.custom"]],
+              main = "CPDAG",
+              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+              shape = "rectangle")
+}
 ```
 
 
 ```{r}
-# svg(paste0(PLOTPATH, "/dag_tabu_th03.svg"))
-strength.plot(avgnet[["tabu.bic.custom"]],
-              arcstren[["tabu.bic.custom"]],
-              main = "DAG",
-              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
-              shape = "rectangle")
-# dev.off()
-# bnlearn::write.dot(graph = dag.th03, file = paste0(PLOTPATH, "/dag_tabu_th03.dot"))
-# write.csv(arcstren[["tabu"]], file = paste0(PLOTPATH, "/arc_strengths.csv"))
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(avgnet[["tabu.bic.custom"]],
+                arcstren[["tabu.bic.custom"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+                shape = "rectangle")
+  dev.off()
+  bnlearn::write.dot(graph = avgnet[["tabu.bic.custom"]],
+                     file = paste0(FILE, "dot"))
+  write.csv(arcstren[["tabu"]], file = paste0(FILE, "csv"))
+  
+} else {
+  strength.plot(avgnet[["tabu.bic.custom"]],
+                arcstren[["tabu.bic.custom"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+                shape = "rectangle")
+}
 ```
 
 
@@ -493,8 +535,8 @@ strength.plot(avgnet[["tabu.bic.custom"]],
 ## save to package data
 
 ```{r save avgnet and arcstren}
-discrete_bns <- list(avgnet = avgnet, 
-                     arcstren = arcstren)
-usethis::use_data(discrete_bns, overwrite = TRUE)
-devtools::document()
+# discrete_bns <- list(avgnet = avgnet, 
+#                      arcstren = arcstren)
+# usethis::use_data(discrete_bns, overwrite = TRUE)
+# devtools::document()
 ```

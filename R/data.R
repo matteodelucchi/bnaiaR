@@ -139,3 +139,13 @@
 #' @format A list of 3 items and class "bn".
 #'
 "ekg"
+
+#' Discrete Bayesian Network Models
+#'
+#' For details consider the vignette
+#' \code{vignette("discrete_BN_SL", package = "bnaiaR")}.
+#'
+#' @format A list of 2 lists with different "bn" objects and "bn.strength"
+#' objects respectively.
+#'
+"discrete_bns"
