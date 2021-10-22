@@ -40,5 +40,5 @@ data base to `adb.raw` data set.
 3. `data_preparation_for_experiments`: Implementation of prior knowledge 
 (blacklist, banned-matrix), specification of variable distributions and 
 variable selection for each analysis scenario.  
-
+4. `regression_analysis`: Multivariable logistic regression models and survival analysis.
 
