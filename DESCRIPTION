@@ -26,6 +26,13 @@ Imports:
     correlationfunnel,
     abn,
     Rgraphviz,
-    BiocManager
+    BiocManager,
+    pROC,
+    pscl,
+    ROCR,
+    sjPlot,
+    survminer,
+    survAUC,
+    survival
 Depends: 
     R (>= 3.5.0)
