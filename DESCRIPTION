@@ -26,6 +26,8 @@ Imports:
     correlationfunnel,
     abn,
     Rgraphviz,
-    BiocManager
+    BiocManager,
+    cowplot,
+    bnlearn
 Depends: 
     R (>= 3.5.0)

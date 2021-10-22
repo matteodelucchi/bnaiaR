@@ -12,7 +12,7 @@ SHD.constantinou(estGraph, trueGraph)
 \item{trueGraph}{Object of class "bn" representing the domain knowledge as graph ("intuition graph" or "ground truth graph").}
 }
 \value{
-
+integer
 }
 \description{
 EXPERIMENTAL!
