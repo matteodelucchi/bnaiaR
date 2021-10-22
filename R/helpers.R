@@ -340,3 +340,40 @@ prep_exp_data <- function(dat = adb,
     return(list(abndata=abndata, dist=dist, banned=banned, bl=bl))
   }
 }
+
+#' Plot and save ROC curve with AUC
+#'
+#' Plots the ROC Curve with AUC and AUC CI values.
+#'
+#' @param roc object returned from `pROC::roc`
+#' @param aucCI object returned from `pROC::ci.auc`
+#' @param FILENAME string of filename
+#' @param PLOTPATH string of path
+#' @param SAVE If True, the plot will be saved.
+#'
+#' @return plot or none.
+#' @export
+#'
+#' @examples
+#' \dontrun{roc <- pROC::roc(ValidSet$Ruptured_IA, pred_glm)
+#' auc <- roc$auc
+#' aucCI <- round(pROC::ci.auc(ValidSet$Ruptured_IA, pred_glm), 2)
+#' plotROCAUC(roc, aucCI, FILENAME = "logreg_IArupture_roc.png")
+#' }
+plotROCAUC <- function(roc, aucCI, FILENAME, PLOTPATH=NULL, SAVE=SAVEPLOTS){
+  if (SAVE){
+    if(is.null(PLOTPATH)){
+      stop( "Don't know where to store. Specify PLOTPATH!")
+    } else{
+      FILE = paste0(PLOTPATH, "/", FILENAME)
+      print(paste0("Saving to ", FILE))
+    }
+    png(filename = FILE)
+    plot(roc, main = "ROC Curve")
+    text(0.5, 0.01, paste("AUC=", aucCI[2], "(95% CI =", aucCI[1], "-", aucCI[3], ")"))
+    dev.off()
+  } else {
+    plot(roc, main = "ROC Curve", )
+    text(0.5, 0.01, paste("AUC=", aucCI[2], "(95% CI =", aucCI[1], "-", aucCI[3], ")"))
+  }
+}
