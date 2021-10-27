@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r development, eval=FALSE, include=FALSE}
-devtools::document()
-devtools::load_all()
+# devtools::document()
+# devtools::load_all()
 # renv::snapshot(prompt = F)
 ```
 
@@ -286,6 +286,33 @@ if (SAVEPLOTS) {
     cpdag(avg.boot, wlbl = TRUE),
     arcstren[["tabu"]],
     main = "CPDAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+}
+```
+
+```{r dag-tabu-strength}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(
+    avgnet[["tabu"]],
+    arcstren[["tabu"]],
+    main = "DAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+  dev.off()
+} else {
+  strength.plot(
+    avgnet[["tabu"]],
+    arcstren[["tabu"]],
+    main = "DAG",
     sub = "SL: tabu\nth.=sign.level",
     shape = "rectangle"
   )
