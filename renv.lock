@@ -12,6 +12,13 @@
     "Version": "3.13"
   },
   "Packages": {
+    "BH": {
+      "Package": "BH",
+      "Version": "1.75.0-0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e4c04affc2cac20c8fec18385cd14691"
+    },
     "BiocGenerics": {
       "Package": "BiocGenerics",
       "Version": "0.38.0",
@@ -72,6 +79,12 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "470851b6d5d0ac559e9d01bb352b4021"
+    },
+    "RBGL": {
+      "Package": "RBGL",
+      "Version": "1.68.0",
+      "Source": "Bioconductor",
+      "Hash": "4eff306a2696d4b434f865a89f1a57d7"
     },
     "RColorBrewer": {
       "Package": "RColorBrewer",
@@ -415,6 +428,13 @@
       "Repository": "CRAN",
       "Hash": "f568ce73d3d59582b0f7babd0eb33d07"
     },
+    "gRbase": {
+      "Package": "gRbase",
+      "Version": "1.8-6.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c25e7184815043557e65e5e2d0603db2"
+    },
     "generics": {
       "Package": "generics",
       "Version": "0.1.0",
@@ -666,6 +686,13 @@
       "Repository": "CRAN",
       "Hash": "b8e6221fc11247b12ab1b055a6f66c27"
     },
+    "mcmcabn": {
+      "Package": "mcmcabn",
+      "Version": "0.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e209a3fe79d3cb9866453c534a2a06b0"
+    },
     "mgcv": {
       "Package": "mgcv",
       "Version": "1.8-38",
@@ -778,6 +805,13 @@
       "Repository": "CRAN",
       "Hash": "fbb11e44d057996ca5fe40d959cacfb0"
     },
+    "plyr": {
+      "Package": "plyr",
+      "Version": "1.8.6",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ec0e5ab4e5f851f6ef32cd1d1984957f"
+    },
     "polynom": {
       "Package": "polynom",
       "Version": "1.4-0",
@@ -869,6 +903,13 @@
       "Repository": "CRAN",
       "Hash": "30e5eba91b67f7f4d75d31de14bbfbdc"
     },
+    "reshape2": {
+      "Package": "reshape2",
+      "Version": "1.4.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "bb5996d0bd962d214a11140d77589917"
+    },
     "rio": {
       "Package": "rio",
       "Version": "0.5.27",
@@ -953,12 +994,26 @@
       "Repository": "CRAN",
       "Hash": "6f0a0fadc63bc6570fe172770f15bbc4"
     },
+    "svglite": {
+      "Package": "svglite",
+      "Version": "2.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "8fb6188960bf0f90996ce52f9c2106ac"
+    },
     "sys": {
       "Package": "sys",
       "Version": "3.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b227d13e29222b4574486cfcbde077fa"
+    },
+    "systemfonts": {
+      "Package": "systemfonts",
+      "Version": "1.0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "5be9fcf8ef6763e8cb13ab009e273a1d"
     },
     "tibble": {
       "Package": "tibble",
