@@ -34,6 +34,7 @@ library(bnlearn)
 # Warning: Bad layout with knitr. Works well if chunks are run without rendering.
 SAVEPLOTS <- FALSE
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "png" # "svg" or "png"
 ```
 
 # Build Evidence Knowledge Graph Structure
@@ -67,8 +68,18 @@ arcs(ekg) <- arc.set
 
 
 ```{r display.evidenceknowledgegraph}
-# Display
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "evidence_knowledge_graph", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
+  dev.off()
+} else {
 graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
+}
 ```
 
 ## save to package data
@@ -80,4 +91,3 @@ graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
 
 > TODO: Make evidence knowledge graph comparable to locbin and locrisk
 
-> TODO: Make nice layout
