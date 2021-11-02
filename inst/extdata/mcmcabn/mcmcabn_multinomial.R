@@ -75,7 +75,12 @@ cat(paste0(
   "_data.RData",
   "\n"
 ))
+
 load(file = paste0(FILENAMEbase, FILENAME, "_data.RData"))
+
+abndata <- abndata %>%
+  # Remove IA size outliers
+  filter(IAsize_log < 4)
 
 # create empty retain matrix
 retain <- matrix(0, ncol(abndata), ncol(abndata))
