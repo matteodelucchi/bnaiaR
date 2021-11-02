@@ -12,10 +12,10 @@ library(bnaiaR)
 #####
 # Settings
 #####
+DEBUG <- TRUE
 EXPNO <- "multinomial"
-FILENAME <- paste0("exp", EXPNO)
-FILENAMEbase <- "./results/raw/"
-DATPATH <- paste0("./data/")
+FILENAME <- paste0("expABN", EXPNO)
+FILENAMEbase <- "./inst/extdata/mcmcabn/results/raw/"
 #create and register cluster
 if(amilocal()){
   n.cores <- parallel::detectCores() - 1 # local
@@ -29,8 +29,11 @@ clust <- parallel::makeCluster(n.cores, outfile="multicore.log")
 #####
 METHOD <- "mle"
 SCORE <- "bic"
-
-RETURN.DAGS <- 100000
+if(DEBUG){
+  RETURN.DAGS <- 1
+} else {
+  RETURN.DAGS <- 100000
+}
 THINNING <- 0
 BURNIN.LEN <- 0
 # MCMC.SCHEME <- c(RETURN.DAGS, THINNING, BURNIN.LEN)
@@ -44,19 +47,20 @@ MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
 THRESHOLD <- 0.5 # arcstrength
 
 #####
-# Load data
+# Data Preparation
 #####
-# cat(paste0("\nLoading data from: ", DATPATH, FILENAME, "_data.RData", "\n"))
-# load(file = paste0(DATPATH, FILENAME, "_data.RData"))
-abndata <- prep_exp_data(dat = adb,
+cat(paste0("\nPrepare data and store it: ", FILENAMEbase, FILENAME, "_data.RData", "\n"))
+prep_exp_data(dat = adb,
                          EXPNO,
                          age="cont",
                          location="byRisk-multinomial",
                          size="log",
                          smoking="mult",
                          SAVE = T,
-                         FILENAMEbase)
-str(abndata)
+                         FILENAMEbase = FILENAMEbase)
+
+cat(paste0("\nLoading data from: ", FILENAMEbase, FILENAME, "_data.RData", "\n"))
+load(file = paste0(FILENAMEbase, FILENAME, "_data.RData"))
 
 # create empty retain matrix
 retain <- matrix(0, ncol(abndata), ncol(abndata))
