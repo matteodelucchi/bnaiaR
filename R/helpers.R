@@ -527,6 +527,7 @@ arc.stren.threshold = function(strength, method = "l1") {
 #'
 #' @param data Data frame used to learn abn DAG
 #' @param abndag List from output of `abn::mostProbable()`
+#' @param title string for title
 #'
 #' @return plot
 #' @export
@@ -538,9 +539,11 @@ arc.stren.threshold = function(strength, method = "l1") {
 #' dag.mP = mostProbable(score.cache = mycache, score = "bic", verbose = FALSE)
 #' abn2bnlearn.plot(data, dag.mP)
 #' }
-abn2bnlearn.plot <- function(data, abndag){
+abn2bnlearn.plot <- function(data, abndag, title){
   dag = bnlearn::empty.graph(names(data))
   bnlearn::amat(dag) = t(abndag$dag)
-  bnlearn::graphviz.plot(dag, shape = "rectangle")
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = title)
 }
 

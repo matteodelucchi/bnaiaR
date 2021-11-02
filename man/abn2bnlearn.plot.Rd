@@ -4,12 +4,14 @@
 \alias{abn2bnlearn.plot}
 \title{Plot ABN DAG with `bnlearn::graphviz.plot`}
 \usage{
-abn2bnlearn.plot(data, abndag)
+abn2bnlearn.plot(data, abndag, title)
 }
 \arguments{
 \item{data}{Data frame used to learn abn DAG}
 
 \item{abndag}{List from output of `abn::mostProbable()`}
+
+\item{title}{string for title}
 }
 \value{
 plot
