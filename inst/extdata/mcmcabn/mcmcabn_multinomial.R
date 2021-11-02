@@ -6,13 +6,13 @@ library(foreach)
 library(doParallel)
 library(abn)
 library(mcmcabn)
-library(ExplorDataISGC)
-library(BNstructureLearning)
+library(bnaiaR)
+# library(BNstructureLearning)
 
 #####
 # Settings
 #####
-EXPNO <- "6"
+EXPNO <- "multinomial"
 FILENAME <- paste0("exp", EXPNO)
 FILENAMEbase <- "./results/raw/"
 DATPATH <- paste0("./data/")
@@ -46,8 +46,17 @@ THRESHOLD <- 0.5 # arcstrength
 #####
 # Load data
 #####
-cat(paste0("\nLoading data from: ", DATPATH, FILENAME, "_data.RData", "\n"))
-load(file = paste0(DATPATH, FILENAME, "_data.RData"))
+# cat(paste0("\nLoading data from: ", DATPATH, FILENAME, "_data.RData", "\n"))
+# load(file = paste0(DATPATH, FILENAME, "_data.RData"))
+abndata <- prep_exp_data(dat = adb,
+                         EXPNO,
+                         age="cont",
+                         location="byRisk-multinomial",
+                         size="log",
+                         smoking="mult",
+                         SAVE = T,
+                         FILENAMEbase)
+str(abndata)
 
 # create empty retain matrix
 retain <- matrix(0, ncol(abndata), ncol(abndata))
