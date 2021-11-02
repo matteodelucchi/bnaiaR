@@ -3,6 +3,7 @@
 export(BSF)
 export(DDM.constantinou)
 export(SHD.constantinou)
+export(abn2bnlearn.plot)
 export(amilocal)
 export(arc.stren.threshold)
 export(connectDBstack)

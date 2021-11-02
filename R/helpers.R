@@ -523,3 +523,24 @@ arc.stren.threshold = function(strength, method = "l1") {
 
 }
 
+#' Plot ABN DAG with `bnlearn::graphviz.plot`
+#'
+#' @param data Data frame used to learn abn DAG
+#' @param abndag List from output of `abn::mostProbable()`
+#'
+#' @return plot
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' mycache = buildScoreCache(data.df = data, data.dists = dists, max.parents = npar, method = "mle",
+#' dag.banned = banned, verbose = FALSE)
+#' dag.mP = mostProbable(score.cache = mycache, score = "bic", verbose = FALSE)
+#' abn2bnlearn.plot(data, dag.mP)
+#' }
+abn2bnlearn.plot <- function(data, abndag){
+  dag = bnlearn::empty.graph(names(data))
+  bnlearn::amat(dag) = t(abndag$dag)
+  bnlearn::graphviz.plot(dag, shape = "rectangle")
+}
+
