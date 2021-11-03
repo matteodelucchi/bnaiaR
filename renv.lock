@@ -560,6 +560,13 @@
       "Repository": "CRAN",
       "Hash": "a525aba14184fec243f9eaec62fbed43"
     },
+    "igraph": {
+      "Package": "igraph",
+      "Version": "1.2.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f1e720796423d6c08bf430fc3be0bf10"
+    },
     "ipred": {
       "Package": "ipred",
       "Version": "0.9-12",
@@ -689,9 +696,10 @@
     "mcmcabn": {
       "Package": "mcmcabn",
       "Version": "0.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "e209a3fe79d3cb9866453c534a2a06b0"
+      "Source": "Local",
+      "RemoteType": "local",
+      "RemoteUrl": "/home/delt/ZHAW/bnaiaR/renv/local/mcmcabn_0.4.tar.gz",
+      "Hash": "516bde99e2f57d594d8e55300bce00fd"
     },
     "mgcv": {
       "Package": "mgcv",

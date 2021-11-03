@@ -11,7 +11,7 @@ library(bnaiaR)
 #####
 # Settings
 #####
-DEBUG <- TRUE
+DEBUG <- FALSE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("exp", EXPNO)
 FILENAMEbase <- "./inst/extdata/mcmcabn/results/raw/"
@@ -28,7 +28,7 @@ if (amilocal()) {
 METHOD <- "mle"
 SCORE <- "bic"
 if (DEBUG) {
-  RETURN.DAGS <- 1
+  RETURN.DAGS <- 50000
 } else {
   RETURN.DAGS <- 100000
 }
@@ -40,7 +40,6 @@ MCMC.SCHEME <-
 MCMC.SEEDS <- c(560505, 921213, 352629, 23146)
 PROB.REV = 0.03 # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
 PROB.MBR = 0.03
-# PROB.MBR = 0
 MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
 
 THRESHOLD <- 0.5 # arcstrength
