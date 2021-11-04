@@ -173,16 +173,20 @@ net.scores <- foreach(
                     method = METHOD)
 
 
-  return(c(i, SCORE, fabn.mP[[SCORE]]))
+  return(list(i=list(dag.mP, c(i, SCORE, fabn.mP[[SCORE]]))))
 
   cat(paste("\nnetwork score for", i, "parents =", fabn.mP[[SCORE]], "\n\n"))
 }
 stopCluster(clust)
 
+net.scores.dags.prelim <- unlist(net.scores, recursive = F)
+net.scores.dags <- net.scores.dags.prelim[seq(1,length(net.scores.dags.prelim), 2)]
+net.scores <- net.scores.dags.prelim[seq(2,length(net.scores.dags.prelim), 2)]
 
 # format net.scores
-net.scores <- as.data.frame(net.scores)
-colnames(net.scores) <- c("npar", "scoretype", "scorevalue")
+net.scores <- data.frame(npar = unlist(net.scores)[seq(1,length(unlist(net.scores)), 3)],
+                            scoretype = unlist(net.scores)[seq(2,length(unlist(net.scores)), 3)],
+                            scorevalue = unlist(net.scores)[seq(3,length(unlist(net.scores)), 3)])
 rownames(net.scores) <- NULL
 net.scores[, 1] <- as.integer(net.scores[, 1])
 net.scores[, 3] <- as.numeric(net.scores[, 3])
@@ -192,6 +196,7 @@ for (i in 1:nrow(net.scores)) {
     net.scores$scorevalue[i] <- -net.scores$scorevalue[i]
   }
 }
+
 # Save intermediate raw data
 save(
   abndata,
@@ -200,6 +205,7 @@ save(
   banned,
 
   net.scores,
+  net.scores.dags,
   file = paste0(FILENAMEbase, FILENAME, "_intermediate.RData")
 )
 cat("\nIntermediate data saved")
