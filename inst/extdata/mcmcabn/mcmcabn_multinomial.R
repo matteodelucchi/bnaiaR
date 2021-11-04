@@ -28,7 +28,7 @@ if (amilocal()) {
 METHOD <- "mle"
 SCORE <- "bic"
 if (DEBUG) {
-  RETURN.DAGS <- 50000
+  RETURN.DAGS <- 1
 } else {
   RETURN.DAGS <- 100000
 }
