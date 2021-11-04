@@ -7,6 +7,7 @@ library(doParallel)
 library(abn)
 library(mcmcabn)
 library(bnaiaR)
+library(ggplot2)
 
 #####
 # Settings
@@ -77,9 +78,54 @@ cat(paste0(
 
 load(file = paste0(FILENAMEbase, FILENAME, "_data.RData"))
 
+# check for outliers in continuous vars
+df <- abndata %>%
+  mutate(ID = seq(1,nrow(abndata)))%>%
+  reshape2::melt(id.vars=c("ID"),
+                 measure.vars=c("AgeDiag", "IAsize_log"))
+
+p.outliers <- ggplot(df, aes(x=value))+
+  facet_wrap(~variable, scales = "free")+
+  geom_boxplot(notch = TRUE) +
+  coord_flip() +
+  theme_bw() +
+  ggtitle("Raw multinomial mixed data",
+          subtitle = "Outliers in continuous variables")
+
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_raw.png"),
+       p.outliers)
+
+# Fix outliers
 abndata <- abndata %>%
   # Remove IA size outliers
-  filter(IAsize_log < 4)
+  filter(IAsize_log < 4) %>%
+  # Clean up age values
+  filter(AgeDiag != 0)
+
+# Plot continuous vars again
+df <- abndata %>%
+  mutate(ID = seq(1,nrow(abndata)))%>%
+  reshape2::melt(id.vars=c("ID"),
+                 measure.vars=c("AgeDiag", "IAsize_log"))
+
+p.nooutliers <- ggplot(df, aes(x=value))+
+  facet_wrap(~variable, scales = "free")+
+  geom_boxplot(notch = TRUE) +
+  coord_flip() +
+  theme_bw() +
+  ggtitle("Raw multinomial mixed data",
+          subtitle = "Outliers removed in continuous variables")
+
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_noOutliers.png"),
+       p.nooutliers)
+
+p.outliers.comb <- cowplot::plot_grid(p.outliers, p.nooutliers, labels = "AUTO", ncol = 1)+
+  theme(plot.caption = element_blank(),
+        plot.caption.position = "plot",
+        panel.background = element_rect(fill = "transparent", color = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_outliers_multiplt.png"),
+       p.outliers.comb)
 
 # create empty retain matrix
 retain <- matrix(0, ncol(abndata), ncol(abndata))
