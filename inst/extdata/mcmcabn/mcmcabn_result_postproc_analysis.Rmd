@@ -839,10 +839,12 @@ A special care should be taken when interpreting or even displaying p-values com
 
 
 ### Regression coefficient estimates and 95% Confidence Intervals (CI)
+
 with their interpretation and data support (computed with structural MCMC).
 
 Second table `spportdag` is the percentage of the individual arcs supported by the 
 MCMC sample. 
+
 ```{r}
 # Look-up table for interpretation of results depending on variable distribution
 interpretLUT <- lapply(fabn.boot.th.mle$abnDag$data.dists, function(x){
@@ -851,7 +853,10 @@ interpretLUT <- lapply(fabn.boot.th.mle$abnDag$data.dists, function(x){
   } else if(x=="gaussian"){
     "correlation"
   } else if(x=="poission"){
-    "rate ratio"}
+    "rate ratio"
+  } else if(x=="multinomial"){
+    "odds ratio"
+  }
 })
 
 # Extract each edge (cornames) and it's interpretation
@@ -860,7 +865,7 @@ interpret <- c()
 for (i in 1:length(fabn.boot.th.mle$coef)){
   for (j in colnames(fabn.boot.th.mle$coef[[i]])){
     interpret <- c(interpret, interpretLUT[which(names(unlist(interpretLUT)) == names(fabn.boot.th.mle$coef[i]))][[1]])
-    if(str_detect(j, "intercept")){
+    if(stringr::str_detect(j, "intercept")){
       cornames <- c(cornames, j)
     } else {
         cornames <- c(cornames, paste0(names(fabn.boot.th.mle$coef[i]), "|", j))
@@ -873,12 +878,16 @@ support <- c()
 supportdag <- dag.mcmc.boot
 supportdag[supportdag<=THRESHOLD] <- 0
 for (i in 1:length(cornames)){
-  edgename <- str_split(cornames[[i]], pattern = "\\|", simplify = T)
+  edgename <- stringr::str_split(cornames[[i]], pattern = "\\|", simplify = T)
   fromname <- edgename[2]
   toname <- edgename[1]
   fromidx <- which(colnames(supportdag) == fromname)
   toidx <- which(colnames(supportdag) == toname)
-  support <- c(support, round(supportdag[toidx, fromidx], 2))
+  if(identical(fromidx, integer(0)) | identical(toidx, integer(0))){
+    support <- c(support, NA)
+  } else {
+    support <- c(support, round(supportdag[toidx, fromidx], 2))
+  }
 }
 
 # put all together
@@ -887,13 +896,14 @@ result.table <- data.frame(cornames = cornames,
                            SE = unlist(fabn.boot.th.mle$Stderror, use.names = F),
                            interpretation= interpret)
 
-# remove edges with "intercept"
-result.table <- result.table[which(!str_detect(result.table$cornames, "intercept")),]
 # add support values
 result.table <- cbind(result.table, support)
 
+# remove edges with "intercept"
+result.table <- result.table[which(!stringr::str_detect(result.table$cornames, "intercept")),]
+
 for (i in 1:nrow(result.table)){
-  if(str_detect(result.table$interpretation[i], "ratio")){
+  if(stringr::str_detect(result.table$interpretation[i], "ratio")){
     # Because of logit() scale
     result.table$coefficient[i] <- exp(result.table$coefficient[i])
   }
@@ -939,28 +949,48 @@ result.table.mle <- result.table %>%
          SE = as.numeric(round(SE, 2)))
 
 if (SAVEPLOTS){
-  write.csv(result.table.mle, file = paste0(PLOTPATH, FILENAME, "results_table_mle.csv"))
-  write.csv(supportdag, file = paste0(PLOTPATH, FILENAME, "individual_arc_support.csv"))
+  write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"))
+  write.csv(supportdag, file = paste0(getwd(), PLOTPATH, FILENAME, "individual_arc_support.csv"))
   } else {
     print(result.table.mle)
   }
 ```
-the odds and rate ratios: If smaller than one, a ratio has a negative effect. 
-Inversely, if larger than one, the effect is positive.
 
+TODO: Include support values for multinomial parent nodes
 
-#### interpretations:
+### Interpretations
+
 ```{r}
 str(abndata)
-abndata[1,]
 ```
 
-Start with support == 1.
 ```{r}
-result.table.mle[which(result.table.mle$support == 1),]
+result.table.mle
 ```
 
+Gender -> Hypertension: negative association. Females tend to have never Hypertension. 
+AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension.
+pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no)
+Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs.
+Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs.
+Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?)
+AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA.
+high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n).
+low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n).
+IA size -> Ruptured IA: positive associated. Large IAs tend to rupture.
+
+
+Not included but from binary graph:
 Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke.
+
+TODO: Check if those match:
+AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked.
+AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location.
+
+Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location.
+
+Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location.
+non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location.
 
 Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke.
 
@@ -970,92 +1000,30 @@ Pos. fam hist -> high risk location: positive association. positive fam. hist., 
 Gender -> low risk location: negative association. gender is femalem, IAs at low risk location.
 Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location. 
 
-pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no)
-Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs.
-
-Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?)
-AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA.
-high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n).
-low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n).
-IA size -> Ruptured IA: positive associated. Large IAs tend to rupture.
-
-
-
-Arcs with less support
-```{r}
-result.table.mle[which(result.table.mle$support != 1),]
-```
-
-Gender -> Hypertension: negative association. Females tend to have never Hypertension. (verify! Vera says: Males tend to have HBP)
-AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension.
-
-AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked.
-AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location.
-
-Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location.
-
-Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location.
-non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location.
-
-Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs.
-
-
-
-
-### Queries
-
-From Kratzer et al 2020 BN modeling applied to FC infection... they model on the
-complete mcmc sample and not the pruned consensus dag. 
-
-```{r}
-mcmc.out.query<- list(dags=list.mc.out.burn.thin.dag,
-                      data.dist=dist,scores=list.mc.out.burn.thin.score)
-```
-
-What is the probability that IA rupture is associated with current smokers?
-```{r}
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|Smoking_Current_Former_No__Current)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~Smoking_Current_Former_No__Current|Ruptured_IA)
-```
-
-What is the probability that IA rupture is associated with Age and current smokers?
-```{r}
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__Current|AgeDiag)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__Current)
-
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__No|AgeDiag)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__No)
-```
-
-Positive familial history - Gender?
-```{r}
-mcmcabn::query(mcmcabn = mcmc.out.query,
-      formula = ~Hypertension|Gender)
-```
-
-
-Hypertension is higher in higher age.
-
 
 ### Arc-histogram
+
 ```{r}
 # Arc histogram
 arcsdist <- apply(list.mc.out.burn.thin.dag, 3, sum)
-plt <- barplot(table(arcsdist),col = "grey",xlab = "Number of arcs in the DAG", ylab = "Number of DAGs")
+
+df.archist <- as.data.frame(table(arcsdist)) %>% 
+  mutate(totalarcs = case_when(arcsdist == sum(dag.maxpar$dag) ~ "1",
+                               TRUE ~ "0"))
+plt.archist <- ggplot(df.archist, aes(x = arcsdist, y = Freq, fill=totalarcs)) +
+  geom_col(width=0.5) +
+  labs(title="Arc Histogram")+
+  xlab("Number of arcs in the DAG")+
+  ylab("Number of DAGs") +
+  scale_fill_manual( values = c("1"="red", "0"="darkgray"), guide = "none")+
+  theme_minimal()
 
 if (SAVEPLOTS){
-  PLOTNAME <- "arc_histogram"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
-  plt
-  dev.off()
+  PLOTNAME <- "_arc_histogram"
+  ggsave(path = paste0(getwd(), PLOTPATH), filename = paste0(FILENAME, PLOTNAME, ".png"),
+       plt.archist)
 } else {
-  plt
+  plt.archist
 }
 ```
 
