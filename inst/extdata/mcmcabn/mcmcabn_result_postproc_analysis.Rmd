@@ -34,14 +34,13 @@ library(svglite)
 library(mcmcabn)
 library(bnlearn)
 library(bnaiaR)
-# library(BNstructureLearning)
 library(coda)
 library(abn)
 ```
 
 # Document Settings
 ```{r}
-SAVEPLOTS <- T
+SAVEPLOTS <- F
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("exp", EXPNO)
 FILENAMEbase <- "/inst/extdata/mcmcabn/results/raw/"
@@ -157,7 +156,7 @@ for (i in net.scores.dags) {
   parents <- parents+1
 }
 
-png(filename = paste0(getwd(), "/results/", FILENAME, "_maxparentDAGs.png"))
+png(filename = paste0(getwd(), "/results/", FILENAME, "_maxparentDAGs.png"),width = 1920, height = 1080)
 par(mfrow=c(3,3))
 parents <- 1
 for(i in plt){
@@ -175,8 +174,6 @@ dev.off()
 
 thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
 
-We thinning was set to keep the same amount of samples as in the non-parametric bootstrapping with tabu (10'000).
-
 ```{r}
 # THINNING <- 2 # keep every second draw
 # BURNIN.LEN <- 2500 # remove the first n draws
@@ -192,6 +189,7 @@ str(mcmc.out.list.burn.thin[1])
 ```
 
 ## Reformat
+
 ```{r}
 # thinned only
 mc.out.thin.1 <- mcmc.out.list.thin[[1]]
@@ -229,67 +227,32 @@ list.mc.out.burn.thin.dag <- abind::abind(mc.out.burn.thin.dag.1, mc.out.burn.th
 ```
 
 # Best fitting DAG
-number of max parents per node
+
+number of max parents per node.
+
 ```{r}
 max.par
 ```
 
-total arcs
+total arcs.
+
 ```{r}
-# plot(dag.maxpar)
 sum(dag.maxpar$dag)
 summary(fabn.maxpar)
-fabn.maxpar.bayes <- fitAbn(dag = dag.maxpar$dag,
-              data.df = abndata,
-              data.dists = dist, 
-              method = "bayes",
-              compute.fixed = T,
-              create.graph = T)
 ```
 
 TODO: Can't fit bayes with multinomial. Only mle.
 
-## Prior distributions
-```{r}
-ncolsplot <- length(fabn.maxpar.bayes$marginals)
-nrowsplot <- max.par+1
-pltlayout <- layout(matrix(seq(1, ncolsplot*nrowsplot), ncol = ncolsplot, byrow = T))
-# layout.show(pltlayout)
-par(mar = c(rep(2.12, 4)))
-for(i in 1:length(fabn.maxpar.bayes$marginals)){
-  nom1<-names(fabn.maxpar.bayes$marginals)[i]
-  cat("processing marginals for node:", nom1 ,"\n");
-  cur.node.marg<-fabn.maxpar.bayes$marginals[i];
-  cur.node.marg<-cur.node.marg[[1]];
-  
-  for(j in 1:length(cur.node.marg)){
-    nom2<-names(cur.node.marg)[j]
-    if (str_detect(nom2, "Intercept|precision")){
-      cat("Skipping ", nom2)
-      next
-    } else{
-      cat("processing parameter:",nom2,"\n")
-    }
-    cur.marg<-cur.node.marg[[j]];
-    cur.ci <- fabn.maxpar.bayes[[21]][[i]][[j]]
-    class(cur.ci) <- NULL # Remove class abnFit as it causes an errors downwards.
-    cur.ci <- as.data.frame(cur.ci)
-    plot(cur.marg,type="l",main=paste(nom1,":",nom2))
-    abline(v = cur.ci$x) # TODO: Use color contour instead of lines.
-  }
-}
-```
-
-
 # MCMC Quality check
+
 ## Gelman
 ```{r}
 gelman.diag(x = list.mc.out.thin.score,autoburnin = T) # if higher than 1.1 or 1.2, run chain longer to improve convergence
 gelman.plot(list.mc.out.thin.score, autoburnin = T)
 
 if (SAVEPLOTS){
-  PLOTNAME <- "gelmanplot"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  PLOTNAME <- "_gelmanplot"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
   dev.off()
 } else {
   gelman.plot(list.mc.out.thin.score, autoburnin = T)
@@ -297,12 +260,15 @@ if (SAVEPLOTS){
 ```
 
 ## Raftery
-calculate no. of iterations and no. of burn-ins to satisfy specified conditions
+
+calculate no. of iterations and no. of burn-ins to satisfy specified conditions.
+
 ```{r}
 raftery.diag(unlist(list.mc.out.thin.score))
 ```
 
 ## Heidelberg and Welch Diagnostics
+
 test H0: The Markov Chain is from a stationary distribution. If not passed, chain must run longer.
 
 ```{r}
@@ -314,12 +280,13 @@ for (chain in 1:length(list.mc.out.thin.score)){
 
 ```
 
-## trace plot
+## Trace Plot
+
 ```{r}
 mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
 if (SAVEPLOTS){
-  PLOTNAME <- "traceplot"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  PLOTNAME <- "_traceplot"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
   
   dev.off()
   } else {
@@ -330,9 +297,9 @@ if (SAVEPLOTS){
 
 ```{r}
 if (SAVEPLOTS){
-  PLOTNAME <- "traceplot_maxscore"
+  PLOTNAME <- "_traceplot_maxscore"
   mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
   dev.off()
   } else {
   mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
@@ -342,9 +309,9 @@ if (SAVEPLOTS){
 
 ```{r}
 if (SAVEPLOTS){
-  PLOTNAME <- "traceplot_classic"
+  PLOTNAME <- "_traceplot_classic"
   plot(list.mc.out.burn.thin.score)
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
   dev.off()
   } else {
   plot(list.mc.out.burn.thin.score)
@@ -420,22 +387,16 @@ combined_cummax_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = origin
 # print(combined_plot)
 
 if (SAVEPLOTS){
-  PLOTNAME <- "traceplot_allruns"
-  ggsave(plot = original_plot,
-         filename = paste0(FILENAME, PLOTNAME, ".svg"),
-         path = PLOTPATH,
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns")
+  ggsave(paste0(PLOTNAME, ".svg"),
          width = PLOTWIDTH, height = PLOTHEIGHT)
 
-  PLOTNAME <- "traceplot_allruns_combined"
-  ggsave(plot = combined_plot,
-         filename = paste0(FILENAME, PLOTNAME, ".svg"),
-         path = PLOTPATH,
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_combined")
+  ggsave(paste0(PLOTNAME, ".svg"),
          width = PLOTWIDTH, height = PLOTHEIGHT)  
 
-  PLOTNAME <- "traceplot_allruns_cummax"
-  ggsave(plot = cummax_plt,
-         filename = paste0(FILENAME, PLOTNAME, ".svg"),
-         path = PLOTPATH,
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_cummax")
+  ggsave(paste0(PLOTNAME, ".svg"),
          width = PLOTWIDTH, height = PLOTHEIGHT)  
   } else {
   original_plot
@@ -444,8 +405,10 @@ if (SAVEPLOTS){
 }
 ```
 
-## Consensus DAG
+# Consensus DAG
+
 best dag trimmed for controlling overfitting
+
 ```{r}
 # Best DAG not trimmed 
 dag.mcmc.boot <- apply(list.mc.out.burn.thin.dag, 1:2, mean)
@@ -457,22 +420,24 @@ dag.mcmc.boot.th[dag.mcmc.boot.th>THRESHOLD]<-1
 dag.mcmc.boot.th[dag.mcmc.boot.th<=THRESHOLD]<-0
 
 # Plot Best DAG trimmed
-# svg(filename = paste0(FILENAMEbase, FILENAME, "consensus_dag.svg"))
-cons.dag.plt <- plotAbn(dag = dag.mcmc.boot.th,data.dists = dist)
-# dev.off()
+cons.dag.plt <- plotAbn(dag = dag.mcmc.boot.th,data.dists = dist, plot = F)
 
 
 if (SAVEPLOTS){
-  PLOTNAME <- "consensus_dag"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
-  cons.dag.plt 
+  PLOTNAME <- "_consensus_dag"
+  dag = bnlearn::empty.graph(names(abndata))
+  bnlearn::amat(dag) = t(dag.mcmc.boot.th)
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = "MCMC ABN DAG")  
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
   dev.off()
-  abn::toGraphviz(dag.mcmc.boot.th, 
-                  data.dists = dist, 
-                  data.df = abndata, 
-                  outfile =paste0(PLOTPATH, FILENAME, PLOTNAME, ".dot"),
+  abn::toGraphviz(dag.mcmc.boot.th,
+                  data.dists = dist,
+                  data.df = abndata,
+                  outfile =paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".dot"),
                   directed=TRUE)
-  saveRDS(dag.mcmc.boot.th, file = paste0(PLOTPATH, FILENAME, PLOTNAME, ".rds"))
+  saveRDS(dag.mcmc.boot.th, file = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".rds"))
 
   } else {
   cons.dag.plt
@@ -484,9 +449,9 @@ if (SAVEPLOTS){
   }
 ```
 
-TODO: Continue here (run mcmcabn_multinomial again)
 
-## significance threshold:
+# Arc strength significance threshold
+
 ```{r}
 dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
 arc.stren.sign.threshold <-arc.stren.threshold(dag.mcmc.boot.stren)
@@ -501,8 +466,8 @@ abline(v=0.5)
 # plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
 
 if (SAVEPLOTS){
-  PLOTNAME <- "cdf_arcstrength"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  PLOTNAME <- "_cdf_arcstrength"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
   dev.off()
   } 
 ```
@@ -549,13 +514,14 @@ cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
         data.dists = dist,
         # fitted.values = fitvals,
         digits = 2,
-        edge.strength = edgestren)
+        edge.strength = edgestren,
+        plot = F)
 # dev.off()
 
 if (SAVEPLOTS){
   PLOTNAME <- "consensus_dag_edgestrength"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
-  cons.dag.plt.edgestrength
+  plot(cons.dag.plt.edgestrength)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
   dev.off()
   } else {
   plot(cons.dag.plt.edgestrength)
@@ -564,21 +530,8 @@ if (SAVEPLOTS){
 
 
 # Inference
-Fit the data to the Network.
-Can be either Bayesian or Maximum Likelihood estimation. 
-Both implementations produce very similar results as shown in (Kratzer et al 2018, Information-Theoretic Scoring Rules to Learn
-Additive Bayesian Network Applied to Epidemiology)
 
 ```{r}
-# Fit best trimmed DAG with Bayesian framework to compute marginals
-fabn.boot.th.bayes <- fitAbn(dag = dag.mcmc.boot.th,
-              data.df = abndata,
-              data.dists = dist, 
-              method = "bayes",
-              compute.fixed = T,
-              create.graph = T,
-              max.iters = 1000)
-
 # Fit best trimmed DAG with MLE framework to compute marginals
 fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
               data.df = abndata,
@@ -587,241 +540,23 @@ fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
               compute.fixed = T,
               create.graph = T)
 
-out.bayes <- unlist(fabn.boot.th.bayes$modes)
+# out.bayes <- unlist(fabn.boot.th.bayes$modes)
 out.mle <- unlist(fabn.boot.th.mle$coef)
 ```
 
 ```{r}
 ##numeric
-df.bayes <- as.data.frame(out.bayes) %>%
-  rownames_to_column()%>%
-  filter(!str_detect(rowname, "precision") &
-           !str_detect(rowname, "Intercept"))
 df.mle <- as.data.frame(out.mle) %>%
-  rownames_to_column()%>%
-  filter(!str_detect(rowname, "precision") &
-           !str_detect(rowname, "Intercept"))
+  tibble::rownames_to_column()%>%
+  filter(!stringr::str_detect(rowname, "precision") &
+           !stringr::str_detect(rowname, "Intercept"))
 
-df.bayes
+# df.bayes
 df.mle
 ```
 
+## Maximum Likelihood Estimation 
 
-### Numerical Stability Check: Parameter estimation
-Once the trimmed DAG is obtained to keep robust structural features, we can extract the
-marginal posterior densities. Indeed, a BN has a qualitative part (the structure) and a
-quantitative part (parameters estimates). They are both equally important for interpreting
-and reporting the findings. As the estimation is based on the Laplace approximation and the
-R package abn does not rely on conjugate priors, a numerical check is performed. Figure 13
-shows the marginal densities. This figure is much more ambitious than the structural learning
-phase. The critical assumption is that the data contains sufficient information to accurately
-estimate the density of individual parameter of the model. This is a stronger requirement
-than simply being able to estimate an overall goodness of fit metric. It could happen that
-INLA or the internal C code cannot estimate the densities with enough numerical stability.
-Many user-tunable parameters can be supplie to fitabn() by providing a list to the control
-argument.
-(from abn vignette Appendix D) 
-
-### Bayesian
-(from help of "abn::fitAbn()")
-The procedure fitAbn fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); or an unbounded count (Poisson). The model comprises of a set of conditionally independent generalized linear regressions with or without random effects. Internal code is used by default for numerical estimation in nodes without random effects, and INLA is the default for nodes with random effects. This default behavior can be overridden using max.mode.error. The default is max.mode.error=10, which means that the modes estimated from INLA output must be within 10% of those estimated using internal code. Otherwise, the internal code is used rather than INLA. To force the use of INLA on all nodes, use max.mode.error=100, which then ignores this check, to force the use of internal code then use max.mode.error=0. For the numerical reliability and perform of abn see http://r-bayesian-networks.org. Generally speaking, INLA can be swift and accurate, but in several cases, it can perform very poorly and so some care is required (which is why there is an internal check on the modes). Binary variables must be declared as factors with two levels, and the argument data.dists must be a list with named arguments, one for each of the variables in data.df (except a grouping variable - if present), where each entry is either "poisson","binomial", or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
-
-If the data are grouped into correlated blocks - wherein a standard regression context a mixed model might be used - then a network comprising of one or more nodes where a generalized linear mixed model is used (but limited to only a single random effect). This is achieved by specifying parameters group.var and cor.vars. Where the former defines the group membership variable, which should be a factor indicating which observations belong to the same grouping. The parameter cor.vars is a character vector that contains the names of the nodes for which a mixed model should be used. For example, in some problems, it may be appropriate for all variables (except group.var) in data.df to be parametrized as a mixed model while in others it may only be a single variable for which grouping adjustment is required (as the remainder of variables are covariates measured at group level).
-
-In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
-
-If compute.fixed=TRUE then the marginal posterior distributions for all parameters are computed. Note the current algorithm used to determine the evaluation grid is rather crude and may need to be manually refined using variate.vec (one parameter at a time) for publication-quality density estimates. Note that a manual grid can only be used with internal code and not INLA (which uses its own grid). The end points are defined as where the value of the marginal density drops below a given threshold pdf.min.
-
-If create.graph=TRUE then the model definition matrix in dag.m is used to create an R graph object (of type graphAM-class). See ?"graph-class" for details and the Rgraphviz documentation (which is extensive). The main purpose of this is to allow easy visualization of the DAG structure via the graphviz library. A graph plot can easily be created by calling the method plot on this object (see example below). Note, however, that the fonts and choice of scaling used here may be far less visually optimal than using graphviz direct (e.g., via toGraphviz) for publication-quality output. Also, re-scaling the plotting window may not result in a callback to re-optimize the visual position of the nodes and edges, and so if the window is re-sized, then re-run the plot command to re-draw to the new scale.
-
-When estimating the log marginal likelihood in models with random effects (using internal code rather than INLA), an attempt is made to minimize the error by comparing the estimates given between a 3pt and 5pt rule when estimating the Hessian in the Laplace approximation. The modes used in each case are identical. The first derivatives are computed using gsl's adaptive finite difference function, and this is embedding inside the standard 3pt and 5pt rules for the second derivatives. In all cases, a central difference approximation is tried first with a forward difference being a fall back (as the precision parameters are strictly positive). The error is minimized through choosing an optimal step size using gsl's Nelder-Mead optimization, and if this fails, (e.g., is larger than max.hessian.error) then the Brent-Dekker root bracketing method is used as a fallback. If the error cannot be reduced to below max.hessian.error, then the step size, which gave the lowest error during the searches (across potentially many different initial bracket choices), is used for the final Hessian evaluations in the Laplace approximation.
-
-#### Marginals for each parameter in model (Bayesian)
-
-Bayesian Parameter uncertainy is analyzed by looking at their credible intervals. 
-
-##### Recap credible intervals
-
-- similar goal to confidence intervals in frequentist statistics but different definition and meaning.
-- the Bayesian framework allows us to say “given the observed data, the effect has 95% probability of falling within this range”, compared to the less straightforward, frequentist alternative (the 95% Confidence* Interval) would be “there is a 95% probability that when computing a confidence interval from data of this sort, the effect falls within this range”.
-- Bayesian inference returns a distribution of possible effect values (posterior distribution). 
-The credible interval is the range containing a particular percentage (i.e. 95%, or 89%) of probable values. 
-
-
-```{r}
-# str(fabn.boot.th.bayes$marginals["Hypertension"])
-str(fabn.boot.th.bayes[[20]]["Hypertension"])
-str(fabn.boot.th.bayes[[21]]["Hypertension"])
-```
-
-##### Plot posterior marginal distribution for each parameter seperately
-For example, the probability that the Hypertension|Gender parameter fals within a given range with it's credible intervals.
-```{r}
-ci <- fabn.boot.th.bayes[[21]][[4]][[2]]
-class(ci) <- NULL
-ci <- as.data.frame(ci)
-
-plot(fabn.boot.th.bayes[[20]][[4]][[2]])
-abline(v = ci$x)
-```
-
-We do that for all of the parameters.
-```{r fig.show="hold", out.width="50%"}
-ncolsplot <- 4
-nrowsplot <- 5
-pltlayout <- layout(matrix(seq(1, ncolsplot*nrowsplot), ncol = ncolsplot, byrow = T))
-# layout.show(pltlayout)
-par(mar = c(rep(2.12, 4)))
-for(i in 1:length(fabn.boot.th.bayes$marginals)){
-  nom1<-names(fabn.boot.th.bayes$marginals)[i]
-  cat("processing marginals for node:", nom1 ,"\n");
-  cur.node.marg<-fabn.boot.th.bayes$marginals[i];
-  cur.node.marg<-cur.node.marg[[1]];
-  
-  for(j in 1:length(cur.node.marg)){
-    nom2<-names(cur.node.marg)[j]
-    if (str_detect(nom2, "Intercept|precision")){
-      cat("Skipping ", nom2)
-      next
-    } else{
-      cat("processing parameter:",nom2,"\n")
-    }
-    cur.marg<-cur.node.marg[[j]];
-    cur.ci <- fabn.boot.th.bayes[[21]][[i]][[j]]
-    class(cur.ci) <- NULL # Remove class abnFit as it causes an errors downwards.
-    cur.ci <- as.data.frame(cur.ci)
-    plot(cur.marg,type="l",main=paste(nom1,":",nom2))
-    abline(v = cur.ci$x) # TODO: Use color contour instead of lines.
-  }
-}
-
-if (SAVEPLOTS){
-  PLOTNAME <- "post_marg_dist"
-  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
-  dev.off()
-}
-```
-
-##### Area under the marginal densities
-```{r}
-marnew <- fabn.boot.th.bayes$marginals[[1]]
-for(i in 2: length(fabn.boot.th.bayes$marginals)){
-  marnew <- c(marnew, fabn.boot.th.bayes$marginals[[i]])
-}
-myarea<-rep(NA,length(marnew))
-names(myarea)<-names(marnew)
-
-for(i in 1:length(marnew)){
-  tmp<-spline(marnew[[i]]);
-  myarea[i]<-sum(diff(tmp$x)*tmp$y[-1]);
-}
-```
-
-
-```{r}
-myarea.df <- as.data.frame(myarea) %>% 
-  rownames_to_column() %>%
-  mutate(rowname = factor(rowname),
-         color = factor(str_extract(rowname, "[^|]+")))  # match 1 or more character before |
-
-aucplot <- ggplot(myarea.df)+
-  geom_col(aes(y = myarea, x= rowname, fill = color)) +
-  coord_flip()+
-  xlab("Area Under Density")+
-  ylab("") +
-  guides(fill=FALSE) + # Removes legend of fill
-  theme_classic()
-
-if (SAVEPLOTS){
-  ggsave(aucplot, file = paste0(PLOTPATH, FILENAME, "auc_plot.png"))
-  } else {
-    print(aucplot)
-  }
-```
-
-```{r}
-margs <- marnew
-mymat<-matrix(rep(NA,length(margs)*3),ncol=3)
-rownames(mymat)<-names(margs)
-colnames(mymat)<-c("2.5%","50%","97.5%")
-
-ignore.me<-union(grep("\\(Int",names(margs)),grep("prec",names(margs)))
-comment<-rep("",length(margs));
-for(i in 1:length(margs)){
-  tmp<-margs[[i]];
-  tmp2<-cumsum(tmp[,2])/sum(tmp[,2]);
-  mymat[i,]<-c(tmp[which(tmp2>0.025)[1]-1,1],
-               tmp[which(tmp2>0.5)[1],1],
-               tmp[which(tmp2>0.975)[1],1]);
-  myvec<-mymat[i,];
-  
-  if( !(i%in%ignore.me) &&  (myvec[1]<0 && myvec[3]>0)){comment[i]<-"not sig. at 5%";} 
-  
-  mymat[i,]<-as.numeric(formatC(mymat[i,],digits=3,format="f"));
-}
-cbind(mymat, comment)
-
-```
-
-Marginals posterior distribution of the parameter estimates
-```{r}
-for(i in 1:length(fabn.boot.th.bayes$marginals)){
-  for (j in 1:length(fabn.boot.th.bayes$marginals[[i]])) {
-   plot(fabn.boot.th.bayes$marginals[[i]][[j]],type="l",main=names(fabn.boot.th.bayes$marginals)[[i]]); 
-  }
-}
-
-## now for a table of quantiles
-margs<-fabn.boot.th.bayes$marginals;
-# mymat<-matrix(rep(NA,length(margs)*3),ncol=3);
-result.table <- matrix(ncol = 4)
-childParent <- c()
-# rownames(mymat)<-names(margs);
-colnames(result.table)<-c("childrenParent", "2.5%","50%","97.5%");
-ignore.me<-union(grep("\\(Int",names(margs)),grep("prec",names(margs)));## these are not effect parameters - background constants and precisions
-comment<-rep("",length(margs));
-for(i in 1:length(margs)){
-  tmp<-margs[[i]]
-  childParent <- names(tmp)
-  
-  tempmat <- matrix(c(childParent,
-                    rep(NA, length(childParent)*3)),
-                    nrow = length(childParent))
-  for (j in 1:length(tmp)) {
-    tmp2<-cumsum(tmp[[j]][,2])/sum(tmp[[j]][,2]);
-    tempmat[j,2] <- tmp[[j]][which(tmp2>0.025)[1]-1,1] ## -1 is so use value on the left of the 2.5% 
-    tempmat[j,3] <- tmp[[j]][which(tmp2>0.5)[1],1]
-    tempmat[j,4] <- tmp[[j]][which(tmp2>0.975)[1],1]
-    
-    # mymat <- matrix(childParent, ci1, ci2, ci3)
-    # if( !(i%in%ignore.me) &&  (myvec[1]<0 && myvec[3]>0)){
-    #   comment[i]<-"not sig. at 5%";} 
-    ## truncate for printing
-    # mymat[i,]<-as.numeric(formatC(mymat[i,],digits=3,format="f"));
-  }
-  result.table <- rbind(result.table, tempmat)
-}
-result.table.bayes <- as.data.frame(result.table[which(!str_detect(result.table[,1], "Intercept|precision")),]) %>%
-  mutate(across(.cols = 2:4, function(x){round(as.numeric(x),3)})) 
-
-for(i in 1:nrow(result.table.bayes)){
-  if (result.table.bayes[i,2] < 0 && result.table.bayes[i,4]>0){
-    result.table.bayes$comment[i] <- "not sig. at 5%"
-  } else {
-      result.table.bayes$comment[i] <- ""
-    }
-}
-
-if (SAVEPLOTS){
-  write.csv(result.table.bayes, file = paste0(PLOTPATH, FILENAME, "results_table_bayes.csv"))
-  } else {
-    print(result.table.bayes)
-  }
-```
-
-
-
-### Maximum Likelihood Estimation 
 (from help of "abn::fitAbn()")
 The procedure fitAbn with the argument method= "mle" fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); an unbounded count (Poisson); or a discrete variable (Multinomial). The model comprises of a set of conditionally independent generalized linear regressions with or without adjustment.
 
@@ -923,7 +658,7 @@ for (i in 1:nrow(result.table)){
     result.table$association[i] <- "negative"}
   
   # extract cornames for parent and children
-  childrenParent <- str_split(result.table$cornames[i], "\\|")
+  childrenParent <- stringr::str_split(result.table$cornames[i], "\\|")
   result.table$parent[i] <- childrenParent[[1]][2]
   result.table$children[i] <- childrenParent[[1]][[1]]
   
@@ -1105,8 +840,8 @@ for(i in 1:freqDAGstoplot){
 }
 
 if (SAVEPLOTS){
-  PLOTNAME <- "mcmc_diversity"
-  svg(filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  PLOTNAME <- "_mcmc_diversity"
+  svg(filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
   
   par(mar=c(5,4,4,4))
   plot(1:freqDAGstoplot, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], type = 'n',ylab = "",xlab = "Number of arcs",xaxt="n",yaxt="n", ylim = c(0,20))
@@ -1147,33 +882,8 @@ obj <- ls() # save current workspace
 
 if (SAVEPLOTS){
   filename_results <- "_analysis_results"
-  save(list= obj, file = paste0(PLOTPATH, FILENAME, filename_results, ".RData"))
+  save(list= obj, file = paste0(getwd(), PLOTPATH, FILENAME, filename_results, ".RData"))
 }
 ```
 
-
-# Plot abn data as dot
-
-```{r}
-getwd()
-load(paste0("exp6_100k_analysis_results.RData"))
-```
-
-```{r}
-if (SAVEPLOTS){
-  PLOTNAME <- "consensus_dag"
-  dev.print(svg, filename = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
-  cons.dag.plt 
-  dev.off()
-  abn::toGraphviz(dag.mcmc.boot.th, 
-                  data.dists = dist, 
-                  data.df = abndata, 
-                  outfile =paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".dot"),
-                  directed=TRUE)
-  saveRDS(dag.mcmc.boot.th, file = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".rds"))
-
-  } else {
-  cons.dag.plt
-  }
-```
 
