@@ -584,13 +584,13 @@ MCMC sample.
 # Look-up table for interpretation of results depending on variable distribution
 interpretLUT <- lapply(fabn.boot.th.mle$abnDag$data.dists, function(x){
   if(x=="binomial"){
-    "odds ratio"
+    "log odds ratio"
   } else if(x=="gaussian"){
     "correlation"
-  } else if(x=="poission"){
-    "rate ratio"
+  } else if(x=="poisson"){
+    "log rate ratio"
   } else if(x=="multinomial"){
-    "odds ratio"
+    "log odds ratio"
   }
 })
 
@@ -638,19 +638,17 @@ result.table <- cbind(result.table, support)
 result.table <- result.table[which(!stringr::str_detect(result.table$cornames, "intercept")),]
 
 for (i in 1:nrow(result.table)){
-  if(stringr::str_detect(result.table$interpretation[i], "ratio")){
-    # Because of logit() scale
-    result.table$coefficient[i] <- exp(result.table$coefficient[i])
+  # Because of logit() scale
+  result.table$expcoef[i] <- exp(result.table$coefficient[i])
+  if(result.table$interpretation[i] != "correlation"){
+    result.table$expinterpret[i] <- "odds ratio"
+  } else {
+    result.table$expinterpret[i] <- "exp. cor. coef."
   }
   
-  # # exponentiate IAsize log
-  # if(str_detect(result.table$cornames[i], "log")){
-  #   result.table$coefficient[i] <- exp(result.table$coefficient[i])
-  # }
-  
-  if(result.table$coefficient[i]<1 && result.table$interpretation[i] != "correlation"){
+ if(result.table$expcoef[i]<1 && result.table$interpretation[i] != "correlation"){
     result.table$association[i] <- "negative"
-  } else if (result.table$coefficient[i]>1 && result.table$interpretation[i] != "correlation"){
+  } else if (result.table$expcoef[i]>1 && result.table$interpretation[i] != "correlation"){
     result.table$association[i] <- "positive"
   } else if (result.table$coefficient[i]>0 && result.table$interpretation[i] == "correlation"){
     result.table$association[i] <- "positive"
@@ -681,10 +679,12 @@ for (i in 1:nrow(result.table)){
 # round and convert to integer
 result.table.mle <- result.table %>%
   mutate(coefficient = as.numeric(round(coefficient, 2)),
-         SE = as.numeric(round(SE, 2)))
+         expcoef = as.numeric(round(expcoef, 2)),
+         SE = as.numeric(round(SE, 2))) %>%
+  select(c(parent, parentLevels, children, childrenLevels, expcoef, expinterpret, association, coefficient, SE, interpretation, support, cornames))
 
 if (SAVEPLOTS){
-  write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"))
+  write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"), row.names = F)
   write.csv(supportdag, file = paste0(getwd(), PLOTPATH, FILENAME, "individual_arc_support.csv"))
   } else {
     print(result.table.mle)
