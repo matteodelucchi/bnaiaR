@@ -22,6 +22,12 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r development, eval=FALSE, include=FALSE}
+# devtools::document()
+# devtools::load_all()
+# renv::snapshot(prompt = F)
+```
+
 ```{r setup}
 # Clear working environment
 rm(list=ls())
@@ -36,9 +42,9 @@ library(bnlearn)
 library(forcats)
 
 # Save plots as files? 
-# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
-SAVEPLOTS <- FALSE
+SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "png" # "svg" or "png"
 ```
 
 # Load Preprocessed Data
@@ -144,9 +150,16 @@ eval.bootstrap.rep.tabu.plot.data <- eval.bootstrap.rep.tabu %>%
 ```
 
 
-```{r classic bootstrap plot, warning=FALSE, layout="l-screen", out.height=2400, out.width="80%"}
-eval.bootstrap.rep.tabu.plot.data +
+```{r classic bootstrap plot, warning=FALSE, out.height=2400, out.width="80%"}
+plt <- eval.bootstrap.rep.tabu.plot.data +
   theme(panel.spacing = unit(0.3, "lines"))
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "bootstrap_size_eval.png", path = PLOTPATH,
+         width =9, height = 15, dpi = 600)
+} else {
+  plt
+}
 ```
 
 
@@ -222,30 +235,88 @@ netmet <- network.metrics(
 
 
 ```{r}
-plot(arcstren[["tabu"]])
-abline(v=0.3)
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "arcstren_tabu_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  plot(arcstren[["tabu"]])
+  # abline(v=0.3)
+  dev.off()
+} else {
+  plot(arcstren[["tabu"]])
+  abline(v = 0.3)
+}
 ```
 
 
 We see many arcs of low support and no visually clear cut-point to set the arc-strength
 threshold. 
 
-We see can see it is difficult to argue from a statistical point of view
+We see it is difficult to argue from a statistical point of view
 where to set the threshold and this is a reason why we have the significance 
 threshold as a point of orientation.
 
 The significance threshold is close to the 50% threshold and the structure would
-not change upon increasing to that point.
+not change upon changing it to that point.
 
 If it is reasonable one can vary from the proposed significance threshold.
 
 
 ```{r cpdag-tabu-strength}
-strength.plot(cpdag(avg.boot, wlbl = TRUE),
-              arcstren[["tabu"]],
-              main = "CPDAG",
-              sub = "SL: tabu\nth.=sign.level",
-              shape = "rectangle")
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(
+    cpdag(avg.boot, wlbl = TRUE),
+    arcstren[["tabu"]],
+    main = "CPDAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+  dev.off()
+} else {
+  strength.plot(
+    cpdag(avg.boot, wlbl = TRUE),
+    arcstren[["tabu"]],
+    main = "CPDAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+}
+```
+
+```{r dag-tabu-strength}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(
+    avgnet[["tabu"]],
+    arcstren[["tabu"]],
+    main = "DAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+  dev.off()
+} else {
+  strength.plot(
+    avgnet[["tabu"]],
+    arcstren[["tabu"]],
+    main = "DAG",
+    sub = "SL: tabu\nth.=sign.level",
+    shape = "rectangle"
+  )
+}
 ```
 
 As already expected from the arc-strength plot, we see a very sparse, partially
@@ -257,40 +328,116 @@ variables are not connected.
 Eventhough methodologically sound, it is difficult to justify this network from
 a clinical point of view. 
 
-Interestingly all connections from the CPDAG above were found in the [consensus DAG
-above](#mcmcconsensusDAG) as well. 
-
-
+Interestingly all connections from the CPDAG above were found in the mcmcabn 
+consensus DAG as well. 
 
 If we lower the arc-strength threshold to 30% (dashed line in arc-strength plot. 
-We stay in the allowed range of variation) we result in a fully connected, 
-partially directed CPDAG.
+We result in a fully connected, partially directed CPDAG.
 
 ```{r cpdag-tabu-strength-th30, layout="l-page"}
 avgnet[["tabu.th03"]] <- averaged.network(arcstren[["tabu"]], threshold = 0.3)
 
-strength.plot(cpdag(avgnet[["tabu.th03"]], wlbl = TRUE),
-              arcstren[["tabu"]],
-              main = "CPDAG",
-              sub = "SL: tabu\nth.=0.3",
-              shape = "rectangle")
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic_th03", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(
+    cpdag(avgnet[["tabu.th03"]], wlbl = TRUE),
+    arcstren[["tabu"]],
+    main = "CPDAG",
+    sub = "SL: tabu\nth.=0.3",
+    shape = "rectangle"
+  )
+  dev.off()
+} else {
+  strength.plot(
+    cpdag(avgnet[["tabu.th03"]], wlbl = TRUE),
+    arcstren[["tabu"]],
+    main = "CPDAG",
+    sub = "SL: tabu\nth.=0.3",
+    shape = "rectangle"
+  )
+}
 ```
 
+The respective DAG:
 
 ```{r}
-# svg(paste0(PLOTPATH, "/dag_tabu_th03.svg"))
-strength.plot(avgnet[["tabu.th03"]],
-              arcstren[["tabu"]],
-              main = "DAG",
-              sub = "SL: tabu\nth.=0.3",
-              shape = "rectangle")
-# dev.off()
-# bnlearn::write.dot(graph = dag.th03, file = paste0(PLOTPATH, "/dag_tabu_th03.dot"))
-# write.csv(arcstren[["tabu"]], file = paste0(PLOTPATH, "/arc_strengths.csv"))
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic_th03", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(avgnet[["tabu.th03"]],
+                arcstren[["tabu"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=0.3",
+                shape = "rectangle")
+  dev.off()
+  bnlearn::write.dot(graph = avgnet[["tabu.th03"]],
+                     file = paste0(FILE, "dot"))
+  write.csv(arcstren[["tabu"]], file = paste0(FILE, "csv"))
+} else {
+  strength.plot(avgnet[["tabu.th03"]],
+                arcstren[["tabu"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=0.3",
+                shape = "rectangle")
+  }
 ```
 
 # Structure Learning with TABU search and custom BIC
+(From Marco Scutari:)
+There are two possible way to remediate this issue. One is to lower the 
+threshold in averaged.network(). However, this is likely to let noisy arcs in
+the network and it is difficult to decide how much the threshold should be 
+lowered in an objective way. The other is to penalise model complexity less 
+harshly so that what were the children have a chance to be significant when they
+are included as parents.
 
+AIC has a smaller penalty coefficient than BIC, but the network it gives is too
+dense. The CDF plot of the arc strengths makes it really apparent the score is 
+overfitting: almost all arcs have non-zero strength.
+
+```{r learn_with_aic, warning=FALSE}
+cl = makeCluster(6)
+
+bb = boot.strength(data, algorithm = "tabu", R = 500, cluster = cl, 
+       algorithm.args = list(score = "aic", blacklist = bl, tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+We can of course increase the threshold a bit to prune borderline arcs and paper
+over the shortcomings of AIC.
+
+```{r learn_with_aic_and_threshold, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.6)
+strength.plot(avg, bb, shape = "rectangle")
+```
+
+AIC (penalty coefficient = 1) overfits badly, and BIC (penalty coefficient = 
+log(n) / 2): the right amount of regularisation is likely to be somewhere in 
+between (say the average of the two penalty coefficients).
+
+```{r learn_with_halved_bic, warning=FALSE}
+bb = boot.strength(data, algorithm = "tabu", R = 500, cluster = cl, 
+       algorithm.args = list(score = "bic", k = (log(nrow(data)) / 2 + 1) /2,
+                             blacklist = bl, tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+stopCluster(cl)
+```
+
+The simpler expression log(nrow(data)) / 4 (which is smaller) leads to a network
+without isolated components, one that looks sensible in a number of ways.
 
 ```{r bootstrap bic custom, echo=FALSE, message=FALSE, warning=FALSE}
 cl = makeCluster(6)
@@ -341,31 +488,73 @@ netmet <- network.metrics(
 
 
 ```{r}
-plot(arcstren[["tabu.bic.custom"]])
-abline(v=0.3)
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "arcstren_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  plot(arcstren[["tabu.bic.custom"]])
+  # abline(v = 0.3)
+  dev.off()
+} else {
+  plot(arcstren[["tabu.bic.custom"]])
+  abline(v=0.3)
+}
 ```
 
 
 
 ```{r cpdag-tabu-strength-bic-custom}
-strength.plot(cpdag(avg.boot, wlbl = TRUE),
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(cpdag(avg.boot, wlbl = TRUE),
               arcstren[["tabu.bic.custom"]],
               main = "CPDAG",
               sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
               shape = "rectangle")
+  dev.off()
+} else {
+  strength.plot(cpdag(avg.boot, wlbl = TRUE),
+              arcstren[["tabu.bic.custom"]],
+              main = "CPDAG",
+              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+              shape = "rectangle")
+}
 ```
 
 
 ```{r}
-# svg(paste0(PLOTPATH, "/dag_tabu_th03.svg"))
-strength.plot(avgnet[["tabu.bic.custom"]],
-              arcstren[["tabu.bic.custom"]],
-              main = "DAG",
-              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
-              shape = "rectangle")
-# dev.off()
-# bnlearn::write.dot(graph = dag.th03, file = paste0(PLOTPATH, "/dag_tabu_th03.dot"))
-# write.csv(arcstren[["tabu"]], file = paste0(PLOTPATH, "/arc_strengths.csv"))
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic_custom", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  strength.plot(avgnet[["tabu.bic.custom"]],
+                arcstren[["tabu.bic.custom"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+                shape = "rectangle")
+  dev.off()
+  bnlearn::write.dot(graph = avgnet[["tabu.bic.custom"]],
+                     file = paste0(FILE, "dot"))
+  write.csv(arcstren[["tabu"]], file = paste0(FILE, "csv"))
+  
+} else {
+  strength.plot(avgnet[["tabu.bic.custom"]],
+                arcstren[["tabu.bic.custom"]],
+                main = "DAG",
+                sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+                shape = "rectangle")
+}
 ```
 
 
@@ -373,8 +562,8 @@ strength.plot(avgnet[["tabu.bic.custom"]],
 ## save to package data
 
 ```{r save avgnet and arcstren}
-discrete_bns <- list(avgnet = avgnet, 
-                     arcstren = arcstren)
-usethis::use_data(discrete_bns, overwrite = TRUE)
-devtools::document()
+# discrete_bns <- list(avgnet = avgnet, 
+#                      arcstren = arcstren)
+# usethis::use_data(discrete_bns, overwrite = TRUE)
+# devtools::document()
 ```

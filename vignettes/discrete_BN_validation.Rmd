@@ -22,6 +22,12 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r development, eval=FALSE, include=FALSE}
+# devtools::document()
+# devtools::load_all()
+# renv::snapshot(prompt = F)
+```
+
 ```{r setup}
 # Clear working environment
 rm(list=ls())
@@ -36,21 +42,21 @@ library(bnlearn)
 library(forcats)
 
 # Save plots as files? 
-# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
-SAVEPLOTS <- FALSE
+SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "png" # "svg" or "png"
 ```
 
 # Load discrete BNs
 
-discrete_bns was generated in vignette `discrete_BN_SL`.
+The object `discrete_bns` was generated in vignette `discrete_BN_SL`.
 
 ```{r message=FALSE, warning=FALSE}
 data <- exp11_dat$abndata
 bl <- exp11_dat$bl
 avgnet <- discrete_bns$avgnet
 arcstren <- discrete_bns$arcstren
-str(avgnet)
+# str(avgnet)
 ```
 
 ```{r}
@@ -68,23 +74,16 @@ strength.plot(avgnet[["tabu.bic.custom"]],
 
 # Cross-validation for predictive accuracy
 
-Predictive accuracy of status.
-
-> TODO: Check if this is correct for non-binary cases!
+## Classification Error of rupture status.
 
 ```{r}
-cv.metrics <- function(xval){
-  OBS = unlist(lapply(unlist(xval, recursive = F), `[[`, "observed"))
-  PRED = unlist(lapply(unlist(xval, recursive = F), `[[`, "predicted"))
-  conf.mat <- table(OBS, PRED)
-  tpr <-conf.mat[1,1]/(conf.mat[1,1]+conf.mat[1,2])
-  fpr <-conf.mat[2,1]/(conf.mat[2,1]+conf.mat[2,2])
-  acc <- (conf.mat[1,1]+conf.mat[2,2])/(conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]+conf.mat[2,2])
-  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc))
-}
-```
-
-```{r}
+xval.rupture.bic.part <- bn.cv(data = data, 
+              bn = avgnet$tabu,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "pred",
+              loss.args = list(target="Ruptured_IA"))
 xval.rupture.bic <- bn.cv(
     data = data,
     bn = avgnet$tabu.th03,
@@ -94,8 +93,6 @@ xval.rupture.bic <- bn.cv(
     loss = "pred",
     loss.args = list(target = "Ruptured_IA")
   )
-cv.metrics(xval.rupture.bic)
-
 xval.rupture.bic.custom <- bn.cv(
     data = data,
     bn = avgnet$tabu.bic.custom,
@@ -105,8 +102,34 @@ xval.rupture.bic.custom <- bn.cv(
     loss = "pred",
     loss.args = list(target =  "Ruptured_IA")
   )
+cv.metrics(xval.rupture.bic.part)
+cv.metrics(xval.rupture.bic)
 cv.metrics(xval.rupture.bic.custom)
 ```
+
+```{r}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "classification_error_ruptureStatus_all", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  plot(xval.rupture.bic.part, xval.rupture.bic, xval.rupture.bic.custom,
+     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+     main = "Classification Error of Rupture Status")
+  dev.off()
+} else {
+  plot(xval.rupture.bic.part, xval.rupture.bic, xval.rupture.bic.custom,
+     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+     main = "Classification Error of Rupture Status")
+}
+```
+
+
+## Averaged, Overall Classification Error of Rupture Status
+
+Average predictive accuracy over all nodes. 
 
 ```{r}
 xval.list.bic <- list()
@@ -147,11 +170,26 @@ summary(accs.bic.custom, na.rm = T)
 
 
 BIC.th03 used three parents (pos.fam.hist, size, location) to predict rupture
-whereas BIC.custom uses only the former two parent nodes to predict ruptue.
+whereas BIC.custom uses only the later two parent nodes to predict rupture.
+From `?bnlearn::bn.cv()`:  
+"...  
+Classification Error (pred): the prediction error for a single node in a discrete network. Frequentist predictions are used, so the values of the target node are predicted using only the information present in its local distribution (from its parents). Lower values are better.  
 
-We can use a Bayesian predictions that use all available nodes for the prediction.
+Posterior Classification Error (pred-lw and pred-lw-cg): similar to the above, but predictions are computed from an arbitrary set of nodes using likelihood weighting to obtain Bayesian posterior estimates. pred-lw applies to discrete Bayesian networks, pred-lw-cg to (discrete nodes in) hybrid networks. Lower values are better.  
+..."  
+
+## Posterior Classification Error of rupture status
+
+So, we can use a Bayesian predictions that use a random set of available nodes for the prediction.
 
 ```{r}
+xval.bic.bayes.part <- bn.cv(data = data, 
+              bn = avgnet$tabu,
+              method = "hold-out",
+              runs = 50,
+              fit = "mle",
+              loss = "pred-lw",
+              loss.args = list(target="Ruptured_IA"))
 xval.bic.bayes <- bn.cv(data = data, 
               bn = avgnet$tabu.th03,
               method = "hold-out",
@@ -166,31 +204,26 @@ xval.bic.custom.bayes <- bn.cv(data = data,
               fit = "mle",
               loss = "pred-lw",
               loss.args = list(target="Ruptured_IA"))
-
-plot(xval.bic.bayes, xval.bic.custom.bayes, xlab = c("BIC.th03", "BIC.custom"))
+cv.metrics(xval.bic.bayes.part)
 cv.metrics(xval.bic.bayes)
 cv.metrics(xval.bic.custom.bayes)
 ```
 
-The classification error for rupture between the two score implementations 
-converges. 
-
 ```{r}
-xval.bic.logl <- bn.cv(data = data, 
-              bn = avgnet$tabu.th03,
-              method = "hold-out",
-              runs = 50,
-              fit = "mle",
-              loss = "logl",
-              loss.args = list(target="Ruptured_IA"))
-xval.bic.custom.logl <- bn.cv(data = data, 
-              bn = avgnet$tabu.bic.custom,
-              method = "hold-out",
-              runs = 50,
-              fit = "mle",
-              loss = "logl",
-              loss.args = list(target="Ruptured_IA"))
-
-plot(xval.bic.logl, xval.bic.custom.logl, xlab = c("BIC.th03", "BIC.custom"))
-```
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "post_classification_error_ruptureStatus_all", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  plot(xval.bic.bayes.part, xval.bic.bayes, xval.bic.custom.bayes, 
+     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+     main = "Posterior Classification Error of Rupture Status")
+  dev.off()
+} else {
+  plot(xval.bic.bayes.part, xval.bic.bayes, xval.bic.custom.bayes, 
+     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+     main = "Posterior Classification Error of Rupture Status")
+}
 ```

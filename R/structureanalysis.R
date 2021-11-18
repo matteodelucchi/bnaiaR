@@ -34,7 +34,7 @@ BSF <- function(estGraph, trueGraph){
 #' @param trueGraph Object of class "bn" representing the domain knowledge as graph ("intuition graph" or "ground truth graph").
 #'
 #' @references Constantinou et al. 2020 http://arxiv.org/abs/1905.12666
-#' @return
+#' @return integer
 #' @export
 SHD.constantinou <- function(estGraph, trueGraph){
   fp <- bnlearn::compare(trueGraph, estGraph)$fp
@@ -52,7 +52,7 @@ SHD.constantinou <- function(estGraph, trueGraph){
 #' @export
 DDM.constantinou <- function(estGraph, trueGraph){
   a <- nrow(bnlearn::arcs(trueGraph))
-  r <- nrow(anti_join(estGraph[,1:2], trueGraph[,1:2]))
+  r <- nrow(dplyr::anti_join(estGraph[,1:2], trueGraph[,1:2]))
 
   fp <- bnlearn::compare(trueGraph, estGraph)$fp
   tp <- bnlearn::compare(trueGraph, estGraph)$tp

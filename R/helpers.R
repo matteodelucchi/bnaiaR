@@ -391,3 +391,33 @@ prep.data2plot <- function(eval, newnames = NULL){
                                  score.function == "hybrid" ~ 3))
   return(eval.prep)
 }
+
+#' Prediction Error Metrics
+#'
+#' From cross-validation object, calculate a set of prediction error metrics.
+#'
+#' @param xval object returned from `bnlearn::bn.cv()`
+#'
+#' @return list of error metrics.
+#' @export
+#'
+#' @examples
+#' \dontrun{xval.rupture.bic <- bn.cv(
+#' data = data,
+#' bn = avgnet$tabu.th03,
+#' method = "hold-out",
+#' runs = 50,
+#' fit = "mle",
+#' loss = "pred",
+#' loss.args = list(target = "Ruptured_IA")
+#' )
+#' cv.metrics(xval.rupture.bic)}
+cv.metrics <- function(xval){
+  OBS = unlist(lapply(unlist(xval, recursive = F), `[[`, "observed"))
+  PRED = unlist(lapply(unlist(xval, recursive = F), `[[`, "predicted"))
+  conf.mat <- table(OBS, PRED)
+  tpr <-conf.mat[1,1]/(conf.mat[1,1]+conf.mat[1,2])
+  fpr <-conf.mat[2,1]/(conf.mat[2,1]+conf.mat[2,2])
+  acc <- (conf.mat[1,1]+conf.mat[2,2])/(conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]+conf.mat[2,2])
+  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc))
+}
