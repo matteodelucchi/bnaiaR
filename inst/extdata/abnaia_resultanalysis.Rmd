@@ -1,0 +1,1129 @@
+---
+title: "ABNAIA HPC Result Analysis"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    df_print: paged
+  rmarkdown::html_vignette: default
+# runtime: shiny
+vignette: >
+  %\VignetteIndexEntry{ABNAIA results analysis}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::knitr}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache.path="./"
+)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+rm(list = ls())
+library(parallel)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(reshape2)
+library(svglite)
+library(mcmcabn)
+library(bnlearn)
+# library(ExplorDataISGC)
+# library(BNstructureLearning)
+library(coda)
+library(abn)
+```
+
+# Document Settings
+```{r}
+SAVEPLOTS <- T
+PLOTPATH <- "./"
+DATPATH <- "./"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+# Disclosure
+
+BEWARE, THIS IS DRAFT CODE WITH PERSONAL NOTES OF MATTEO NOT INTENDED TO BE
+REPRODUCIBLE IN ANY WAY!
+
+# Method Background
+One actual strong limitation of the R package abn is that it cannot deal with
+multinomial distributed random variables. Indeed, in applied epidemiology,
+the data are often composed of a mixture of different distributions. The
+most common are categorical, continuous and discrete random variable. 
+The R package abn has an implementation of binomial, Gaussian and Poisson
+Bayesian regression. This implies that when dealing with categorical random
+variable one has to split the random variable in a pairs. This is interesting
+from a modelling perspective as this is very flexible. But it destroys the
+intrinsic link between the dichotomised variables which can negatively affects
+the modelling. Additionally, it increases the number of variables which is
+computationally not desirable.
+(CP from Kratzer et al 2018, Information-Theoretic Scoring Rules to Learn
+Additive Bayesian Network Applied to Epidemiology)
+See this paper for more details on ABN and it's implementation.
+
+# Experiment 6
+## Load Data and take a first glimpse
+```{r}
+load(paste0(DATPATH, "exp6", "_final_100000.RData"))
+```
+
+FILENAME
+```{r}
+FILENAME <- paste0(FILENAME, "_100k")
+FILENAME
+```
+
+
+List of all mcmcabn outputs. 
+```{r}
+length(mcmc.out.list)
+```
+
+Show first mcmcabn output.
+```{r}
+str(mcmc.out.list[1])
+```
+
+DAG from first mcmcabn output. [rows, columns, dags]. dags = number of returned DAGS specified in mcmcscheme.
+```{r}
+str(mcmc.out.list[[1]]$dags)
+```
+
+## Preprocess
+### Thin and Burn-in
+
+thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
+
+We thinning was set to keep the same amount of samples as in the non-parametric bootstrapping with tabu (10'000).
+
+```{r}
+# THINNING <- 2 # keep every second draw
+# BURNIN.LEN <- 2500 # remove the first n draws
+THINNING <- 7
+BURNIN.LEN <- 25000 # remove the first n draws
+
+mcmc.out.list.burn <- postBURNin(mcmc.out.list = mcmc.out.list, burnin.length = BURNIN.LEN)
+mcmc.out.list.thin <- postTHINN(mcmc.out.list = mcmc.out.list, thinningsteps = THINNING)
+mcmc.out.list.burn.thin <- postTHINN(mcmc.out.list = mcmc.out.list.burn, thinningsteps = THINNING)
+str(mcmc.out.list.burn[1])
+str(mcmc.out.list.thin[1])
+str(mcmc.out.list.burn.thin[1])
+```
+
+### Reformat
+```{r}
+# thinned only
+mc.out.thin.1 <- mcmc.out.list.thin[[1]]
+mc.out.thin.2 <- mcmc.out.list.thin[[2]]
+mc.out.thin.3 <- mcmc.out.list.thin[[3]]
+mc.out.thin.4 <- mcmc.out.list.thin[[4]]
+
+mc.out.thin.score.1 <- mcmc(mc.out.thin.1$scores)
+mc.out.thin.score.2 <- mcmc(mc.out.thin.2$scores)
+mc.out.thin.score.3 <- mcmc(mc.out.thin.3$scores)
+mc.out.thin.score.4 <- mcmc(mc.out.thin.4$scores)
+
+list.mc.out.thin.score <- mcmc.list(mc.out.thin.score.1, mc.out.thin.score.2, mc.out.thin.score.3, mc.out.thin.score.4)
+
+# burned and thinned
+mc.out.burn.thin.1 <- mcmc.out.list.burn.thin[[1]]
+mc.out.burn.thin.2 <- mcmc.out.list.burn.thin[[2]]
+mc.out.burn.thin.3 <- mcmc.out.list.burn.thin[[3]]
+mc.out.burn.thin.4 <- mcmc.out.list.burn.thin[[4]]
+
+mc.out.burn.thin.score.1 <- mcmc(mc.out.burn.thin.1$scores)
+mc.out.burn.thin.score.2 <- mcmc(mc.out.burn.thin.2$scores)
+mc.out.burn.thin.score.3 <- mcmc(mc.out.burn.thin.3$scores)
+mc.out.burn.thin.score.4 <- mcmc(mc.out.burn.thin.4$scores)
+
+# list.mc <- mcmc.list(mc.score.1, mc.score.2, mc.score.3, mc.score.4)
+list.mc.out.burn.thin.score <- mcmc.list(mc.out.burn.thin.score.1, mc.out.burn.thin.score.2, mc.out.burn.thin.score.3, mc.out.burn.thin.score.4)
+
+mc.out.burn.thin.dag.1 <- mc.out.burn.thin.1$dags
+mc.out.burn.thin.dag.2 <- mc.out.burn.thin.2$dags
+mc.out.burn.thin.dag.3 <- mc.out.burn.thin.3$dags
+mc.out.burn.thin.dag.4 <- mc.out.burn.thin.4$dags
+
+list.mc.out.burn.thin.dag <- abind::abind(mc.out.burn.thin.dag.1, mc.out.burn.thin.dag.2, mc.out.burn.thin.dag.3, mc.out.burn.thin.dag.4)
+```
+
+## Best fitting DAG
+number of max parents per node
+```{r}
+max.par
+```
+
+total arcs
+```{r}
+# plot(dag.maxpar)
+sum(dag.maxpar$dag)
+summary(fabn.maxpar)
+fabn.maxpar.bayes <- fitAbn(dag = dag.maxpar$dag,
+              data.df = abndata,
+              data.dists = dist, 
+              method = "bayes",
+              compute.fixed = T,
+              create.graph = T)
+```
+### Prior distributions
+```{r}
+ncolsplot <- length(fabn.maxpar.bayes$marginals)
+nrowsplot <- max.par+1
+pltlayout <- layout(matrix(seq(1, ncolsplot*nrowsplot), ncol = ncolsplot, byrow = T))
+# layout.show(pltlayout)
+par(mar = c(rep(2.12, 4)))
+for(i in 1:length(fabn.maxpar.bayes$marginals)){
+  nom1<-names(fabn.maxpar.bayes$marginals)[i]
+  cat("processing marginals for node:", nom1 ,"\n");
+  cur.node.marg<-fabn.maxpar.bayes$marginals[i];
+  cur.node.marg<-cur.node.marg[[1]];
+  
+  for(j in 1:length(cur.node.marg)){
+    nom2<-names(cur.node.marg)[j]
+    if (str_detect(nom2, "Intercept|precision")){
+      cat("Skipping ", nom2)
+      next
+    } else{
+      cat("processing parameter:",nom2,"\n")
+    }
+    cur.marg<-cur.node.marg[[j]];
+    cur.ci <- fabn.maxpar.bayes[[21]][[i]][[j]]
+    class(cur.ci) <- NULL # Remove class abnFit as it causes an errors downwards.
+    cur.ci <- as.data.frame(cur.ci)
+    plot(cur.marg,type="l",main=paste(nom1,":",nom2))
+    abline(v = cur.ci$x) # TODO: Use color contour instead of lines.
+  }
+}
+```
+
+
+## MCMC Quality check
+### Gelman
+```{r}
+gelman.diag(x = list.mc.out.thin.score,autoburnin = T) # if higher than 1.1 or 1.2, run chain longer to improve convergence
+gelman.plot(list.mc.out.thin.score, autoburnin = T)
+
+if (SAVEPLOTS){
+  PLOTNAME <- "gelmanplot"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+} else {
+  gelman.plot(list.mc.out.thin.score, autoburnin = T)
+}
+```
+
+### Raftery
+calculate no. of iterations and no. of burn-ins to satisfy specified conditions
+```{r}
+raftery.diag(unlist(list.mc.out.thin.score))
+```
+
+### Heidelberg and Welch Diagnostics
+test H0: The Markov Chain is from a stationary distribution. If not passed, chain must run longer.
+
+```{r}
+for (chain in 1:length(list.mc.out.thin.score)){
+  print("------------------------")
+  print(paste("Chain no: ", chain))
+  print(heidel.diag(list.mc.out.thin.score[[chain]]))
+}
+
+```
+
+### trace plot
+```{r}
+mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+if (SAVEPLOTS){
+  PLOTNAME <- "traceplot"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  
+  dev.off()
+  } else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+  }
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "traceplot_maxscore"
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+  }
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "traceplot_classic"
+  plot(list.mc.out.burn.thin.score)
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else {
+  plot(list.mc.out.burn.thin.score)
+}
+```
+
+```{r}
+## traceplot
+fabn <-fitAbn(dag = dag.maxpar$dag,
+              data.df = abndata,
+              data.dists = dist, 
+              method = METHOD) 
+
+max.score <- -fabn$bic
+
+dta <- data.frame(mc.out.thin.1[2:4],
+                  mc.out.thin.2[2:4],
+                  mc.out.thin.3[2:4],
+                  mc.out.thin.4[2:4]) # Thinned but not burned
+
+dta <- dta[,c(1,4,7,10)]
+# dta <- dta[thin, ]
+names(dta) <- c("Run1","Run2","Run3","Run4")
+dta$X <- (1:length(dta$Run1))
+dta <- reshape2::melt(dta, "X", value.name = "scores")
+
+dta$cummax[1] <- dta$scores[1]
+for (i in 2:length(dta$scores)) {
+  if (dta$scores[i] > dta$cummax[i - 1]) {
+    dta$cummax[i] <- dta$scores[i]
+    } else {
+      dta$cummax[i] <- dta$cummax[i - 1]
+    }
+}
+
+# Create a text
+
+original_plot <- ggplot(data = dta, aes_string(x = "X", y="scores", color = "variable")) +
+  geom_line(alpha = 0.8,lwd=1.1) +
+  geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+  geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+  labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+  ggpubr::theme_pubr()+
+  ylim(min(dta$scores),max(dta$scores)) 
+  # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score,alpha = .3) +
+  # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# print(original_plot)
+
+# Plot
+y_density <- cowplot::axis_canvas(original_plot, axis = "y", coord_flip = TRUE) +
+  geom_density(data = dta, aes_string(x = "scores",fill = "factor(variable)"), alpha = 0.5) +
+  coord_flip()
+
+cummax_plt <- ggplot(data = dta, aes_string(x = "X", y="cummax", color = "variable")) +
+  geom_line(alpha = 0.8,lwd=1.1, inherit.aes = T) +
+  geom_point(aes_string(color = "variable"), inherit.aes = T)+
+  geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+  geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+  labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+  ggpubr::theme_pubr()+
+  ylim(min(dta$scores),max(dta$scores)) 
+  # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score, alpha = .3) +
+  # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# cummax_plt
+
+# create the combined plot
+combined_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right"))
+combined_cummax_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = cummax_plt, position = "right"))
+# ggsave(paste0(FILENAMEbase, FILENAME, "traceplot_combined.png"),
+#        plot = cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right")),
+#        width = 9,height = 7)
+# dev.off()
+# print(combined_plot)
+
+if (SAVEPLOTS){
+  PLOTNAME <- "traceplot_allruns"
+  ggsave(plot = original_plot,
+         filename = paste0(FILENAME, PLOTNAME, ".svg"),
+         path = PLOTPATH,
+         width = PLOTWIDTH, height = PLOTHEIGHT)
+
+  PLOTNAME <- "traceplot_allruns_combined"
+  ggsave(plot = combined_plot,
+         filename = paste0(FILENAME, PLOTNAME, ".svg"),
+         path = PLOTPATH,
+         width = PLOTWIDTH, height = PLOTHEIGHT)  
+
+  PLOTNAME <- "traceplot_allruns_cummax"
+  ggsave(plot = cummax_plt,
+         filename = paste0(FILENAME, PLOTNAME, ".svg"),
+         path = PLOTPATH,
+         width = PLOTWIDTH, height = PLOTHEIGHT)  
+  } else {
+  original_plot
+  combined_plot 
+  cummax_plt
+}
+```
+
+### Consensus DAG
+best dag trimmed for controlling overfitting
+```{r}
+# Best DAG not trimmed 
+dag.mcmc.boot <- apply(list.mc.out.burn.thin.dag, 1:2, mean)
+colnames(dag.mcmc.boot) <- rownames(dag.mcmc.boot) <- names(dist)
+
+# Best DAG Trimmed on THRESHOLD
+dag.mcmc.boot.th <- dag.mcmc.boot
+dag.mcmc.boot.th[dag.mcmc.boot.th>THRESHOLD]<-1
+dag.mcmc.boot.th[dag.mcmc.boot.th<=THRESHOLD]<-0
+
+# Plot Best DAG trimmed
+# svg(filename = paste0(FILENAMEbase, FILENAME, "consensus_dag.svg"))
+cons.dag.plt <- plotAbn(dag = dag.mcmc.boot.th,data.dists = dist)
+# dev.off()
+
+
+if (SAVEPLOTS){
+  PLOTNAME <- "consensus_dag"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  cons.dag.plt 
+  dev.off()
+  abn::toGraphviz(dag.mcmc.boot.th, 
+                  data.dists = dist, 
+                  data.df = abndata, 
+                  outfile =paste0(PLOTPATH, FILENAME, PLOTNAME, ".dot"),
+                  directed=TRUE)
+  saveRDS(dag.mcmc.boot.th, file = paste0(PLOTPATH, FILENAME, PLOTNAME, ".rds"))
+
+  } else {
+  cons.dag.plt
+  }
+```
+
+
+### significance threshold:
+```{r}
+dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
+arc.stren.sign.threshold <-arc.stren.threshold(dag.mcmc.boot.stren)
+
+
+# relative arc strength
+plot(ecdf(dag.mcmc.boot.stren))
+abline(v = arc.stren.sign.threshold, lty=2)
+abline(v=0.5)
+
+# # absolute arc strength
+# plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "cdf_arcstrength"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  dev.off()
+  } 
+```
+
+Difference in DAG between two arc strength thresholds:
+```{r}
+# relative frequency of an arc appearing in the MCMC sample
+x <- dag.mcmc.boot
+
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold)]
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold-0.01)] <- 100 # Assign impossible value to highlight arc
+x
+```
+
+
+```{r}
+# Fit best DAG trimmed 
+fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
+              data.df = abndata,
+              data.dists = dist, 
+              method = METHOD,
+              compute.fixed = T,
+              create.graph = T)
+
+fabn.boot.th.mle$bic
+infoDag(dag.mcmc.boot.th)
+
+# plot with arc strength
+plotdag <- dag.mcmc.boot
+plotdag[plotdag>THRESHOLD]<-1
+plotdag[plotdag<=THRESHOLD]<-0
+
+fitvals <- fabn.boot.th.mle$coef
+
+for (i in 1:length(fitvals)){
+  names(fitvals[[i]]) <- colnames(fitvals[[i]])
+}
+
+edgestren <- round(dag.mcmc.boot, 2)
+edgestren[edgestren<=THRESHOLD]<-0
+
+# svg(filename = paste0(FILENAMEbase, FILENAME, "consensus_dag_edgestrength.svg"))
+cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
+        data.dists = dist,
+        # fitted.values = fitvals,
+        digits = 2,
+        edge.strength = edgestren)
+# dev.off()
+
+if (SAVEPLOTS){
+  PLOTNAME <- "consensus_dag_edgestrength"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  cons.dag.plt.edgestrength
+  dev.off()
+  } else {
+  plot(cons.dag.plt.edgestrength)
+}
+```
+
+
+## Inference
+Fit the data to the Network.
+Can be either Bayesian or Maximum Likelihood estimation. 
+Both implementations produce very similar results as shown in (Kratzer et al 2018, Information-Theoretic Scoring Rules to Learn
+Additive Bayesian Network Applied to Epidemiology)
+
+```{r}
+# Fit best trimmed DAG with Bayesian framework to compute marginals
+fabn.boot.th.bayes <- fitAbn(dag = dag.mcmc.boot.th,
+              data.df = abndata,
+              data.dists = dist, 
+              method = "bayes",
+              compute.fixed = T,
+              create.graph = T,
+              max.iters = 1000)
+
+# Fit best trimmed DAG with MLE framework to compute marginals
+fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
+              data.df = abndata,
+              data.dists = dist, 
+              method = "mle",
+              compute.fixed = T,
+              create.graph = T)
+
+out.bayes <- unlist(fabn.boot.th.bayes$modes)
+out.mle <- unlist(fabn.boot.th.mle$coef)
+```
+
+```{r}
+##numeric
+df.bayes <- as.data.frame(out.bayes) %>%
+  rownames_to_column()%>%
+  filter(!str_detect(rowname, "precision") &
+           !str_detect(rowname, "Intercept"))
+df.mle <- as.data.frame(out.mle) %>%
+  rownames_to_column()%>%
+  filter(!str_detect(rowname, "precision") &
+           !str_detect(rowname, "Intercept"))
+
+df.bayes
+df.mle
+```
+
+
+### Numerical Stability Check: Parameter estimation
+Once the trimmed DAG is obtained to keep robust structural features, we can extract the
+marginal posterior densities. Indeed, a BN has a qualitative part (the structure) and a
+quantitative part (parameters estimates). They are both equally important for interpreting
+and reporting the findings. As the estimation is based on the Laplace approximation and the
+R package abn does not rely on conjugate priors, a numerical check is performed. Figure 13
+shows the marginal densities. This figure is much more ambitious than the structural learning
+phase. The critical assumption is that the data contains sufficient information to accurately
+estimate the density of individual parameter of the model. This is a stronger requirement
+than simply being able to estimate an overall goodness of fit metric. It could happen that
+INLA or the internal C code cannot estimate the densities with enough numerical stability.
+Many user-tunable parameters can be supplie to fitabn() by providing a list to the control
+argument.
+(from abn vignette Appendix D) 
+
+### Bayesian
+(from help of "abn::fitAbn()")
+The procedure fitAbn fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); or an unbounded count (Poisson). The model comprises of a set of conditionally independent generalized linear regressions with or without random effects. Internal code is used by default for numerical estimation in nodes without random effects, and INLA is the default for nodes with random effects. This default behavior can be overridden using max.mode.error. The default is max.mode.error=10, which means that the modes estimated from INLA output must be within 10% of those estimated using internal code. Otherwise, the internal code is used rather than INLA. To force the use of INLA on all nodes, use max.mode.error=100, which then ignores this check, to force the use of internal code then use max.mode.error=0. For the numerical reliability and perform of abn see http://r-bayesian-networks.org. Generally speaking, INLA can be swift and accurate, but in several cases, it can perform very poorly and so some care is required (which is why there is an internal check on the modes). Binary variables must be declared as factors with two levels, and the argument data.dists must be a list with named arguments, one for each of the variables in data.df (except a grouping variable - if present), where each entry is either "poisson","binomial", or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
+
+If the data are grouped into correlated blocks - wherein a standard regression context a mixed model might be used - then a network comprising of one or more nodes where a generalized linear mixed model is used (but limited to only a single random effect). This is achieved by specifying parameters group.var and cor.vars. Where the former defines the group membership variable, which should be a factor indicating which observations belong to the same grouping. The parameter cor.vars is a character vector that contains the names of the nodes for which a mixed model should be used. For example, in some problems, it may be appropriate for all variables (except group.var) in data.df to be parametrized as a mixed model while in others it may only be a single variable for which grouping adjustment is required (as the remainder of variables are covariates measured at group level).
+
+In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
+
+If compute.fixed=TRUE then the marginal posterior distributions for all parameters are computed. Note the current algorithm used to determine the evaluation grid is rather crude and may need to be manually refined using variate.vec (one parameter at a time) for publication-quality density estimates. Note that a manual grid can only be used with internal code and not INLA (which uses its own grid). The end points are defined as where the value of the marginal density drops below a given threshold pdf.min.
+
+If create.graph=TRUE then the model definition matrix in dag.m is used to create an R graph object (of type graphAM-class). See ?"graph-class" for details and the Rgraphviz documentation (which is extensive). The main purpose of this is to allow easy visualization of the DAG structure via the graphviz library. A graph plot can easily be created by calling the method plot on this object (see example below). Note, however, that the fonts and choice of scaling used here may be far less visually optimal than using graphviz direct (e.g., via toGraphviz) for publication-quality output. Also, re-scaling the plotting window may not result in a callback to re-optimize the visual position of the nodes and edges, and so if the window is re-sized, then re-run the plot command to re-draw to the new scale.
+
+When estimating the log marginal likelihood in models with random effects (using internal code rather than INLA), an attempt is made to minimize the error by comparing the estimates given between a 3pt and 5pt rule when estimating the Hessian in the Laplace approximation. The modes used in each case are identical. The first derivatives are computed using gsl's adaptive finite difference function, and this is embedding inside the standard 3pt and 5pt rules for the second derivatives. In all cases, a central difference approximation is tried first with a forward difference being a fall back (as the precision parameters are strictly positive). The error is minimized through choosing an optimal step size using gsl's Nelder-Mead optimization, and if this fails, (e.g., is larger than max.hessian.error) then the Brent-Dekker root bracketing method is used as a fallback. If the error cannot be reduced to below max.hessian.error, then the step size, which gave the lowest error during the searches (across potentially many different initial bracket choices), is used for the final Hessian evaluations in the Laplace approximation.
+
+#### Marginals for each parameter in model (Bayesian)
+
+Bayesian Parameter uncertainy is analyzed by looking at their credible intervals. 
+
+##### Recap credible intervals
+
+- similar goal to confidence intervals in frequentist statistics but different definition and meaning.
+- the Bayesian framework allows us to say “given the observed data, the effect has 95% probability of falling within this range”, compared to the less straightforward, frequentist alternative (the 95% Confidence* Interval) would be “there is a 95% probability that when computing a confidence interval from data of this sort, the effect falls within this range”.
+- Bayesian inference returns a distribution of possible effect values (posterior distribution). 
+The credible interval is the range containing a particular percentage (i.e. 95%, or 89%) of probable values. 
+
+
+```{r}
+# str(fabn.boot.th.bayes$marginals["Hypertension"])
+str(fabn.boot.th.bayes[[20]]["Hypertension"])
+str(fabn.boot.th.bayes[[21]]["Hypertension"])
+```
+
+##### Plot posterior marginal distribution for each parameter seperately
+For example, the probability that the Hypertension|Gender parameter fals within a given range with it's credible intervals.
+```{r}
+ci <- fabn.boot.th.bayes[[21]][[4]][[2]]
+class(ci) <- NULL
+ci <- as.data.frame(ci)
+
+plot(fabn.boot.th.bayes[[20]][[4]][[2]])
+abline(v = ci$x)
+```
+
+We do that for all of the parameters.
+```{r fig.show="hold", out.width="50%"}
+ncolsplot <- 4
+nrowsplot <- 5
+pltlayout <- layout(matrix(seq(1, ncolsplot*nrowsplot), ncol = ncolsplot, byrow = T))
+# layout.show(pltlayout)
+par(mar = c(rep(2.12, 4)))
+for(i in 1:length(fabn.boot.th.bayes$marginals)){
+  nom1<-names(fabn.boot.th.bayes$marginals)[i]
+  cat("processing marginals for node:", nom1 ,"\n");
+  cur.node.marg<-fabn.boot.th.bayes$marginals[i];
+  cur.node.marg<-cur.node.marg[[1]];
+  
+  for(j in 1:length(cur.node.marg)){
+    nom2<-names(cur.node.marg)[j]
+    if (str_detect(nom2, "Intercept|precision")){
+      cat("Skipping ", nom2)
+      next
+    } else{
+      cat("processing parameter:",nom2,"\n")
+    }
+    cur.marg<-cur.node.marg[[j]];
+    cur.ci <- fabn.boot.th.bayes[[21]][[i]][[j]]
+    class(cur.ci) <- NULL # Remove class abnFit as it causes an errors downwards.
+    cur.ci <- as.data.frame(cur.ci)
+    plot(cur.marg,type="l",main=paste(nom1,":",nom2))
+    abline(v = cur.ci$x) # TODO: Use color contour instead of lines.
+  }
+}
+
+if (SAVEPLOTS){
+  PLOTNAME <- "post_marg_dist"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+}
+```
+
+##### Area under the marginal densities
+```{r}
+marnew <- fabn.boot.th.bayes$marginals[[1]]
+for(i in 2: length(fabn.boot.th.bayes$marginals)){
+  marnew <- c(marnew, fabn.boot.th.bayes$marginals[[i]])
+}
+myarea<-rep(NA,length(marnew))
+names(myarea)<-names(marnew)
+
+for(i in 1:length(marnew)){
+  tmp<-spline(marnew[[i]]);
+  myarea[i]<-sum(diff(tmp$x)*tmp$y[-1]);
+}
+```
+
+
+```{r}
+myarea.df <- as.data.frame(myarea) %>% 
+  rownames_to_column() %>%
+  mutate(rowname = factor(rowname),
+         color = factor(str_extract(rowname, "[^|]+")))  # match 1 or more character before |
+
+aucplot <- ggplot(myarea.df)+
+  geom_col(aes(y = myarea, x= rowname, fill = color)) +
+  coord_flip()+
+  xlab("Area Under Density")+
+  ylab("") +
+  guides(fill=FALSE) + # Removes legend of fill
+  theme_classic()
+
+if (SAVEPLOTS){
+  ggsave(aucplot, file = paste0(PLOTPATH, FILENAME, "auc_plot.png"))
+  } else {
+    print(aucplot)
+  }
+```
+
+```{r}
+margs <- marnew
+mymat<-matrix(rep(NA,length(margs)*3),ncol=3)
+rownames(mymat)<-names(margs)
+colnames(mymat)<-c("2.5%","50%","97.5%")
+
+ignore.me<-union(grep("\\(Int",names(margs)),grep("prec",names(margs)))
+comment<-rep("",length(margs));
+for(i in 1:length(margs)){
+  tmp<-margs[[i]];
+  tmp2<-cumsum(tmp[,2])/sum(tmp[,2]);
+  mymat[i,]<-c(tmp[which(tmp2>0.025)[1]-1,1],
+               tmp[which(tmp2>0.5)[1],1],
+               tmp[which(tmp2>0.975)[1],1]);
+  myvec<-mymat[i,];
+  
+  if( !(i%in%ignore.me) &&  (myvec[1]<0 && myvec[3]>0)){comment[i]<-"not sig. at 5%";} 
+  
+  mymat[i,]<-as.numeric(formatC(mymat[i,],digits=3,format="f"));
+}
+cbind(mymat, comment)
+
+```
+
+Marginals posterior distribution of the parameter estimates
+```{r}
+for(i in 1:length(fabn.boot.th.bayes$marginals)){
+  for (j in 1:length(fabn.boot.th.bayes$marginals[[i]])) {
+   plot(fabn.boot.th.bayes$marginals[[i]][[j]],type="l",main=names(fabn.boot.th.bayes$marginals)[[i]]); 
+  }
+}
+
+## now for a table of quantiles
+margs<-fabn.boot.th.bayes$marginals;
+# mymat<-matrix(rep(NA,length(margs)*3),ncol=3);
+result.table <- matrix(ncol = 4)
+childParent <- c()
+# rownames(mymat)<-names(margs);
+colnames(result.table)<-c("childrenParent", "2.5%","50%","97.5%");
+ignore.me<-union(grep("\\(Int",names(margs)),grep("prec",names(margs)));## these are not effect parameters - background constants and precisions
+comment<-rep("",length(margs));
+for(i in 1:length(margs)){
+  tmp<-margs[[i]]
+  childParent <- names(tmp)
+  
+  tempmat <- matrix(c(childParent,
+                    rep(NA, length(childParent)*3)),
+                    nrow = length(childParent))
+  for (j in 1:length(tmp)) {
+    tmp2<-cumsum(tmp[[j]][,2])/sum(tmp[[j]][,2]);
+    tempmat[j,2] <- tmp[[j]][which(tmp2>0.025)[1]-1,1] ## -1 is so use value on the left of the 2.5% 
+    tempmat[j,3] <- tmp[[j]][which(tmp2>0.5)[1],1]
+    tempmat[j,4] <- tmp[[j]][which(tmp2>0.975)[1],1]
+    
+    # mymat <- matrix(childParent, ci1, ci2, ci3)
+    # if( !(i%in%ignore.me) &&  (myvec[1]<0 && myvec[3]>0)){
+    #   comment[i]<-"not sig. at 5%";} 
+    ## truncate for printing
+    # mymat[i,]<-as.numeric(formatC(mymat[i,],digits=3,format="f"));
+  }
+  result.table <- rbind(result.table, tempmat)
+}
+result.table.bayes <- as.data.frame(result.table[which(!str_detect(result.table[,1], "Intercept|precision")),]) %>%
+  mutate(across(.cols = 2:4, function(x){round(as.numeric(x),3)})) 
+
+for(i in 1:nrow(result.table.bayes)){
+  if (result.table.bayes[i,2] < 0 && result.table.bayes[i,4]>0){
+    result.table.bayes$comment[i] <- "not sig. at 5%"
+  } else {
+      result.table.bayes$comment[i] <- ""
+    }
+}
+
+if (SAVEPLOTS){
+  write.csv(result.table.bayes, file = paste0(PLOTPATH, FILENAME, "results_table_bayes.csv"))
+  } else {
+    print(result.table.bayes)
+  }
+```
+
+
+
+### Maximum Likelihood Estimation 
+(from help of "abn::fitAbn()")
+The procedure fitAbn with the argument method= "mle" fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); an unbounded count (Poisson); or a discrete variable (Multinomial). The model comprises of a set of conditionally independent generalized linear regressions with or without adjustment.
+
+Binary and discrete variables must be declared as factors and the argument data.dists must be a list with named arguments, one for each of the variables in data.df, where each entry is either "poisson","binomial", "multinomial" or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
+
+In the context of fitAbn adjustment means that irrespective to the adjacency matrix the adjustment variable set (adj.vars) will be add as covariate to every node defined by cor.vars. If cor.vars is NULL then adjustment is over all variables in the data.df.
+
+In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
+
+The Information-theoretic based network scores used in fitAbn with argument method="mle" are the maximum likelihood (mlik, called marginal likelihood in this context as it is computed node wise), the Akaike Information Criteria (aic), the Bayesian Information Criteria (bic) and the Minimum distance Length (mdl). The classical definitions of those metrics are given in Kratzer and Furrer (2018).
+
+The numerical routine is based on an iterative scheme to estimate the regression coefficients. The Iterative Reweighed Least Square (IRLS) programmed using Rcpp/RcppArmadrillo. One hard coded feature of fitAbn with argument method="mle" is a conditional use of a bias reduced binomial regression when a classical Generalized Linear Model (GLM) fails to estimate the maximum likelihood of the given model accurately. Additionally, a QR decomposition is performed to check for rank deficiency. If the model is rank deficient and the BR GLM fails to estimate it, then predictors are sequentially removed. This feature aims at better estimating network scores when data sparsity is present.
+
+A special care should be taken when interpreting or even displaying p-values computed with fitAbn. Indeed, the full model is already selected using goodness of fit metrics based on the (same) full dataset.
+
+
+### Regression coefficient estimates and 95% Confidence Intervals (CI)
+with their interpretation and data support (computed with structural MCMC).
+
+Second table `spportdag` is the percentage of the individual arcs supported by the 
+MCMC sample. 
+```{r}
+# Look-up table for interpretation of results depending on variable distribution
+interpretLUT <- lapply(fabn.boot.th.mle$abnDag$data.dists, function(x){
+  if(x=="binomial"){
+    "odds ratio"
+  } else if(x=="gaussian"){
+    "correlation"
+  } else if(x=="poission"){
+    "rate ratio"}
+})
+
+# Extract each edge (cornames) and it's interpretation
+cornames <- c()
+interpret <- c()
+for (i in 1:length(fabn.boot.th.mle$coef)){
+  for (j in colnames(fabn.boot.th.mle$coef[[i]])){
+    interpret <- c(interpret, interpretLUT[which(names(unlist(interpretLUT)) == names(fabn.boot.th.mle$coef[i]))][[1]])
+    if(str_detect(j, "intercept")){
+      cornames <- c(cornames, j)
+    } else {
+        cornames <- c(cornames, paste0(names(fabn.boot.th.mle$coef[i]), "|", j))
+      }
+  }
+}
+
+# each edge's support aka. arc-strength
+support <- c()
+supportdag <- dag.mcmc.boot
+supportdag[supportdag<=THRESHOLD] <- 0
+for (i in 1:length(cornames)){
+  edgename <- str_split(cornames[[i]], pattern = "\\|", simplify = T)
+  fromname <- edgename[2]
+  toname <- edgename[1]
+  fromidx <- which(colnames(supportdag) == fromname)
+  toidx <- which(colnames(supportdag) == toname)
+  support <- c(support, round(supportdag[toidx, fromidx], 2))
+}
+
+# put all together
+result.table <- data.frame(cornames = cornames,
+                           coefficient = unlist(fabn.boot.th.mle$coef, use.names = F),
+                           SE = unlist(fabn.boot.th.mle$Stderror, use.names = F),
+                           interpretation= interpret)
+
+# remove edges with "intercept"
+result.table <- result.table[which(!str_detect(result.table$cornames, "intercept")),]
+# add support values
+result.table <- cbind(result.table, support)
+
+for (i in 1:nrow(result.table)){
+  if(str_detect(result.table$interpretation[i], "ratio")){
+    # Because of logit() scale
+    result.table$coefficient[i] <- exp(result.table$coefficient[i])
+  }
+  
+  # # exponentiate IAsize log
+  # if(str_detect(result.table$cornames[i], "log")){
+  #   result.table$coefficient[i] <- exp(result.table$coefficient[i])
+  # }
+  
+  if(result.table$coefficient[i]<1 && result.table$interpretation[i] != "correlation"){
+    result.table$association[i] <- "negative"
+  } else if (result.table$coefficient[i]>1 && result.table$interpretation[i] != "correlation"){
+    result.table$association[i] <- "positive"
+  } else if (result.table$coefficient[i]>0 && result.table$interpretation[i] == "correlation"){
+    result.table$association[i] <- "positive"
+  } else if (result.table$coefficient[i]<0 && result.table$interpretation[i] == "correlation"){
+    result.table$association[i] <- "negative"}
+  
+  # extract cornames for parent and children
+  childrenParent <- str_split(result.table$cornames[i], "\\|")
+  result.table$parent[i] <- childrenParent[[1]][2]
+  result.table$children[i] <- childrenParent[[1]][[1]]
+  
+  # add levels
+  levsparents <- levels(abndata[[result.table$parent[i]]])
+  if(!is.null(levsparents)){
+    result.table$parentLevels[i] <- paste(levsparents, collapse = '; ')
+  } else if(is.null(levsparents) && (result.table$parent[i] == "IAsize_log" | result.table$parent[i] == "AgeDiag")){
+    result.table$parentLevels[i] <- paste("continuous scale")
+  }
+  levschild <- levels(abndata[[result.table$children[i]]])
+  if(!is.null(levschild)){
+    result.table$childrenLevels[i] <- paste(levschild, collapse = '; ')
+  } else if(is.null(levschild) && (result.table$children[i] == "IAsize_log" | result.table$children[i] == "AgeDiag")){
+    result.table$childrenLevels[i] <- paste("continuous scale")
+  }
+}
+
+
+# round and convert to integer
+result.table.mle <- result.table %>%
+  mutate(coefficient = as.numeric(round(coefficient, 2)),
+         SE = as.numeric(round(SE, 2)))
+
+if (SAVEPLOTS){
+  write.csv(result.table.mle, file = paste0(PLOTPATH, FILENAME, "results_table_mle.csv"))
+  write.csv(supportdag, file = paste0(PLOTPATH, FILENAME, "individual_arc_support.csv"))
+  } else {
+    print(result.table.mle)
+  }
+```
+the odds and rate ratios: If smaller than one, a ratio has a negative effect. 
+Inversely, if larger than one, the effect is positive.
+
+
+#### interpretations:
+```{r}
+str(abndata)
+abndata[1,]
+```
+
+Start with support == 1.
+```{r}
+result.table.mle[which(result.table.mle$support == 1),]
+```
+
+Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke.
+
+Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke.
+
+Gender -> high risk location: positive association. gender is male, High risk location
+Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location.
+
+Gender -> low risk location: negative association. gender is femalem, IAs at low risk location.
+Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location. 
+
+pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no)
+Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs.
+
+Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?)
+AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA.
+high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n).
+low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n).
+IA size -> Ruptured IA: positive associated. Large IAs tend to rupture.
+
+
+
+Arcs with less support
+```{r}
+result.table.mle[which(result.table.mle$support != 1),]
+```
+
+Gender -> Hypertension: negative association. Females tend to have never Hypertension. (verify! Vera says: Males tend to have HBP)
+AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension.
+
+AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked.
+AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location.
+
+Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location.
+
+Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location.
+non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location.
+
+Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs.
+
+
+
+
+### Queries
+
+From Kratzer et al 2020 BN modeling applied to FC infection... they model on the
+complete mcmc sample and not the pruned consensus dag. 
+
+```{r}
+mcmc.out.query<- list(dags=list.mc.out.burn.thin.dag,
+                      data.dist=dist,scores=list.mc.out.burn.thin.score)
+```
+
+What is the probability that IA rupture is associated with current smokers?
+```{r}
+query(mcmcabn = mcmc.out.query,
+      formula = ~Ruptured_IA|Smoking_Current_Former_No__Current)-
+  query(mcmcabn = mcmc.out.query,
+      formula = ~Smoking_Current_Former_No__Current|Ruptured_IA)
+```
+
+What is the probability that IA rupture is associated with Age and current smokers?
+```{r}
+query(mcmcabn = mcmc.out.query,
+      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__Current|AgeDiag)-
+  query(mcmcabn = mcmc.out.query,
+      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__Current)
+
+query(mcmcabn = mcmc.out.query,
+      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__No|AgeDiag)-
+  query(mcmcabn = mcmc.out.query,
+      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__No)
+```
+
+Positive familial history - Gender?
+```{r}
+mcmcabn::query(mcmcabn = mcmc.out.query,
+      formula = ~Hypertension|Gender)
+```
+
+
+Hypertension is higher in higher age.
+
+
+### Arc-histogram
+```{r}
+# Arc histogram
+arcsdist <- apply(list.mc.out.burn.thin.dag, 3, sum)
+plt <- barplot(table(arcsdist),col = "grey",xlab = "Number of arcs in the DAG", ylab = "Number of DAGs")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "arc_histogram"
+  dev.print(svg, filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  plt
+  dev.off()
+} else {
+  plt
+}
+```
+
+### Most frequent DAGS in MCMC sample
+
+```{r WARNING_takes_long_time, cache=TRUE}
+u.list.dag <- unique.array(x = list.mc.out.burn.thin.dag,MARGIN = 3) # remove duplicate elements/rows
+
+num_100 <- apply(X = u.list.dag, MARGIN = 3, FUN = function(x){
+  sum(apply(X = list.mc.out.burn.thin.dag,MARGIN = 3,FUN = function(y){
+    if(identical(x,y)){1}else{0}
+  }))
+})
+
+# # Attempt to make it faster
+# 
+# # Same as above, but only on a subset
+# num_100 <- apply(X = u.list.dag[,,1:3], MARGIN = 3, FUN = function(x){
+#   sum(apply(X = list.mc.out.burn.thin.dag[,,1:3],MARGIN = 3,FUN = function(y){
+#       if(identical(x,y)){1}else{0}
+#   }))
+# })
+#
+# # This works:
+# ident <- 0
+# for(i in 1:dim(u.list.dag[,,1:3])[3]){
+#   x <- u.list.dag[,,i]
+#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
+#     y <- list.mc.out.burn.thin.dag[,,j]
+#     
+#     if(identical(x,y)){
+#       ident <- ident+1
+#     }
+#   }
+# }
+# print(ident)
+# 
+# # This doesn't work:
+# library(foreach)
+# library(parallel)
+# cl <- makeCluster(detectCores()-1)
+# registerDoParallel(cl)
+# ident <- 0
+# foreach(i=1:dim(u.list.dag[,,1:3])[3], .combine = '+') %do% {
+#   x <- u.list.dag[,,i]
+#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
+#     y <- list.mc.out.burn.thin.dag[,,j]
+#     
+#     if(identical(x,y)){
+#       1
+#     }
+#   }
+# }
+# print(ident)
+
+
+max(which((cumsum(sort(num_100,decreasing = FALSE)))/1000<0.80,arr.ind = TRUE))
+```
+
+
+```{r, cache=TRUE}
+freqDAGstoplot <- 100
+
+##plot
+scores.dags <- vector(length = freqDAGstoplot)
+num.arcs <- vector(length = freqDAGstoplot)
+shd <- vector(length = freqDAGstoplot)
+for(i in 1:freqDAGstoplot){
+
+  dag <- u.list.dag[,,order(num_100,decreasing = TRUE)[i]]
+  colnames(dag) <- rownames(dag) <- names(dist)
+  fabn <- fitAbn(dag = dag,
+                 data.df = abndata,
+                 data.dists = dist,
+                 method = METHOD)
+  scores.dags[i] <- -fabn$bic
+  num.arcs[i] <- sum(dag)
+  shd[i] <- compareDag(ref = u.list.dag[,,order(num_100,decreasing = TRUE)[1]],u.list.dag[,,order(num_100,decreasing = TRUE)[i]])$`Hamming-distance`
+}
+
+if (SAVEPLOTS){
+  PLOTNAME <- "mcmc_diversity"
+  svg(filename = paste0(PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  
+  par(mar=c(5,4,4,4))
+  plot(1:freqDAGstoplot, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], type = 'n',ylab = "",xlab = "Number of arcs",xaxt="n",yaxt="n", ylim = c(0,20))
+  axis(2,at = c(0, 5,10,15, 20),labels = c("0.0%","0.5%","1%", "1.5%", "2%"),col.axis = "#4393C3")
+  mtext("Occurence of DAGs", side=2, line=2, col="#4393C3")
+  rect(1:freqDAGstoplot - .4, 0, 1:freqDAGstoplot + .4, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], col = '#4393C3')
+  par(new = TRUE)
+  plot(x = 1:freqDAGstoplot,y = scores.dags,col="red", type = 'b', lwd=2, axes = FALSE, xlab = "",ylab="")
+  axis(4, col.axis = 'red')
+  mtext("DAGs scores", side=4, line=2, col="red")
+  axis(1, col.axis = 'black',at = 1:freqDAGstoplot,labels = num.arcs)
+  axis(3, col.axis = 'orange',at = 1:freqDAGstoplot,labels = shd)
+  mtext("Structural Hamming distances", side=3, line=2, col="orange")
+
+  dev.off()
+} else {
+  
+  par(mar=c(5,4,4,4))
+  plot(1:freqDAGstoplot, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], type = 'n',ylab = "",xlab = "Number of arcs",xaxt="n",yaxt="n", ylim = c(0,20))
+  axis(2,at = c(0, 5,10,15, 20),labels = c("0.0%","0.5%","1%", "1.5%", "2%"),col.axis = "#4393C3")
+  mtext("Occurence of DAGs", side=2, line=2, col="#4393C3")
+  rect(1:freqDAGstoplot - .4, 0, 1:freqDAGstoplot + .4, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], col = '#4393C3')
+  par(new = TRUE)
+  plot(x = 1:freqDAGstoplot,y = scores.dags,col="red", type = 'b', lwd=2, axes = FALSE, xlab = "",ylab="")
+  axis(4, col.axis = 'red')
+  mtext("DAGs scores", side=4, line=2, col="red")
+  axis(1, col.axis = 'black',at = 1:freqDAGstoplot,labels = num.arcs)
+  axis(3, col.axis = 'orange',at = 1:freqDAGstoplot,labels = shd)
+  mtext("Structural Hamming distances", side=3, line=2, col="orange")
+
+}
+```
+
+## Save Analysis Results for reporting
+
+```{r}
+obj <- ls() # save current workspace
+
+if (SAVEPLOTS){
+  filename_results <- "_analysis_results"
+  save(list= obj, file = paste0(PLOTPATH, FILENAME, filename_results, ".RData"))
+}
+```
+
+
+# Plot abn data as dot
+
+```{r}
+getwd()
+load(paste0("exp6_100k_analysis_results.RData"))
+```
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "consensus_dag"
+  dev.print(svg, filename = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  cons.dag.plt 
+  dev.off()
+  abn::toGraphviz(dag.mcmc.boot.th, 
+                  data.dists = dist, 
+                  data.df = abndata, 
+                  outfile =paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".dot"),
+                  directed=TRUE)
+  saveRDS(dag.mcmc.boot.th, file = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".rds"))
+
+  } else {
+  cons.dag.plt
+  }
+```
+

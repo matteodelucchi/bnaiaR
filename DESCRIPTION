@@ -30,6 +30,9 @@ Imports:
     Rgraphviz,
     BiocManager,
     cowplot,
-    bnlearn
+    bnlearn,
+    data.table,
+    igraph,
+    mcmcabn
 Depends: 
     R (>= 3.5.0)
