@@ -1,0 +1,93 @@
+---
+title: "Process bnaiaR Networks for SmartGraph visualizations"
+author: "Matteo Delucchi"
+date: "11/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+library(dplyr)
+library(bnlearn)
+library(bnaiaR)
+library(abn)
+```
+
+# Document Settings
+```{r}
+# Save plots as files? 
+SAVE <- F
+CSVPATH <- Sys.getenv("CSVPATH")
+PLOTFORMAT <- "png" # "svg" or "png"
+```
+
+# Clinical Evidence Graph
+
+```{r}
+ekg <- as.data.frame(arcs(ekg)) %>%
+  mutate(strength = rep(1, nrow(.)))
+print(ekg)
+```
+
+```{r}
+if (SAVE) {
+  FILE <- paste0(CSVPATH, "/", "ceg.csv")
+  write.csv(ekg, file = FILE)
+} else {
+  print(ekg)
+}
+```
+
+
+# Discrete BNs
+
+Load data.
+```{r}
+data <- exp11_dat$abndata
+avgnet <- discrete_bns$avgnet
+arcstren <- discrete_bns$arcstren
+```
+
+Display discrete BN.
+```{r}
+strength.plot(avgnet[["tabu.th03"]],
+              arcstren[["tabu"]],
+              main = "DAG",
+              sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              shape = "rectangle")
+```
+
+```{r}
+dBN <- as.data.frame(arc.strength(avgnet[["tabu.th03"]], data)) 
+print(dBN)
+```
+
+```{r}
+if (SAVE) {
+  FILE <- paste0(CSVPATH, "/", "discreteBN.csv")
+  write.csv(dBN, file = FILE)
+} else {
+  print(dBN)
+}
+```
+
+# Additive BNs
+
+```{r}
+aBN <- read.csv(paste0(getwd(), "/results/expABNmultinomial_100kresults_table_mle.csv")) %>%
+  select(c(from, to, support)) %>%
+  rename("strength" = "support")
+```
+
+```{r}
+if (SAVE) {
+  FILE <- paste0(CSVPATH, "/", "additiveBN.csv")
+  write.csv(aBN, file = FILE)
+} else {
+  print(aBN)
+}
+```
