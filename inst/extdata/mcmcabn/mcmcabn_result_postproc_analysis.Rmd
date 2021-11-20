@@ -609,13 +609,67 @@ for (i in 1:length(fabn.boot.th.mle$coef)){
 }
 
 # each edge's support aka. arc-strength
+possibleLevels <- c("\\.Former", "\\.No", "\\.Current", "\\.No", "\\.Yes", "\\.Low", "\\.Medium", "\\.High", "High", "Low", "Medium")
 support <- c()
+from_names <- c()
+from_levels <- c()
+to_names <- c()
+to_levels <- c()
 supportdag <- dag.mcmc.boot
 supportdag[supportdag<=THRESHOLD] <- 0
 for (i in 1:length(cornames)){
   edgename <- stringr::str_split(cornames[[i]], pattern = "\\|", simplify = T)
-  fromname <- edgename[2]
-  toname <- edgename[1]
+  
+  fromname <- stringr::str_split(edgename[2], "\\.", simplify = T)[1]
+  toname <- stringr::str_split(edgename[1], "\\.", simplify = T)[1]
+  
+  tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)
+  if (length(tolevels) == 1){
+    tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)[1]
+  } else if (length(tolevels) >= 2){
+    tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)[1,2]
+  } else if (length(tolevels) == 0){
+    tolevels <- NA
+  }
+  
+  if(fromname == "location"){
+    fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)
+  } else {
+    fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)
+      if (length(fromlevels) == 1){
+        fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)[1]
+      } else if (length(fromlevels) >= 2){
+        fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)[1,2]
+      } else if (length(fromlevels) == 0){
+        fromlevels <- NA
+      }
+    }
+  
+  # fix from and to names here to match in supportdag
+  if (fromname == "location"){
+    fromname <- "location.grouped"
+  } else if(fromname == "Positive"){
+    fromname <- "Positive.famillial.history"
+  } else if(fromname == "Multiple"){
+    fromname <- "Multiple.IAs"
+  }
+  
+  if (toname == "location"){
+    toname <- "location.grouped"
+  } else if(toname == "Positive"){
+    toname <- "Positive.famillial.history"
+  } else if(toname == "Multiple"){
+    toname <- "Multiple.IAs"
+  }
+  
+  # Fill missing from and to levels
+  if (is.na(fromlevels) & fromname != "intercept"){
+    fromlevels <- stringr::str_flatten(levels(abndata[,fromname]), collapse=", ")
+  }
+  if (is.na(tolevels) & fromname != "intercept"){
+    tolevels <- stringr::str_flatten(levels(abndata[,toname]), collapse=", ")
+  }
+
   fromidx <- which(colnames(supportdag) == fromname)
   toidx <- which(colnames(supportdag) == toname)
   if(identical(fromidx, integer(0)) | identical(toidx, integer(0))){
@@ -623,10 +677,19 @@ for (i in 1:length(cornames)){
   } else {
     support <- c(support, round(supportdag[toidx, fromidx], 2))
   }
+  
+  from_names <- c(from_names, fromname)
+  from_levels <- c(from_levels, fromlevels)
+  to_names <- c(to_names, toname)
+  to_levels <- c(to_levels, tolevels)
 }
 
 # put all together
 result.table <- data.frame(cornames = cornames,
+                           from = from_names,
+                           fromLevels = from_levels,
+                           to = to_names,
+                           toLevels = to_levels,
                            coefficient = unlist(fabn.boot.th.mle$coef, use.names = F),
                            SE = unlist(fabn.boot.th.mle$Stderror, use.names = F),
                            interpretation= interpret)
@@ -655,24 +718,24 @@ for (i in 1:nrow(result.table)){
   } else if (result.table$coefficient[i]<0 && result.table$interpretation[i] == "correlation"){
     result.table$association[i] <- "negative"}
   
-  # extract cornames for parent and children
-  childrenParent <- stringr::str_split(result.table$cornames[i], "\\|")
-  result.table$parent[i] <- childrenParent[[1]][2]
-  result.table$children[i] <- childrenParent[[1]][[1]]
-  
-  # add levels
-  levsparents <- levels(abndata[[result.table$parent[i]]])
-  if(!is.null(levsparents)){
-    result.table$parentLevels[i] <- paste(levsparents, collapse = '; ')
-  } else if(is.null(levsparents) && (result.table$parent[i] == "IAsize_log" | result.table$parent[i] == "AgeDiag")){
-    result.table$parentLevels[i] <- paste("continuous scale")
-  }
-  levschild <- levels(abndata[[result.table$children[i]]])
-  if(!is.null(levschild)){
-    result.table$childrenLevels[i] <- paste(levschild, collapse = '; ')
-  } else if(is.null(levschild) && (result.table$children[i] == "IAsize_log" | result.table$children[i] == "AgeDiag")){
-    result.table$childrenLevels[i] <- paste("continuous scale")
-  }
+  # # extract cornames for parent and children
+  # childrenParent <- stringr::str_split(result.table$cornames[i], "\\|")
+  # result.table$parent[i] <- childrenParent[[1]][2]
+  # result.table$children[i] <- childrenParent[[1]][[1]]
+  # 
+  # # add levels
+  # levsparents <- levels(abndata[[result.table$parent[i]]])
+  # if(!is.null(levsparents)){
+  #   result.table$parentLevels[i] <- paste(levsparents, collapse = '; ')
+  # } else if(is.null(levsparents) && (result.table$parent[i] == "IAsize_log" | result.table$parent[i] == "AgeDiag")){
+  #   result.table$parentLevels[i] <- paste("continuous scale")
+  # }
+  # levschild <- levels(abndata[[result.table$children[i]]])
+  # if(!is.null(levschild)){
+  #   result.table$childrenLevels[i] <- paste(levschild, collapse = '; ')
+  # } else if(is.null(levschild) && (result.table$children[i] == "IAsize_log" | result.table$children[i] == "AgeDiag")){
+  #   result.table$childrenLevels[i] <- paste("continuous scale")
+  # }
 }
 
 
@@ -681,7 +744,7 @@ result.table.mle <- result.table %>%
   mutate(coefficient = as.numeric(round(coefficient, 2)),
          expcoef = as.numeric(round(expcoef, 2)),
          SE = as.numeric(round(SE, 2))) %>%
-  select(c(parent, parentLevels, children, childrenLevels, expcoef, expinterpret, association, coefficient, SE, interpretation, support, cornames))
+  select(c(from, fromLevels, to, toLevels, expcoef, expinterpret, association, coefficient, SE, interpretation, support, cornames))
 
 if (SAVEPLOTS){
   write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"), row.names = F)
@@ -691,7 +754,6 @@ if (SAVEPLOTS){
   }
 ```
 
-TODO: Include support values for multinomial parent nodes
 
 ### Interpretations
 
