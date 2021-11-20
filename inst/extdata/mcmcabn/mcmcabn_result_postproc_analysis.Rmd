@@ -754,6 +754,66 @@ if (SAVEPLOTS){
   }
 ```
 
+#### As LaTeX table
+
+```{r}
+linesep<-function(x,y=character()){
+  if(!length(x))
+    return(y)
+  linesep(x[-length(x)], c(rep('',x[length(x)]-1),'\\addlinespace',y))  
+}
+
+result.table.mle %>%
+  # sort by parent nodes first and then by child nodes
+  arrange(from, fromlevels, to, tolevels) %>%
+  # Fix wrong levels for rupture status
+  mutate(toLevels = case_when(to == "Ruptured_IA" & toLevels != "Yes, No" ~ "Yes, No", 
+                              TRUE ~ toLevels)) %>%
+  # Clean up node labels
+  mutate(from = case_when(from == "Gender" ~ "Sex",
+                          from == "AgeDiag" ~ "Age at Diagnosis",
+                          from == "Positive.famillial.history" ~ "Pos. Fam. History",
+                          from == "Smoking_Current_Former_No" ~ "Smoking Status",
+                          from == "location.grouped" ~ "IA Location",
+                          from == "Multiple.IAs" ~ "Multiple IAs",
+                          from == "IAsize_log" ~ "IA Size",
+                          from == "Ruptured_IA" ~ "Ruptured IA",
+                          TRUE ~ from)) %>%
+  mutate(to = case_when(to == "Gender" ~ "Sex",
+                        to == "AgeDiag" ~ "Age at Diagnosis",
+                        to == "Positive.famillial.history" ~ "Pos. Fam. History",
+                        to == "Smoking_Current_Former_No" ~ "Smoking Status",
+                        to == "location.grouped" ~ "IA Location",
+                        to == "Multiple.IAs" ~ "Multiple IAs",
+                        to == "IAsize_log" ~ "IA Size",
+                        to == "Ruptured_IA" ~ "Ruptured IA",
+                          TRUE ~ to)) %>%
+  
+  # Clean column names
+  rename("From" = "from",
+         "From Levels" = "fromLevels",
+         "To" = "to",
+         "To Levels" = "toLevels",
+         "Coefficient" = "expcoef",
+         "Interpretation" = "expinterpret",
+         "Association" = "association",
+         "log coefficient" = "coefficient",
+         "log coef. Interpretation" = "interpretation", 
+         "Arc-strength" = "support") %>%
+  select(-c(cornames)) %>%
+  tibble::remove_rownames() %>%
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "tab:expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(4, 5, 3, 1, 3, 1, 4)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 2, "Children" = 2, "Association" = 6, " " = 1)) %>%
+  kableExtra::landscape()   %>%
+  cat(., file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.tex"))
+```
 
 ### Interpretations
 

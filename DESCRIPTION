@@ -33,6 +33,7 @@ Imports:
     bnlearn,
     data.table,
     igraph,
-    mcmcabn
+    mcmcabn,
+    kableExtra
 Depends: 
     R (>= 3.5.0)

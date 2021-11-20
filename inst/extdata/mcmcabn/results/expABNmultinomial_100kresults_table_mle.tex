@@ -1,0 +1,43 @@
+
+\begin{landscape}\begin{table}[!h]
+
+\caption{\label{tab:tab:expABNmultinom_100k_results_table_mle}Result Table Caption}
+\centering
+\resizebox{\linewidth}{!}{
+\begin{tabular}[t]{llllrllrrlr}
+\toprule
+\multicolumn{2}{c}{Parent} & \multicolumn{2}{c}{Children} & \multicolumn{6}{c}{Association} & \multicolumn{1}{c}{ } \\
+\cmidrule(l{3pt}r{3pt}){1-2} \cmidrule(l{3pt}r{3pt}){3-4} \cmidrule(l{3pt}r{3pt}){5-10}
+From & From Levels & To & To Levels & Coefficient & Interpretation & Association & log coefficient & SE & log coef. Interpretation & Arc-strength\\
+\midrule
+\cellcolor{gray!6}{Age at Diagnosis} & \cellcolor{gray!6}{} & \cellcolor{gray!6}{Hypertension} & \cellcolor{gray!6}{AnyType, Never} & \cellcolor{gray!6}{0.48} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.73} & \cellcolor{gray!6}{0.08} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+Age at Diagnosis &  & Ruptured IA & Yes, No & 1.77 & odds ratio & positive & 0.57 & 0.09 & log odds ratio & 1.00\\
+\cellcolor{gray!6}{Age at Diagnosis} & \cellcolor{gray!6}{} & \cellcolor{gray!6}{Smoking Status} & \cellcolor{gray!6}{Former} & \cellcolor{gray!6}{0.51} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.68} & \cellcolor{gray!6}{0.19} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+Age at Diagnosis &  & Smoking Status & No & 1.52 & odds ratio & positive & 0.42 & 0.08 & log odds ratio & 1.00\\
+\addlinespace
+\cellcolor{gray!6}{Sex} & \cellcolor{gray!6}{Female, Male} & \cellcolor{gray!6}{Hypertension} & \cellcolor{gray!6}{AnyType, Never} & \cellcolor{gray!6}{0.63} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.47} & \cellcolor{gray!6}{0.17} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{0.87}\\
+Sex & Female, Male & IA Location & Low & 0.37 & odds ratio & negative & -1.00 & 0.25 & log odds ratio & 1.00\\
+\cellcolor{gray!6}{Sex} & \cellcolor{gray!6}{Female, Male} & \cellcolor{gray!6}{IA Location} & \cellcolor{gray!6}{Medium} & \cellcolor{gray!6}{0.60} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.51} & \cellcolor{gray!6}{0.19} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+Sex & Female, Male & Smoking Status & Former & 1.19 & odds ratio & positive & 0.17 & 0.22 & log odds ratio & 1.00\\
+\cellcolor{gray!6}{Sex} & \cellcolor{gray!6}{Female, Male} & \cellcolor{gray!6}{Smoking Status} & \cellcolor{gray!6}{No} & \cellcolor{gray!6}{1.60} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{positive} & \cellcolor{gray!6}{0.47} & \cellcolor{gray!6}{0.11} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+\addlinespace
+Hypertension & AnyType, Never & IA Location & Low & 0.45 & odds ratio & negative & -0.79 & 0.22 & log odds ratio & 0.96\\
+\cellcolor{gray!6}{Hypertension} & \cellcolor{gray!6}{AnyType, Never} & \cellcolor{gray!6}{IA Location} & \cellcolor{gray!6}{Medium} & \cellcolor{gray!6}{1.34} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{positive} & \cellcolor{gray!6}{0.29} & \cellcolor{gray!6}{0.17} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{0.96}\\
+Hypertension & AnyType, Never & Multiple IAs & Yes, No & 1.56 & odds ratio & positive & 0.44 & 0.15 & log odds ratio & 1.00\\
+\addlinespace
+\cellcolor{gray!6}{IA Size} & \cellcolor{gray!6}{} & \cellcolor{gray!6}{Ruptured IA} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{0.66} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.42} & \cellcolor{gray!6}{0.09} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+\addlinespace
+IA Location & High & Ruptured IA & Yes, No & 1.90 & odds ratio & positive & 0.64 & 0.23 & log odds ratio & 1.00\\
+\cellcolor{gray!6}{IA Location} & \cellcolor{gray!6}{Medium} & \cellcolor{gray!6}{Ruptured IA} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{4.81} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{positive} & \cellcolor{gray!6}{1.57} & \cellcolor{gray!6}{0.22} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+IA Location & Low & Ruptured IA & Yes, No & 41.03 & odds ratio & positive & 3.71 & 0.39 & log odds ratio & 1.00\\
+\addlinespace
+\cellcolor{gray!6}{Multiple IAs} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{IA Size} & \cellcolor{gray!6}{} & \cellcolor{gray!6}{0.73} & \cellcolor{gray!6}{exp. cor. coef.} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.31} & \cellcolor{gray!6}{0.07} & \cellcolor{gray!6}{correlation} & \cellcolor{gray!6}{1.00}\\
+\addlinespace
+Pos. Fam. History & Yes, No & IA Size &  & 1.56 & exp. cor. coef. & positive & 0.45 & 0.08 & correlation & 1.00\\
+\cellcolor{gray!6}{Pos. Fam. History} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{IA Location} & \cellcolor{gray!6}{Low} & \cellcolor{gray!6}{0.71} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.34} & \cellcolor{gray!6}{0.18} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{0.64}\\
+Pos. Fam. History & Yes, No & IA Location & Medium & 2.58 & odds ratio & positive & 0.95 & 0.22 & log odds ratio & 0.64\\
+\cellcolor{gray!6}{Pos. Fam. History} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{Ruptured IA} & \cellcolor{gray!6}{Yes, No} & \cellcolor{gray!6}{0.44} & \cellcolor{gray!6}{odds ratio} & \cellcolor{gray!6}{negative} & \cellcolor{gray!6}{-0.82} & \cellcolor{gray!6}{0.22} & \cellcolor{gray!6}{log odds ratio} & \cellcolor{gray!6}{1.00}\\
+\bottomrule
+\end{tabular}}
+\end{table}
+\end{landscape}
