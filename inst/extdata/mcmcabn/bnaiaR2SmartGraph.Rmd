@@ -28,17 +28,18 @@ PLOTFORMAT <- "png" # "svg" or "png"
 # Clinical Evidence Graph
 
 ```{r}
-ekg <- as.data.frame(arcs(ekg)) %>%
-  mutate(strength = rep(1, nrow(.)))
-print(ekg)
+ceg <- as.data.frame(arcs(ekg)) %>%
+  mutate(strength = rep(1, nrow(.)),
+         direction = rep(1, nrow(.)))
+print(ceg)
 ```
 
 ```{r}
 if (SAVE) {
   FILE <- paste0(CSVPATH, "/", "ceg.csv")
-  write.csv(ekg, file = FILE)
+  write.csv(ceg, file = FILE)
 } else {
-  print(ekg)
+  print(ceg)
 }
 ```
 
@@ -64,6 +65,7 @@ strength.plot(avgnet[["tabu.th03"]],
 ```{r}
 dBN <- as.data.frame(arcstren[["tabu"]]) 
 print(dBN)
+plot(arcstren[["tabu"]])
 ```
 
 ```{r}
@@ -72,6 +74,21 @@ if (SAVE) {
   write.csv(dBN, file = FILE)
 } else {
   print(dBN)
+}
+```
+
+```{r}
+dcustomBN <- as.data.frame(arcstren[["tabu.bic.custom"]]) 
+print(dcustomBN)
+plot(arcstren[["tabu.bic.custom"]])
+```
+
+```{r}
+if (SAVE) {
+  FILE <- paste0(CSVPATH, "/", "discrete_customBN.csv")
+  write.csv(dcustomBN, file = FILE)
+} else {
+  print(dcustomBN)
 }
 ```
 
