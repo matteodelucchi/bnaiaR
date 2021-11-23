@@ -99,5 +99,4 @@ graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
 # devtools::document()
 ```
 
-> TODO: Make evidence knowledge graph comparable to locbin and locrisk
 
