@@ -38,6 +38,7 @@ print(ceg)
 if (SAVE) {
   FILE <- paste0(CSVPATH, "/", "ceg.csv")
   write.csv(ceg, file = FILE)
+  # system("python main.py --inputfile='ceg.csv'")
 } else {
   print(ceg)
 }
