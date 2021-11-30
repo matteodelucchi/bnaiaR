@@ -28,19 +28,19 @@ PLOTFORMAT <- "png" # "svg" or "png"
 # Clinical Evidence Graph
 
 ```{r}
-ceg <- as.data.frame(arcs(ekg)) %>%
-  mutate(strength = rep(1, nrow(.)),
-         direction = rep(1, nrow(.)))
-print(ceg)
+
+ekg <- as.data.frame(arcs(ekg)) %>%
+  mutate(strength = rep(1, nrow(.)))
+print(ekg)
 ```
 
 ```{r}
 if (SAVE) {
   FILE <- paste0(CSVPATH, "/", "ceg.csv")
-  write.csv(ceg, file = FILE)
-  # system("python main.py --inputfile='ceg.csv'")
+
+  write.csv(ekg, file = FILE)
 } else {
-  print(ceg)
+  print(ekg)
 }
 ```
 
