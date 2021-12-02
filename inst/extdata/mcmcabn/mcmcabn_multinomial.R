@@ -102,6 +102,18 @@ abndata <- abndata %>%
   # Clean up age values
   filter(AgeDiag != 0)
 
+# Reorder Levels
+abndata <- abndata %>%
+  mutate(Gender = forcats::fct_relevel(Gender, c("Female", "Male")))%>%
+  mutate(Positive.famillial.history = forcats::fct_relevel(Positive.famillial.history, c("No", "Yes")))%>%
+  # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, LETTERS[1:length(levels(AgeDiag.group))])) %>%
+  mutate(Hypertension = forcats::fct_relevel(Hypertension, c("Never", "AnyType")))%>%
+  mutate(Smoking_Current_Former_No = forcats::fct_relevel(Smoking_Current_Former_No, c("No", "Former", "Current")))%>%
+  mutate(location.grouped = forcats::fct_relevel(location.grouped, c( "Low", "Medium",  "High"))) %>%
+  # mutate(IAsize.groups = fct_relevel(IAsize.groups, LETTERS[1:length(levels(IAsize.groups))]))%>%
+  mutate(Multiple.IAs = forcats::fct_relevel(Multiple.IAs, c("No", "Yes")))%>%
+  mutate(Ruptured_IA = forcats::fct_relevel(Ruptured_IA, c("No", "Yes")))
+
 # Plot continuous vars again
 df <- abndata %>%
   mutate(ID = seq(1,nrow(abndata)))%>%

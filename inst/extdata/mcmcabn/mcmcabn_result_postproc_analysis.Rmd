@@ -714,7 +714,7 @@ result.table.basic
 ```{r}
 result.table <- result.table.basic %>%
   # Fix toLevels of Ruptured_IA
-  mutate(toLevels = case_when(to == "Ruptured_IA" ~ "Yes, No",
+  mutate(toLevels = case_when(to == "Ruptured_IA" ~ "No, Yes",
                               TRUE ~ toLevels)) %>%
   # Handle intercepts: fromLevels = intercept and from = to-label (this happens due to some bad algorithm design above)
   mutate(from = case_when(stringr::str_detect(cornames, "intercept") & is.na(fromLevels) & is.na(toLevels) ~ to,
@@ -821,7 +821,7 @@ result.table.mle <- result.table %>%
 
 if (SAVEPLOTS){
   write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"), row.names = F)
-  write.csv(supportdag, file = paste0(getwd(), PLOTPATH, FILENAME, "individual_arc_support.csv"))
+  # write.csv(supportdag, file = paste0(getwd(), PLOTPATH, FILENAME, "individual_arc_support.csv"))
   } else {
     print(result.table.mle)
   }
@@ -937,37 +937,39 @@ str(abndata)
 result.table.mle
 ```
 
-Gender -> Hypertension: negative association. Females tend to have never Hypertension. 
-AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension.
-pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no)
-Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs.
-Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs.
-Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?)
-AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA.
-high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n).
-low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n).
-IA size -> Ruptured IA: positive associated. Large IAs tend to rupture.
+> TODO: Check interpretation!
+
+<!-- Gender -> Hypertension: negative association. Females tend to have never Hypertension.  -->
+<!-- AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension. -->
+<!-- pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no) -->
+<!-- Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs. -->
+<!-- Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs. -->
+<!-- Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?) -->
+<!-- AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA. -->
+<!-- high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n). -->
+<!-- low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n). -->
+<!-- IA size -> Ruptured IA: positive associated. Large IAs tend to rupture. -->
 
 
-Not included but from binary graph:
-Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke.
+<!-- Not included but from binary graph: -->
+<!-- Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke. -->
 
-TODO: Check if those match:
-AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked.
-AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location.
+<!-- TODO: Check if those match: -->
+<!-- AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked. -->
+<!-- AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location. -->
 
-Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location.
+<!-- Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location. -->
 
-Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location.
-non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location.
+<!-- Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location. -->
+<!-- non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location. -->
 
-Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke.
+<!-- Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke. -->
 
-Gender -> high risk location: positive association. gender is male, High risk location
-Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location.
+<!-- Gender -> high risk location: positive association. gender is male, High risk location -->
+<!-- Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location. -->
 
-Gender -> low risk location: negative association. gender is femalem, IAs at low risk location.
-Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location. 
+<!-- Gender -> low risk location: negative association. gender is femalem, IAs at low risk location. -->
+<!-- Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location.  -->
 
 
 ### Arc-histogram
