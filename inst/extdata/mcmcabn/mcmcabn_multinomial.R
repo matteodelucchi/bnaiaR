@@ -104,7 +104,7 @@ abndata <- abndata %>%
 
 # Reorder Levels
 abndata <- abndata %>%
-  mutate(Gender = forcats::fct_relevel(Gender, c("Female", "Male")))%>%
+  mutate(Gender = forcats::fct_relevel(Gender, c("Male", "Female")))%>%
   mutate(Positive.famillial.history = forcats::fct_relevel(Positive.famillial.history, c("No", "Yes")))%>%
   # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, LETTERS[1:length(levels(AgeDiag.group))])) %>%
   mutate(Hypertension = forcats::fct_relevel(Hypertension, c("Never", "AnyType")))%>%

@@ -13759,3 +13759,590 @@ Step1. completed max alpha_i(S) for all i and S
 Total sets g(S) to be evaluated over: 512
 Step1. completed max alpha_i(S) for all i and S
 Total sets g(S) to be evaluated over: 512
+starting worker pid=46226 on localhost:11872 at 15:05:55.982
+starting worker pid=46231 on localhost:11872 at 15:05:55.993
+starting worker pid=46227 on localhost:11872 at 15:05:55.995
+starting worker pid=46228 on localhost:11872 at 15:05:56.003
+starting worker pid=46232 on localhost:11872 at 15:05:56.015
+starting worker pid=46229 on localhost:11872 at 15:05:56.016
+starting worker pid=46230 on localhost:11872 at 15:05:56.020
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: nnet
+Loading required package: lme4
+Loading required package: Matrix
+Loading required package: lme4
+Loading required package: lme4
+Loading required package: lme4
+Loading required package: lme4
+Loading required package: Matrix
+Loading required package: Matrix
+Loading required package: Matrix
+Loading required package: lme4
+Loading required package: lme4
+Loading required package: Matrix
+Loading required package: Matrix
+Loading required package: Matrix
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+Loading required package: grid
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: BiocGenerics
+Loading required package: parallel
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: BiocGenerics
+Loading required package: parallel
+Loading required package: Rgraphviz
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: graph
+Loading required package: Rgraphviz
+Loading required package: BiocGenerics
+Loading required package: BiocGenerics
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: parallel
+Loading required package: parallel
+Loading required package: graph
+Loading required package: BiocGenerics
+Loading required package: BiocGenerics
+Loading required package: parallel
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+Loading required package: grid
+Loading required package: grid
+Loading required package: grid
+Loading required package: grid
+Loading required package: grid
+Loading required package: grid
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.49014e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.26107e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 9.0964e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.42508e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.77899e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.47483e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.60997e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.52194e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 8.78146e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.49014e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.26107e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 9.0964e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.42508e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.49014e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.77899e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.47483e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.26107e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.60997e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.52194e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 9.0964e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 8.78146e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.69906e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.42508e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.77899e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.34743e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.47483e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06223e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 3.63706e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.29362e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.60997e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.52194e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 8.78146e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.69906e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.34743e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06223e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 3.63706e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.29362e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.11662e-18); attempting approx solution
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.49014e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.26107e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 9.0964e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.42508e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.77899e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.47483e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.60997e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.52194e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 8.78146e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.69906e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.34743e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06223e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 3.63706e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.29362e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.11662e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36512e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.73161e-17); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38703e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.53797e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.19019e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.00733e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.70479e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.46111e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.94984e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.61122e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 5.53778e-35); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06725e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.38666e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.36119e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.49014e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.26107e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 9.0964e-18); attempting approx solution
+
+warning: solve(): system is singular; attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.42508e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.77899e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.47483e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 4.60997e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.52194e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 8.78146e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.69906e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 1.34743e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.06223e-18); attempting approx solution
+
+warning: solve(): system is singular (rcond: 3.63706e-34); attempting approx solution
+
+warning: solve(): system is singular (rcond: 2.29362e-17); attempting approx solution
+
+warning: solve(): system is singular (rcond: 6.11662e-18); attempting approx solution
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
