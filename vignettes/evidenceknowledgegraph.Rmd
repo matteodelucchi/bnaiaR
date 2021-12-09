@@ -99,4 +99,22 @@ graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
 # devtools::document()
 ```
 
+# Correlation Analysis
+
+```{r}
+df.disc <- as.table(as.matrix(exp11_dat$abndata))
+str(exp11_dat$abndata)
+head(df.disc)
+table(df.disc)
+```
+
+```{r}
+x <- chisq.test(exp11_dat$abndata$Gender, exp11_dat$abndata$Ruptured_IA)
+corrplot::corrplot(x$residuals, is.corr = F)
+```
+
+```{r}
+x <- chisq.test(exp11_dat$abndata$Ruptured_IA, exp11_dat$abndata$Gender)
+corrplot::corrplot(x$residuals, is.corr = F, method = "color", order = "hclust")
+```
 
