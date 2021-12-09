@@ -933,6 +933,36 @@ result.table.mle.basicLatex %>%
   cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_short.tex"))
 ```
 
+For presentation
+```{r}
+result.table.mle.basicLatex %>%
+  select(-c(Probability, `Probability Interpretation`, `log coefficient`, SE, `log coef. Interpretation`)) %>%
+  filter(`From State 0` != "intercept") %>%
+  mutate(`Interpretation` = case_when(`From State 0` == "" ~ "corr. coefficient",
+                                      `Interpretation` == "exp. corr. coef." ~ "corr. coefficient",
+                                      TRUE ~ `Interpretation`)) %>%
+  relocate(`Arc-strength`, .after = `Interpretation`) %>%
+  # rename(" " = "From",
+         # "State 0" = "From State 0",
+         # "State 1" = "From State 1",
+         # " " ="To",
+         # "State 0" = "To State 0",
+         # "State 1" = "To State 1") %>%
+  
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(5, 4, 3, 2, 2, 2, 5, 6, 2)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 3, " " = 1), align = "l") %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_pres.tex"))
+```
+
+
 ### Interpretations
 
 ```{r}
