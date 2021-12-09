@@ -107,13 +107,24 @@ plt <- sjPlot::plot_model(glm_model,
            line.size = 1.5, 
            dot.size = 3, #
            # transform="plogis", # plots probabilities
+           # value.size	= 4,
            title = "Logistic regression for IA rupture in ADB") +
   ylab("Odds ratios") +
   geom_hline(yintercept = 1) +
   theme_light()
 
 if (SAVEPLOTS){
-  ggsave(plot = plt, filename = "logreg_IArupture.png", path = PLOTPATH, dpi = 600)
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt.mod, filename = "logreg_IArupture.png", path = PLOTPATH, 
+         # dpi = 600, width = 4096, height = 3072, units = "px")
+         dpi = 600, width = 4096, height = 2304, units = "px")
 } else {
   plt
 }
@@ -200,7 +211,17 @@ plt <- sjPlot::plot_model(glm_model.logreg.all,
   theme_light() 
 
 if (SAVEPLOTS){
-  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, dpi = 600)
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
+         dpi = 600, width = 4096, height = 4096, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
 } else {
   plt
 }
