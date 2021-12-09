@@ -227,3 +227,102 @@ if (SAVEPLOTS) {
      main = "Posterior Classification Error of Rupture Status")
 }
 ```
+
+# Inference by querying
+
+```{r}
+tabu_th03_fit <- bn.fit(data = data, x = avgnet$tabu.th03)
+```
+
+
+```{r}
+plot(tabu_th03_fit$location.grouped$prob)
+```
+
+Males tend to have an IA more often at a high risk location but
+Females tend to develop an IA in high risk location more often if they suffer HBP than males who suffer HBP.
+
+
+```{r}
+plot(tabu_th03_fit$IAsize.groups.merged$prob)
+```
+
+Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
+
+```{r}
+(tabu_th03_fit$Ruptured_IA$prob)
+```
+
+Larger IAs tend to rupture more frequently.
+
+
+```{r}
+(tabu_th03_fit$Smoking_Current_Former_No$prob)
+```
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Gender == "Female" | Gender == "Male"))
+plot(sim, col = "grey")
+```
+
+Former Smokers have a slightly increased rupture risk compared to the others.
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Positive.famillial.history == "Yes"))
+plot(sim, col = "grey")
+table(sim)
+
+# sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Positive.famillial.history == "No" & Ruptured_IA == "Yes"))
+# plot(sim, col = "grey")
+# prop.table(table(sim))
+# sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Positive.famillial.history == "Yes" & Ruptured_IA == "Yes"))
+# plot(sim, col = "grey")
+# prop.table(table(sim))
+```
+
+But being aware of IA cases in relatives decreases rupture risk of former smokers.
+
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Hypertension", "Positive.famillial.history"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey")
+prop.table(table(sim))
+```
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Multiple.IAs == "Yes" ))
+prop.table(table(sim))
+plot(sim)
+
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Multiple.IAs == "No" ))
+prop.table(table(sim))
+plot(sim)
+```
+
+No clear tendency for rupture with and withouth multiple IAs.
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "IAsize.groups.merged"), n = 10^4, evidence = (Multiple.IAs == "Yes" ))
+prop.table(table(sim))
+plot(sim)
+
+sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs", "IAsize.groups.merged"), n = 10^4, evidence = (Ruptured_IA == "Yes" ))
+prop.table(table(sim))
+plot(sim)
+```
+
+Having multiple IAs, they tend to rupture at larger size.
+
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Gender == "Female" & location.grouped == "High"))
+prop.table(table(sim))
+
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "IAsize.groups.merged"), n = 10^4, evidence = (Gender == "Female" & Hypertension == "AnyType" & Multiple.IAs == "Yes" ))
+prop.table(table(sim))
+```
+
+```{r}
+str(data)
+```
+
