@@ -719,12 +719,16 @@ result.table <- result.table.basic %>%
   # Handle intercepts: fromLevels = intercept and from = to-label (this happens due to some bad algorithm design above)
   mutate(from = case_when(stringr::str_detect(cornames, "intercept") & is.na(fromLevels) & is.na(toLevels) ~ to,
                           stringr::str_detect(cornames, "intercept") & is.na(fromLevels) & !is.na(toLevels) ~ paste(to, toLevels, sep = "="),
+                          (from %in% c("location.grouped", "Smoking_Current_Former_No")) & (fromLevels %in% c("Low", "Medium", "High", "Current", "Former", "No")) ~ paste(from, fromLevels, sep = "="),
                           TRUE ~ from),
          fromLevels = case_when(stringr::str_detect(cornames, "intercept") & is.na(fromLevels) ~ "intercept",
+                                fromLevels %in% c("Low", "Medium", "High", "Current", "Former", "No") ~ "No, Yes",
                           TRUE ~ fromLevels),
          to = case_when(stringr::str_detect(cornames, "intercept") ~ NA_character_,
-                          TRUE ~ to),
+                        (to %in% c("location.grouped", "Smoking_Current_Former_No")) & (toLevels %in% c("Low", "Medium", "High", "Current", "Former", "No")) ~ paste(to, toLevels, sep = "="),
+                        TRUE ~ to),
          toLevels = case_when((fromLevels == "intercept") ~ NA_character_,
+                              toLevels %in% c("Low", "Medium", "High", "Current", "Former", "No") ~ "No, Yes",
                               TRUE ~ toLevels)) %>%
   
   # Clean up node labels
@@ -734,6 +738,7 @@ result.table <- result.table.basic %>%
                           from == "AgeDiag" ~ "Age at Diagnosis",
                           from == "Positive.famillial.history" ~ "Pos. Fam. History",
                           from == "Smoking_Current_Former_No" ~ "Smoking Status",
+                          from == "Smoking_Current_Former_No=Current" ~ "Smoking Status=Current",
                           from == "Smoking_Current_Former_No=Former" ~ "Smoking Status=Former",
                           from == "Smoking_Current_Former_No=No" ~ "Smoking Status=No",
                           from == "location.grouped" ~ "IA Location",
@@ -748,6 +753,7 @@ result.table <- result.table.basic %>%
                         to == "AgeDiag" ~ "Age at Diagnosis",
                         to == "Positive.famillial.history" ~ "Pos. Fam. History",
                         to == "Smoking_Current_Former_No" ~ "Smoking Status",
+                        to == "Smoking_Current_Former_No=Current" ~ "Smoking Status=Current",
                         to == "Smoking_Current_Former_No=Former" ~ "Smoking Status=Former",
                         to == "Smoking_Current_Former_No=No" ~ "Smoking Status=No",
                         to == "location.grouped" ~ "IA Location",
