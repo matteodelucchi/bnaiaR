@@ -255,14 +255,105 @@ Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
 
 Larger IAs tend to rupture more frequently.
 
+```{r cpdist_age_hypertension_rupture}
+par(mfrow = c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == Yes")
 
-```{r}
-(tabu_th03_fit$Smoking_Current_Former_No$prob)
+sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "No"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == No")
+
+par(mfrow = c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Hypertension"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == Yes")
+
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Hypertension"), n = 10^4, evidence = (Ruptured_IA == "No"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == No")
+
+par(mfrow = c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Hypertension == "AnyType"))
+plot(sim, col = "grey",
+     main = "Hypertension == AnyType")
+
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Hypertension == "Never"))
+plot(sim, col = "grey",
+     main = "Hypertension == Never")
+
+par(mfrow = c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == Yes")
+
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "No"))
+plot(sim, col = "grey",
+     main = "Ruptured_IA == No")
 ```
 
+
+
+```{r cpquery_smoking_gender}
+plot(tabu_th03_fit$Smoking_Current_Former_No$prob)
+```
+
+Less former smokers than current or non-smokers.
+Males more frequently are current smokers and females more frequently are former smokers.
+Males most often stopped smoking.
+-> Due to prior IA diagnosis?
+-> Due to IA rupture?
+-> Due to pos. fam. history?
+
 ```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Gender == "Female" | Gender == "Male"))
-plot(sim, col = "grey")
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = 'Ruptured_IA == "Yes"')
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Ruptured_IA == "No"))
+plot(sim, col = "grey",
+     main = 'Ruptured_IA == "No"')
+```
+
+P(smoking | ruptured = Y)
+P(smoking | ruptured = N)
+
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Multiple.IAs == "Yes" & Gender == "Male"))
+plot(sim, col = "grey",
+     main = 'Multiple.IAs == "Yes" & Gender == "Male"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Multiple.IAs"), n = 10^4, evidence = (Gender == "Male"))
+plot(sim, col = "grey",
+     main = 'Gender == "Male"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Gender == "Male"))
+plot(sim, col = "grey",
+     main = 'Gender == "Male"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Positive.famillial.history"), n = 10^4, evidence = (Gender == "Male"))
+plot(sim, col = "grey",
+     main = 'Gender == "Male"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = 'Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Gender == "Male" & Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = 'Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"')
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^5, evidence = (Gender == "Female"))
+plot(sim, col = "grey",
+     main = 'Gender == "Female"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^5, evidence = (Gender == "Male"))
+plot(sim, col = "grey",
+     main = 'Gender == "Male"')
 ```
 
 Former Smokers have a slightly increased rupture risk compared to the others.
