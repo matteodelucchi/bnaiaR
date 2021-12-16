@@ -199,7 +199,9 @@ table(adb.raw$db)
 plt <- overview_plt_max(adb.raw)
 
 if (SAVEPLOTS){
-  ggsave(plot = plt, filename = "ADB_overview.png", path = PLOTPATH, dpi = 600)}
+  ggsave(plot = plt, filename = "ADB_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
 ```
 
 ### Age
@@ -214,6 +216,7 @@ Filter impossible age values:
 patientsWithWrongAge <- adb.raw %>%
   filter(age.at.time.of.diagnosis > 130 | is.na(age.at.time.of.diagnosis) | age.at.time.of.diagnosis <= 0) %>%
   select(ID_2, age.at.time.of.diagnosis)
+str(patientsWithWrongAge)
 ```
 
 
