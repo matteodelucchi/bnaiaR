@@ -86,7 +86,7 @@ pltSexdisc_raw <- dfdbn %>%
 pltSexdisc <- pltSexdisc_raw+
   ggtitle("Sex")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltSexdisc)
@@ -106,7 +106,7 @@ pltAge_raw <- dfabn %>%
 pltAge <- pltAge_raw+
   ggtitle("Age")+
   xlab("years") +
-  ylab("count")+
+  ylab("Number of records")+
   theme_tufte()
 print(pltAge)
 ```
@@ -127,7 +127,7 @@ pltAgedisc <- pltAgedisc_raw+
   scale_x_discrete(labels = c("[0,40)", "[40,45)", "[45,50)", "[50,55)", "[55,60)", "[60,65)", paste0("[65,", maxage, ")"))) +
   ggtitle("Age")+
   xlab("age groups") +
-  ylab("count")+
+  ylab("Number of records")+
   theme_tufte()
 print(pltAgedisc)
 ```
@@ -281,7 +281,7 @@ pltfam_raw <- dfdbn %>%
 pltfam <- pltfam_raw+
   ggtitle("Fam. History")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltfam)
@@ -301,7 +301,7 @@ pltHBP <- pltHBP_raw+
   scale_x_discrete(labels = c("Any Type", "Never")) +
   ggtitle("Hypertension")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltHBP)
@@ -321,7 +321,7 @@ pltSmoke <- pltSmoke_raw+
   # scale_x_discrete(labels = c("Any Type", "Never")) +
   ggtitle("Smoking")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltSmoke)
@@ -340,7 +340,7 @@ pltMulti_raw <- dfdbn %>%
 pltMulti <- pltMulti_raw+
   ggtitle("Multiple IA")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltMulti)
@@ -359,7 +359,7 @@ pltloc_raw <- dfdbn %>%
 pltloc <- pltloc_raw+
   ggtitle("Location")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltloc)
@@ -379,7 +379,9 @@ plt.loc.comb <- df.loc %>%
   labs(title= "IA location",
        y="Number of records",
        x=NULL)+
-  scale_fill_manual(values=c("Low"="darkgreen", "Medium"= "darkorange", "High" = "darkred"), name = "Risk of IA rupture")+
+  # scale_fill_manual(values=c("Low"="darkgreen", "Medium"= "darkorange", "High" = "darkred"), name = "Risk of IA rupture")+
+  scale_fill_manual(values=c("Low"=colorblind_pal()(8)[4], "Medium"= colorblind_pal()(8)[2], "High" = colorblind_pal()(8)[7]), name = "Risk of IA rupture")+
+  # scale_fill_tableau(name = "Risk of IA rupture")+
   theme_tufte()+
   theme(plot.caption = element_text(hjust = 0.5),
         plot.caption.position = "plot",
@@ -402,7 +404,7 @@ pltSize_raw <- dfabn %>%
 pltSize <- pltSize_raw+
   ggtitle("IA size")+
   xlab("log(IA size)") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltSize)
@@ -422,7 +424,7 @@ pltSizedisc <- pltSizedisc_raw+
   scale_x_discrete(labels = c("A≤7", "B=7-12", "C≥13")) +
   ggtitle("IA size")+
   xlab("[mm]") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltSizedisc)
@@ -492,7 +494,7 @@ plt.overlay.size <- df.size.cont %>%
   geom_col(aes(x = IAsize_log, y = IAsize.n), width = 0.005) +
   # Layouting
   theme_tufte()+
-  scale_x_continuous(breaks = round(c(seq(0, 3, 0.5), max(df.size.cont$IAsize_log))), 2) +
+  scale_x_continuous(breaks = round(c(seq(0, 4, 0.5)), 2)) +
   labs(
     title = "IA size",
     y = "Number of records",
@@ -526,11 +528,10 @@ pltRupt_raw <- dfdbn %>%
   aes(x = value)  +
   geom_histogram(stat = "count")
 
-
 pltRupt <- pltRupt_raw+
   ggtitle("Ruptured IA")+
   xlab(" ") +
-  ylab("count")+
+  ylab("Number of records")+
   theme(axis.text.x.bottom = element_blank())+
   theme_tufte()
 print(pltRupt)
@@ -575,5 +576,42 @@ if (SAVEPLOTS) {
 } else {
   multplt.overlay
 }
+```
+
+
+# Stacked
+
+All vars, stacked except for size and age
+
+
+```{r}
+dfdbn %>%
+  select(Ruptured_IA) %>%
+  gather(cols, value) %>%
+
+  ggplot() +
+  aes(x= cols, fill = value)  +
+  geom_bar()
+```
+
+
+```{r}
+legend_ord <- c()
+for (c in colnames(select(dfdbn, -c(AgeDiag.group, IAsize.groups.merged)))){
+  legend_ord <- c(legend_ord, levels(dfdbn[[c]]))
+}
+legend_ord <-unique(legend_ord)
+
+dfdbn %>%
+  select(-c(AgeDiag.group, IAsize.groups.merged)) %>%
+  gather(cols, value) %>%
+
+  ggplot() +
+  aes(x= cols, fill = value)  +
+  geom_bar() +
+  # scale_fill_colorblind() +
+  # scale_fill_tableau()
+  scale_fill_stata(breaks=legend_ord)+
+  coord_flip()
 ```
 
