@@ -34,6 +34,7 @@ library(bnaiaR)
 library(dplyr)
 library(ggplot2)
 library(forcats)
+library(mgcv)
 library(survival)
 library(survminer)
 
@@ -271,6 +272,118 @@ The AUC increased to the model above with only a subset of the variables
 to 0.77.
 In the ANOVA Hypertension become non-significant.
 
+## Log reg for IA Rupture including all Variables but age
+
+```{r}
+data.logreg.all.noage <- data.reg %>%
+  select(-c(AgeDiag.group))
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(data.logreg.all.noage), size = 0.7*nrow(data.logreg.all.noage), replace = FALSE)
+TrainSet <- data.logreg.all.noage[train,]
+ValidSet <- data.logreg.all.noage[-train,]
+```
+
+
+
+```{r}
+glm_model.logreg.all.noage <- glm(Ruptured_IA ~.,family=binomial(link='logit'),data=TrainSet)
+summary(data.logreg.all.noage)
+
+plt <- sjPlot::plot_model(glm_model.logreg.all.noage,
+           show.values = TRUE, 
+           value.offset = .3, 
+           sort.est=TRUE,  
+           line.size = 1.5, 
+           dot.size = 3, #,transform="plogis" plots probabilities
+           title = "Logistic regression for IA rupture in ADB (all variables)") +
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light() 
+
+if (SAVEPLOTS){
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
+         dpi = 600, width = 4096, height = 4096, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+```
+
+
+
+# Multivariate Generalized Additive Model for IA Rupture including all variables
+
+Replacing categorical `AgeDiag.group` with continuous `AgeDiag`.
+
+```{r}
+gam_dat <- adb %>%
+  select(c(Gender, 
+           AgeDiag, 
+           # AgeDiag.group, 
+           Positive.famillial.history, Smoking_Current_Former_No, Hypertension, location.grouped, Multiple.IAs,
+           # IAsize.groups, 
+           IAsize_log, 
+           Ruptured_IA)) %>%
+  # Remove IA size outliers
+  filter(IAsize_log < 4) %>%
+  # Clean up age values
+  filter(AgeDiag != 0) %>%
+  mutate(location.grouped = fct_relevel(location.grouped, c("Low","Medium","High")))%>%
+  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("No","Former","Current"))) %>%
+  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("No", "Yes"))) %>%
+  mutate(Gender = fct_relevel(Gender,c("Male","Female"))) %>%
+  mutate(Hypertension = fct_relevel(Hypertension,c("Never","AnyType"))) %>%
+  mutate(Ruptured_IA = fct_relevel(Ruptured_IA,c("No","Yes"))) %>%
+  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("No", "Yes"))) 
+  # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, c(LETTERS[seq(8,1,-1)]))) %>%
+  # mutate(IAsize.groups.merged = fct_relevel(IAsize.groups.merged, c(LETTERS[seq(3,1,-1)])))
+  # mutate(Ruptured_IA = as.integer(Ruptured_IA))
+
+str(gam_dat)
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(gam_dat), size = 0.7*nrow(gam_dat), replace = FALSE)
+TrainSet <- gam_dat[train,]
+ValidSet <- gam_dat[-train,]
+```
+
+### Generalized additive model
+
+```{r}
+# gam_model <- gam(Ruptured_IA ~ Positive.famillial.history+location.grouped+s(IAsize_log, k=3)+s(AgeDiag, k=3), data=TrainSet, family = "binomial")
+gam_model <- gam(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+s(IAsize_log, k=3)+Multiple.IAs+s(AgeDiag, k=3), data=TrainSet, family = "binomial")
+gam.check(gam_model)
+summary.gam(gam_model)
+par(mfrow = c(1,8))
+plot.gam(gam_model, all.terms = T)
+anova.gam(gam_model)
+```
+
+
+```{r}
+gam_pred <- predict.gam(gam_model, newdata = ValidSet, type = "response")
+table(ValidSet$Ruptured_IA, gam_pred>0.5)
+
+roc.gam_model <- pROC::roc(ValidSet$Ruptured_IA, gam_pred)
+aucCI.gam_model <- round(pROC::ci.auc(ValidSet$Ruptured_IA, gam_pred), 2)
+plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH)
+```
+
 
 # Multivariate Cox regression for IA Rupture including all variables
 
@@ -280,14 +393,16 @@ Replacing categorical `AgeDiag.group` with continuous `AgeDiag`.
 data("exp06_dat")
 coxdat <- exp06_dat$abndata
 data.coxreg.all <- data.reg %>%
-  cbind(coxdat$AgeDiag) %>%
-  rename(AgeDiag = "coxdat$AgeDiag") %>%
-  select(-c(AgeDiag.group)) %>%
+  cbind(coxdat$AgeDiag, coxdat$IAsize_log) %>%
+  rename(AgeDiag = "coxdat$AgeDiag",
+         IAsize_log = "coxdat$IAsize_log") %>%
+  select(-c(AgeDiag.group, IAsize.groups.merged)) %>%
   # tibble::rowid_to_column("ID") %>%
   mutate(Ruptured_IA = as.integer(Ruptured_IA))
 
 str(data.coxreg.all)
 ```
+
 ### Data preparation
 
 ```{r}
@@ -295,6 +410,8 @@ train <- sample.int(n = nrow(data.coxreg.all), size = 0.7*nrow(data.coxreg.all),
 TrainSet <- data.coxreg.all[train,]
 ValidSet <- data.coxreg.all[-train,]
 ```
+
+### Cox regression
 
 We fit a survival model with:  
 Event: Rupture_IA == "Yes"  
