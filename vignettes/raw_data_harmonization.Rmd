@@ -146,6 +146,26 @@ str(aneuquest.raw)
 str(aneux.raw)
 ```
 
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(aneuquest.raw)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "AneuQuest_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(aneux.raw)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "AneuX_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
+
 ## Harmonization
 
 ```{r}

@@ -64,6 +64,16 @@ df <- adb.raw %>%
 str(df)
 ```
 
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(df)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "ADB_noNAs_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
 ## Rename Variables
 
 ```{r}
