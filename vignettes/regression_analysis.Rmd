@@ -384,6 +384,43 @@ aucCI.gam_model <- round(pROC::ci.auc(ValidSet$Ruptured_IA, gam_pred), 2)
 plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH)
 ```
 
+```{r}
+gam_model_summary <- summary(gam_model)
+pltdat <- data.frame(varnames = names(gam_model_summary$p.coeff), coefs = as.numeric(gam_model_summary$p.coeff), pvalue=as.numeric(gam_model_summary$p.pv)) %>%
+  mutate(expcoefs = exp(coefs))
+
+ggplot(pltdat)+
+  aes(x=varnames, y=coefs)+
+  geom_point()+
+  ylab("Logit") +
+  geom_hline(yintercept = 0) +
+  theme_light() +
+  coord_flip()
+
+ggplot(pltdat)+
+  aes(x=varnames, y=expcoefs)+
+  geom_point()+
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light() +
+  coord_flip()
+
+if (SAVEPLOTS){
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH, 
+         dpi = 600, width = 4096, height = 4096, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+```
 
 # Multivariate Cox regression for IA Rupture including all variables
 
