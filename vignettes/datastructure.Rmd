@@ -98,14 +98,14 @@ str(abndata)
 ```{r}
 text_tbl <- data.frame(
   variables = c(
-    "Family History",
     "Sex",
     "Age",
     "",
-    "Smoking",
+    "Family History",
     "Hypertension",
-    "Location",
+    "Smoking",
     "Multiplicity",
+    "Location",
     "Size",
     "",
     "Ruptured"),
@@ -123,17 +123,17 @@ text_tbl <- data.frame(
     "discrete"
   ),
   descr = c(
-      "Positive familial history ('Yes', 'No') of intracranial aneurysm if one or more first degree relative(s) were diagnosed with IA.",
-      "Biological, self-reported sex ('female', 'male').",
+      "Biological, self-reported sex as \textit{female} or \textit{male}.",
       "Age in years at the time of IA diagnosis. Equal to age at time of rupture for ruptured IA.",
-      "Age discretized in groups of A=[0,40), B=[40,45), C=[45,50), D=[50,55), E=[55,60), F=[60,65), G=[65,93).",
-      "Patient's smoking behaviour classified as current smoker if smoked (> 300 cigarettes) and continues current smoking. Former smoker, if smoked (>300 cigarettes) and stopped at least 6 months pre-diagnosis. Never smoked if < 300 cigarettes smoked ever.",
-      "No hypertension if patient is unaware of increased blood pressure (>120/80mmHg). Hypertension of AnyType if patient is aware of increased blood pressure. Including untreated and treated BP >140/90mmHg, with the later including both, cases of uncontrolled and controlled BP where the BP is above or in normal range respectively.",
-      "IA Location classified by rupture risk in groups of high risk (Acom, Pcom, V-B, A2, PC), medium risk (MCA, ICA, Basilar, Other, A1 segment ant) and low risk (CavICA, OphtICA).",
-      "Yes if >1 IA was detected.",
+      "Age discretized in groups of A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-93.",
+      "Positive familial history of intracranial aneurysm as \textit{yes} if one or more first degree relative(s) were diagnosed with IA and \textit{no} otherwise.",
+      "\textit{No} hypertension awareness if patient is unaware of increased blood pressure (>120/80mmHg). \textit{Yes} if patient is aware of increased blood pressure. Including untreated and treated BP >140/90mmHg, with the later including both, cases of uncontrolled and controlled BP where the BP is above or in normal range respectively.",
+      "Patient's smoking behaviour classified as \textit{current} smoker if smoked (> 300 cigarettes) and continues current smoking. \textit{Former} smoker, if smoked (>300 cigarettes) and stopped at least 6 months pre-diagnosis. \textit{Never} smoked if < 300 cigarettes smoked ever.",
+      "\textit{Yes} if >1 IA was detected.",
+      "IA Location classified by rupture risk in groups of \textit{high} risk (Acom, Pcom, V-B, A2, PC), \textit{medium} risk (MCA, ICA, Basilar, Other, A1 segment ant) and \textit{low} risk (CavICA, OphtICA).",
       "Natural logarithm of IA max diameter [mm] reported at time of diagnosis.",
-      "IA max diameter [mm] grouped in in A=< 7mm, B=7-12mm, C=13-25mm, D=>25mm.",
-      "IA rupture status at time of diagnosis.")
+      "IA max diameter [mm] grouped in in \textit{A}≤ 7mm, \textit{B}=7-12mm, \textit{C}=13-25mm, \textit{D}≥25mm.",
+      "\textit{Yes} if IA was ruptured at time of diagnosis and \textit{no} otherwise.")
 )
 ```
 
@@ -147,7 +147,7 @@ text_tbl %>%
   kbl(format = "latex", booktabs = T) %>%
   # kable_classic(full_width = F) %>%
   kable_styling(latex_options=c("striped", "hold_position"),
-                stripe_index = c(1,3,4,6,8,11)) %>%
+                stripe_index = c(1,4,6,8,11)) %>%
   column_spec(3, width = "10cm") %>%
   # kableExtra::landscape() %>%
   cat(., file = paste0(PLOTPATH, "/vardesc_table.tex"))
