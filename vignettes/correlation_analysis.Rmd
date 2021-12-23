@@ -32,12 +32,15 @@ library(bnlearn)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(ggthemes)
 
 # Save plots as files? 
 # Warning: Bad layout with knitr. Works well if chunks are run without rendering.
 SAVEPLOTS <- FALSE
 PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTFORMAT <- "png" # "svg" or "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
 ```
 
 # Load Data
@@ -150,45 +153,122 @@ dfonehot <- dfonehot %>%
 
 # Chi-square Test
 
-```{r}
-x <- chisq.test(dataraw$Gender, dataraw$Positive.famillial.history)
-corrplot::corrplot(x$residuals, is.corr = F)
-x$residuals
 
-x$p.value
-x
+make empty adjacency matrix
+
+chi square visualization:
+for each variable pair:
+  calculate chi-square
+  if chi-square p-value < 0.05:
+    variables are probably related
+    write 1 in adjacency matrix
+  else
+    variables are probably unrelated
+    write 0 in adjacency matrix
+    
+```{r}
+df <- dataraw %>%
+  rename(c("Sex" = "Gender",
+           # "Sex = Female" = "Gender.Female",
+           # "Sex = Male" = "Gender.Male",
+           "Fam. History" = "Positive.famillial.history",
+           # "Fam. History = No" = "Positive.famillial.history.No",
+           # "Fam. History = Yes" = "Positive.famillial.history.Yes",
+           "Age" = "AgeDiag.group",           
+           # "Age = F" = "AgeDiag.group.F",
+           # "Age = G" = "AgeDiag.group.G",
+           # "Age = D" = "AgeDiag.group.D",
+           # "Age = E" = "AgeDiag.group.E",
+           # "Age = C" = "AgeDiag.group.C",
+           # "Age = B" = "AgeDiag.group.B",
+           # "Age = A" = "AgeDiag.group.A",
+           "Hypertension" = "Hypertension",
+           # "Hypertension = Never" = "Hypertension.Never",
+           # "Hypertension = AnyType" = "Hypertension.AnyType",
+           "Smoking" = "Smoking_Current_Former_No",
+           # "Smoking = Current" = "Smoking_Current_Former_No.Current",
+           # "Smoking = Former" = "Smoking_Current_Former_No.Former",
+           # "Smoking = No" = "Smoking_Current_Former_No.No",
+           "Location" = "location.grouped",
+           # "Location = High risk" = "location.grouped.High",
+           # "Location = Medium risk" = "location.grouped.Medium",
+           # "Location = Low risk" = "location.grouped.Low",
+           "IA size" = "IAsize.groups.merged",
+           # "IA size = A" = "IAsize.groups.merged.A",
+           # "IA size = B" = "IAsize.groups.merged.B",
+           # "IA size = C" = "IAsize.groups.merged.C",
+           "Multiple IAs" = "Multiple.IAs",
+           # "Multiple IAs = Yes" = "Multiple.IAs.Yes",
+           # "Multiple IAs = No" = "Multiple.IAs.No",
+           "Ruptured IA" = "Ruptured_IA"
+           # "Ruptured IA = Yes" = "Ruptured_IA.Yes",
+           # "Ruptured IA = No" = "Ruptured_IA.No"
+           ))
 ```
 
-H0: vars sind unabhängig.
-
 ```{r}
-x <- chisq.test(dataraw$Ruptured_IA, dataraw$Smoking_Current_Former_No)
-corrplot::corrplot(x$residuals, is.corr = F)
-x$residuals
+varnames <- names(df)
+varno <- length(varnames)
+adjmat <- matrix(rep(0, varno^2), nrow = varno, dimnames = list(varnames, varnames))
+adjmat
 
-x$p.value
-x
+for(r in 1:varno){
+  for(c in 1:varno){
+    chi <-chisq.test(df[[varnames[r]]], df[[varnames[c]]])
+    if (chi$p.value < 0.05){
+          adjmat[r,c] <- 1
+    } 
+  }
+}
+adjmat
 ```
 
 
-
 ```{r}
-# chisq.overall <- function(x=dataraw){
-#   cordf <- matrix(nrow = 26)
-#   # for each variable
-#   for(v in 1:length(colnames(x))){
-#     w <- 1
-#     while (w <= length(colnames(x))) {
-#       chi <- chisq.test(x[[v]], x[[w]]) 
-#       browser()
-#       cordf[c(v:w),] <- cbind(cordf, chi$residuals)
-#       w <- w+1
-#     }
-#   }
-#   # correlation to all others
-#   return(cordf)
-# }
-# chisq.overall()
+# keep only lower diagonal
+adjmat[upper.tri(adjmat)] <- NA
+diag(adjmat) <- NA
+
+
+plt <- adjmat %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("rowvars") %>%
+  pivot_longer(-c(rowvars), names_to = "colvars", values_to = "chisq") %>%
+  mutate(rowvars = forcats::fct_inorder(rowvars),
+         colvars = forcats::fct_inorder(colvars)) %>%
+
+  
+  # ggplot(aes(x=forcats::fct_rev(colvars), y=rowvars, fill=chisq)) + 
+  ggplot() +
+  aes(x=colvars, y=forcats::fct_rev(rowvars), fill=as.factor(chisq))+
+  # ggplot(aes(x=colvars, y=rowvars, fill=chisq)) + 
+  geom_raster() +
+  # scale_fill_continuous(na.value = "transparent") +
+  # scale_fill_grey(na.value = "transparent")+
+  # scale_fill_steps(low = "lightgray", high="black", na.value = "transparent",
+                   # name = "Correlation")+
+  # scale_fill_stepsn(colors = c("lightgray", "black"), values = c(0,1), na.value = "transparent")+
+  scale_fill_manual(values = c("lightgray", "black"), na.value = "transparent",
+                   name = "Chi^2 p-value < 0.05", labels = c("No: Independent", "Yes: Dependent", " "))+
+  ggthemes::theme_tufte()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title = element_blank(),
+        legend.position = c(0.7,0.7))
+
+if (SAVEPLOTS) {
+  plt <- plt + 
+    theme(axis.text = element_text(size = 28),
+          legend.text = element_text(size = 28),
+          legend.title = element_text(size = 30))
+  ggsave(
+    plot = plt,
+    filename = "chisquareplt.png",
+    path = PLOTPATH,
+    width = PLOTWIDTH, height = PLOTHEIGHT, dpi = 600
+  )
+} else {
+  plt
+}
 ```
 
 # Pearson's Correlation Matrix
@@ -244,7 +324,7 @@ plt <- corrplot::corrplot(dfcor, type="upper",
                    order="original",
                    
                    # hide correlation coefficient on the principal diagonal
-                   diag=T
+                   diag=F
                    )
 
 if (SAVEPLOTS){
