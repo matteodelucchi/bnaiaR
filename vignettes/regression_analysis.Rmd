@@ -183,7 +183,43 @@ Let's include all variables in the model.
 ## Log reg for IA Rupture including all Variables
 
 ```{r}
-data.logreg.all <- data.reg 
+data.logreg.all <- data.reg %>%
+  rename(c("Sex" = "Gender",
+           # "Sex = Female" = "Gender.Female",
+           # "Sex = Male" = "Gender.Male",
+           "Fam. History" = "Positive.famillial.history",
+           # "Fam. History = No" = "Positive.famillial.history.No",
+           # "Fam. History = Yes" = "Positive.famillial.history.Yes",
+           "Age" = "AgeDiag.group",           
+           # "Age = F" = "AgeDiag.group.F",
+           # "Age = G" = "AgeDiag.group.G",
+           # "Age = D" = "AgeDiag.group.D",
+           # "Age = E" = "AgeDiag.group.E",
+           # "Age = C" = "AgeDiag.group.C",
+           # "Age = B" = "AgeDiag.group.B",
+           # "Age = A" = "AgeDiag.group.A",
+           "Hypertension" = "Hypertension",
+           # "Hypertension = Never" = "Hypertension.Never",
+           # "Hypertension = AnyType" = "Hypertension.AnyType",
+           "Smoking" = "Smoking_Current_Former_No",
+           # "Smoking = Current" = "Smoking_Current_Former_No.Current",
+           # "Smoking = Former" = "Smoking_Current_Former_No.Former",
+           # "Smoking = No" = "Smoking_Current_Former_No.No",
+           "Location" = "location.grouped",
+           # "Location = High risk" = "location.grouped.High",
+           # "Location = Medium risk" = "location.grouped.Medium",
+           # "Location = Low risk" = "location.grouped.Low",
+           "IA size" = "IAsize.groups.merged",
+           # "IA size = A" = "IAsize.groups.merged.A",
+           # "IA size = B" = "IAsize.groups.merged.B",
+           # "IA size = C" = "IAsize.groups.merged.C",
+           "Multiple IAs" = "Multiple.IAs",
+           # "Multiple IAs = Yes" = "Multiple.IAs.Yes",
+           # "Multiple IAs = No" = "Multiple.IAs.No",
+           "Ruptured IA" = "Ruptured_IA"
+           # "Ruptured IA = Yes" = "Ruptured_IA.Yes",
+           # "Ruptured IA = No" = "Ruptured_IA.No"
+           ))
 ```
 
 ### Data preparation
@@ -197,7 +233,7 @@ ValidSet <- data.logreg.all[-train,]
 
 
 ```{r}
-glm_model.logreg.all <- glm(Ruptured_IA ~.,family=binomial(link='logit'),data=TrainSet)
+glm_model.logreg.all <- glm(`Ruptured IA` ~.,family=binomial(link='logit'),data=TrainSet)
 summary (glm_model.logreg.all)
 
 plt <- sjPlot::plot_model(glm_model.logreg.all,
@@ -206,7 +242,7 @@ plt <- sjPlot::plot_model(glm_model.logreg.all,
            sort.est=TRUE,  
            line.size = 1.5, 
            dot.size = 3, #,transform="plogis" plots probabilities
-           title = "Logistic regression for IA rupture in ADB (all variables)") +
+           title = "Logistic regression for IA rupture") +
   ylab("Odds ratios") +
   geom_hline(yintercept = 1) +
   theme_light() 
@@ -220,7 +256,7 @@ if (SAVEPLOTS){
                       labels.x = 15,
                       labels.y = 15,
                       base.theme = theme_light())
-  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
+  ggsave(plot = plt.mod, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
          dpi = 600, width = 4096, height = 4096, units = "px")
          # dpi = 600, width = 4096, height = 2304, units = "px")
 } else {
@@ -241,13 +277,13 @@ ANOVA.logreg.all
 
 pscl::pR2(glm_model.logreg.all)
 pred_glm.logreg.all <- predict(glm_model.logreg.all,newdata=ValidSet,type='response')
-table(ValidSet$Ruptured_IA, pred_glm.logreg.all > 0.5)
+table(ValidSet$`Ruptured IA`, pred_glm.logreg.all > 0.5)
 
-roc.logreg.all <- pROC::roc(ValidSet$Ruptured_IA, pred_glm.logreg.all)
-aucCI.logreg.all <- round(pROC::ci.auc(ValidSet$Ruptured_IA, pred_glm.logreg.all), 2)
+roc.logreg.all <- pROC::roc(ValidSet$`Ruptured IA`, pred_glm.logreg.all)
+aucCI.logreg.all <- round(pROC::ci.auc(ValidSet$`Ruptured IA`, pred_glm.logreg.all), 2)
 plotROCAUC(roc.logreg.all, aucCI.logreg.all, FILENAME = "logreg_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH)
 
-pred.logreg.all.rocr <- ROCR::prediction(pred_glm.logreg.all, ValidSet$Ruptured_IA)
+pred.logreg.all.rocr <- ROCR::prediction(pred_glm.logreg.all, ValidSet$`Ruptured IA`)
 perf.acc.logreg.all <- ROCR::performance(pred.logreg.all.rocr, measure="acc", x.measure = "cutoff")
 ROCR::plot(perf.acc.logreg.all, main = "Auccuracy")
 
@@ -262,7 +298,7 @@ paste("Cutoff with max. Accuracy = ", max.acc.cutoff)
 
 ## Accuraccy as in Morel et al 2021 for verification:
 pred_glm.logreg.all <- ifelse(pred_glm.logreg.all > max.acc.cutoff,"Yes","No")
-misClasificError.logreg.all <- mean(pred_glm.logreg.all != ValidSet$Ruptured_IA)
+misClasificError.logreg.all <- mean(pred_glm.logreg.all != ValidSet$`Ruptured IA`)
 # format(misClasificError.logreg.all, digits = 2)
 lp_accuracy_glm.logreg.all <- (paste("Accuracy = ",1-misClasificError.logreg.all))
 lp_accuracy_glm.logreg.all
