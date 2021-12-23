@@ -33,6 +33,7 @@ library(tidyr)
 library(reshape2)
 library(bnlearn)
 library(bnaiaR)
+library(kableExtra)
 ```
 
 # Load Data and take a first glimpse
@@ -256,6 +257,85 @@ plt.overlay.age <- df.age.cont %>%
     plot.background = element_rect(fill = "transparent", colour = NA)
   )
 
+
+
+plt.overlay.age.large <- df.age.cont %>%
+  ggplot() +
+  
+  # Age group fine
+  annotate(
+    "rect",
+    xmin = c(
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
+      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+    ),
+    xmax = c(
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
+      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+    ),
+    ymin = rep(0, 7),
+    ymax = df.age.group$AgeDiag.group.n,
+    alpha = 0.2,
+    color = "gray",
+    fill = "lightgray"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, .2)))+
+  geom_text(label = "A", family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]))/2), 
+            y=df.age.group$AgeDiag.group.n[1]*1.1)+
+  geom_text(label = "B",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]))/2), 
+            y=df.age.group$AgeDiag.group.n[2]*1.1)+
+  geom_text(label = "C",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]))/2), 
+            y=df.age.group$AgeDiag.group.n[3]*1.1)+
+  geom_text(label = "D",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]))/2), 
+            y=df.age.group$AgeDiag.group.n[4]*1.1)+
+  geom_text(label = "E",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]))/2), 
+            y=df.age.group$AgeDiag.group.n[5]*1.1)+
+  geom_text(label = "F",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]))/2), 
+            y=df.age.group$AgeDiag.group.n[6]*1.1)+
+  geom_text(label = "G",  family = "serif", size=7,
+            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")]))/2), 
+            y=df.age.group$AgeDiag.group.n[7]*1.05)+
+  # Age group cont
+  geom_col(aes(x = AgeDiag, y = AgeDiag.n), width = 0.5) +
+  # Layouting
+  theme_tufte()+
+  scale_x_continuous(breaks = c(min(df.age.cont$AgeDiag), 40, seq(40, 65, 5), max(df.age.cont$AgeDiag)),
+                     minor_breaks = seq(45, 65, 5)) +
+  labs(
+    title = "Age",
+    y = "Number of records",
+    x = "years"
+  ) +
+  theme(
+    plot.caption = element_text(hjust = 0.5),
+    plot.caption.position = "plot",
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    
+    title = element_text(size = 30),
+          text = element_text(size = 28),
+          axis.text = element_text(size = 28),
+          axis.title = element_text(size = 28),
+          legend.text = element_text(size = 28),
+          legend.title = element_text(size = 30))
+plt.overlay.age.large
+  
 if (SAVEPLOTS) {
   ggsave(
     plot = plt.overlay.age,
@@ -388,6 +468,14 @@ plt.loc.comb <- df.loc %>%
         legend.position = c(0.8,0.7))+
   coord_flip()
 
+plt.loc.comb.large <- plt.loc.comb +
+  theme(title = element_text(size = 30),
+          text = element_text(size = 28),
+          axis.text = element_text(size = 28),
+          axis.title = element_text(size = 28),
+          legend.text = element_text(size = 28),
+          legend.title = element_text(size = 30))
+  
 print(plt.loc.comb)
 ```
 
@@ -519,6 +607,158 @@ if (SAVEPLOTS) {
 }
 ```
 
+```{r IA size mm overlay}
+df.size <- adb %>% 
+    # Remove IA size outliers
+  filter(IAsize_log < 4) %>%
+  select(c(IAsize, IAsize.groups.merged)) %>%
+  arrange(IAsize)
+
+df.size.cont <- adb %>% 
+    # Remove IA size outliers
+  filter(IAsize_log < 4) %>%
+  select(c(IAsize, IAsize.groups.merged)) %>%
+  arrange(IAsize) %>%
+  count(IAsize, name="IAsize.n")
+
+df.size.group <- adb %>% 
+    # Remove IA size outliers
+  filter(IAsize_log < 4) %>%
+  select(c(IAsize, IAsize.groups.merged)) %>%
+  arrange(IAsize) %>%
+  count(IAsize.groups.merged, name="IAsize.group.n")
+
+# small geom_text size
+plt.overlay.size.mm <- df.size.cont %>%
+  ggplot() +
+
+  # Size group fine
+  annotate(
+    "rect",
+    xmin = c(
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
+      # min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]),
+    ),
+    xmax = c(
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
+    #   max(df.size$IAsize_log[which(df.size$IAsize.groups.merged == "D")]),
+    ),
+    ymin = rep(0, 3),
+    ymax = df.size.group$IAsize.group.n/10,
+    alpha = 0.2,
+    color = "gray",
+    fill = "lightgray"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, .2)))+
+  geom_text(label = "A≤7mm", family = "serif", fontface = "plain",
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]))/2),
+            y=df.size.group$IAsize.group.n[1]/10*1.05)+
+  geom_text(label = "B=7-12mm",  family = "serif", fontface = "plain",
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]))/2),
+            y=df.size.group$IAsize.group.n[2]/10*1.1)+
+  geom_text(label = "C≥13mm",  family = "serif", fontface = "plain",
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")]))/2),
+            y=df.size.group$IAsize.group.n[3]/10*1.3)+
+  # geom_text(label = "D",  family = "serif", fontface = "plain",
+  #           x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]))/2), 
+  #           y=df.size.group$IAsize.group.n[4]*1.1)+
+
+  # Size group cont
+  geom_col(aes(x = IAsize, y = IAsize.n), width=0.1, position = "stack") +
+  # Layouting
+  theme_tufte()+
+  # scale_x_continuous(breaks = round(c(seq(0, 4, 0.5)), 2)) +
+  labs(
+    title = "IA size",
+    y = "Number of records",
+    x = "[mm]"
+  ) +
+  theme(
+    plot.caption = element_text(hjust = 0.5),
+    plot.caption.position = "plot",
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA)
+  )
+
+# large geom_text size
+plt.overlay.size.mm.large <- df.size.cont %>%
+  ggplot() +
+
+  # Size group fine
+  annotate(
+    "rect",
+    xmin = c(
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
+      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
+      # min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]),
+    ),
+    xmax = c(
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
+      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
+    #   max(df.size$IAsize_log[which(df.size$IAsize.groups.merged == "D")]),
+    ),
+    ymin = rep(0, 3),
+    ymax = df.size.group$IAsize.group.n/10,
+    alpha = 0.2,
+    color = "gray",
+    fill = "lightgray"
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, .2)))+
+  geom_text(label = "A≤7mm", family = "serif", fontface = "plain", size = 7,
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]))/2),
+            y=df.size.group$IAsize.group.n[1]/10*1.05)+
+  geom_text(label = "B=7-12mm",  family = "serif", fontface = "plain",size = 7,
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]))/2),
+            y=df.size.group$IAsize.group.n[2]/10*1.1)+
+  geom_text(label = "C≥13mm",  family = "serif", fontface = "plain", size = 7,
+            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")]))/2),
+            y=df.size.group$IAsize.group.n[3]/10*1.3)+
+  # geom_text(label = "D",  family = "serif", fontface = "plain",
+  #           x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]))/2), 
+  #           y=df.size.group$IAsize.group.n[4]*1.1)+
+
+  # Size group cont
+  geom_col(aes(x = IAsize, y = IAsize.n), width=0.1, position = "stack") +
+  # Layouting
+  theme_tufte()+
+  # scale_x_continuous(breaks = round(c(seq(0, 4, 0.5)), 2)) +
+  labs(
+    title = "IA size",
+    y = "Number of records",
+    x = "[mm]"
+  ) +
+  theme(
+    plot.caption = element_text(hjust = 0.5),
+    plot.caption.position = "plot",
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    
+    title = element_text(size = 30),
+          text = element_text(size = 28),
+          axis.text = element_text(size = 28),
+          axis.title = element_text(size = 28),
+          legend.text = element_text(size = 28),
+          legend.title = element_text(size = 30))
+plt.overlay.size.mm.large
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt.overlay.size.mm,
+    filename = "IAsize_overlay_mm.png",
+    path = PLOTPATH,
+    dpi = 600
+  )
+} else {
+  plt.overlay.size.mm
+}
+```
+
 ```{r Ruptured IA}
 pltRupt_raw <- dfdbn %>%
   select(Ruptured_IA) %>%
@@ -577,6 +817,108 @@ if (SAVEPLOTS) {
   multplt.overlay
 }
 ```
+
+```{r}
+multplt.overlay.small <- plot_grid(plotlist = list(plt.overlay.age.large, 
+                                             plt.loc.comb.large, 
+                                             plt.overlay.size.mm.large),
+          ncol = 3)
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = multplt.overlay.small,
+    filename = "vars_overview_multiplt_overlay_small.png",
+    path = PLOTPATH,
+    dpi = 300, width = PLOTWIDTH*2, height = PLOTHEIGHT*1.2
+  )
+} else {
+  multplt.overlay.small
+}
+```
+
+
+
+```{r}
+dfdbn.renamed <- dfdbn %>%
+  rename(c("Sex" = "Gender",
+           # "Sex = Female" = "Gender.Female",
+           # "Sex = Male" = "Gender.Male",
+           "Fam. History" = "Positive.famillial.history",
+           # "Fam. History = No" = "Positive.famillial.history.No",
+           # "Fam. History = Yes" = "Positive.famillial.history.Yes",
+           "Age" = "AgeDiag.group",           
+           # "Age = F" = "AgeDiag.group.F",
+           # "Age = G" = "AgeDiag.group.G",
+           # "Age = D" = "AgeDiag.group.D",
+           # "Age = E" = "AgeDiag.group.E",
+           # "Age = C" = "AgeDiag.group.C",
+           # "Age = B" = "AgeDiag.group.B",
+           # "Age = A" = "AgeDiag.group.A",
+           "Hypertension" = "Hypertension",
+           # "Hypertension = Never" = "Hypertension.Never",
+           # "Hypertension = AnyType" = "Hypertension.AnyType",
+           "Smoking" = "Smoking_Current_Former_No",
+           # "Smoking = Current" = "Smoking_Current_Former_No.Current",
+           # "Smoking = Former" = "Smoking_Current_Former_No.Former",
+           # "Smoking = No" = "Smoking_Current_Former_No.No",
+           "Location" = "location.grouped",
+           # "Location = High risk" = "location.grouped.High",
+           # "Location = Medium risk" = "location.grouped.Medium",
+           # "Location = Low risk" = "location.grouped.Low",
+           "IA size" = "IAsize.groups.merged",
+           # "IA size = A" = "IAsize.groups.merged.A",
+           # "IA size = B" = "IAsize.groups.merged.B",
+           # "IA size = C" = "IAsize.groups.merged.C",
+           "Multiple IAs" = "Multiple.IAs",
+           # "Multiple IAs = Yes" = "Multiple.IAs.Yes",
+           # "Multiple IAs = No" = "Multiple.IAs.No",
+           "Ruptured IA" = "Ruptured_IA"
+           # "Ruptured IA = Yes" = "Ruptured_IA.Yes",
+           # "Ruptured IA = No" = "Ruptured_IA.No"
+           )) %>%
+    select(-c(Age, Location, `IA size`))
+variables <- c()
+varlevels <- c()
+varlevn <- c()
+for(c in names(dfdbn.renamed)){
+  varlevs <- levels(dfdbn.renamed[[c]])
+  variables <- c(variables, rep(c, length(varlevs)))
+  varlevels <- c(varlevels, varlevs)
+  varlevn <- c(varlevn, as.numeric(summary(dfdbn.renamed[[c]])))
+}
+
+text_tbl <- data.frame(variables, varlevels, varlevn)
+text_tbl$variables_cleaned <- " "
+for(r in 2:nrow(text_tbl)){
+  current <- text_tbl[r,1]
+  upper <- text_tbl[r-1,1]
+  
+  if(r==2){
+    text_tbl$variables_cleaned[r-1] <- current
+  } else if(current == upper){
+    text_tbl$variables_cleaned[r] <- " "
+  } else {
+    text_tbl$variables_cleaned[r] <- current
+  }
+}
+text_tbl
+
+text_tbl %>%
+  select(c(variables_cleaned, varlevels, varlevn)) %>%
+  rename("Factor" = "variables_cleaned",
+         "Level" = "varlevels",
+         "Number of records" = "varlevn") %>%
+  
+  kbl(format = "latex", booktabs = T) %>%
+  # kable_classic(full_width = F) %>%
+  kable_styling(latex_options=c("striped", "hold_position"),
+                stripe_index = c(1,3,5,7,10,12)) %>%
+  column_spec(3) %>%
+  # kableExtra::landscape() %>%
+  cat(., file = paste0(PLOTPATH, "/vars_overview_table.tex"))
+```
+
+
 
 
 # Stacked
