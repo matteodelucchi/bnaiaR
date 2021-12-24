@@ -284,13 +284,21 @@ plot(sim, col = "grey",
      main = "Hypertension == Never")
 
 par(mfrow = c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)), col = "grey",
      main = "Ruptured_IA == Yes")
 
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "No"))
-plot(sim, col = "grey",
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
+plot(prop.table(table(sim)), col = "grey",
      main = "Ruptured_IA == No")
+
+SAVEPLOTS <- F
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+  } 
 ```
 
 
@@ -412,6 +420,132 @@ prop.table(table(sim))
 sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "IAsize.groups.merged"), n = 10^4, evidence = (Gender == "Female" & Hypertension == "AnyType" & Multiple.IAs == "Yes" ))
 prop.table(table(sim))
 ```
+
+
+
+smoking -> rupture
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
+plot(sim, col = "grey",
+     main = 'Ruptured_IA == "Yes"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
+plot(sim, col = "grey",
+     main = 'Ruptured_IA == "No"')
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current"))
+plot(sim, col = "grey",
+     main = 'Smoking_Current_Former_No == "Current"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "No"))
+plot(sim, col = "grey",
+     main = 'Smoking_Current_Former_No == "No"')
+```
+
+
+smoking -> IA size
+```{r}
+SAVEPLOTS <- F
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "IAsize.groups.merged"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Ruptured_IA == "Yes"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "IAsize.groups.merged"), n = 10^5, evidence = (Ruptured_IA == "No"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Ruptured_IA == "No"')
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-smoking-size"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+  } 
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Ruptured_IA == "Yes"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Ruptured_IA == "No"')
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-smoking-age"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+} 
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Smoking_Current_Former_No == "Current"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current" & Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Smoking_Current_Former_No == "Current" & Ruptured_IA == "Yes"')
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_smoking-age-size"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+  } 
+```
+plot1: former smoker rupture larger as current or non-smoker. Treatment bias in non-ruptured IAs towards smaller size.
+plot2: non-smoker rupture later as current smoker. Former smoker around the age of 50 are less likely for IA rupture.
+
+
+
+
+Awareness of HBP leads to higher age at rupture:
+```{r}
+sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^4, evidence = (Hypertension == "AnyType"))
+plot(prop.table(table(sim)))
+
+sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)))
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Gender", "IAsize.groups.merged"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)))
+
+sim = cpdist(tabu_th03_fit, nodes = c("Gender", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)))
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes" & Gender == "Female"))
+plot(prop.table(table(sim)))
+
+sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes" & Gender == "Male"))
+plot(prop.table(table(sim)))
+```
+
+```{r}
+SAVEPLOTS <- F
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
+plot(prop.table(table(sim)),
+     main = 'Ruptured_IA == "Yes"')
+
+sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "No"))
+plot(prop.table(table(sim)),
+     main = 'Ruptured_IA == "No"')
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-location-gender"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+} 
+```
+
 
 ```{r}
 str(data)
