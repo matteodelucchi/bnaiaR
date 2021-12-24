@@ -249,24 +249,28 @@ plt <- adjmat %>%
                    # name = "Correlation")+
   # scale_fill_stepsn(colors = c("lightgray", "black"), values = c(0,1), na.value = "transparent")+
   scale_fill_manual(values = c("lightgray", "black"), na.value = "transparent",
-                   name = "Chi^2 p-value < 0.05", labels = c("No: Independent", "Yes: Dependent", " "))+
+                   # name = "Chi^2 p-value < 0.05", labels = c("No: Independent", "Yes: Dependent", " ")
+                   name = expression(p-value < 0.05), labels = expression(H[0]~not~rejected, H[0]~rejected))+
+  ggtitle(expression(Chi^{2}~test~of~independence))+
   ggthemes::theme_tufte()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title = element_blank(),
-        legend.position = c(0.7,0.7))
+        legend.position = c(0.7,0.7),
+        legend.text.align = 0)
 
 if (SAVEPLOTS) {
   plt <- plt + 
     theme(axis.text = element_text(size = 28),
           legend.text = element_text(size = 28),
-          legend.title = element_text(size = 30))
+          legend.title = element_text(size = 30),
+          title = element_text(size = 30))
   ggsave(
     plot = plt,
     filename = "chisquareplt.png",
     path = PLOTPATH,
     width = PLOTWIDTH, height = PLOTHEIGHT, dpi = 600
   )
-} else {
+  } else {
   plt
 }
 ```
