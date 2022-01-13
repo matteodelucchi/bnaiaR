@@ -492,7 +492,7 @@ if (SAVEPLOTS){
   dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
             res = 600, width = 6000)
   dev.off()
-  } 
+} 
 ```
 plot1: former smoker rupture larger as current or non-smoker. Treatment bias in non-ruptured IAs towards smaller size.
 plot2: non-smoker rupture later as current smoker. Former smoker around the age of 50 are less likely for IA rupture.
@@ -545,7 +545,24 @@ if (SAVEPLOTS){
   dev.off()
 } 
 ```
+```{r}
+SAVEPLOTS <- T
 
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Ruptured_IA"), n = 10^4, evidence = (Smoking_Current_Former_No == "Current" & Hypertension == "AnyType" & Positive.famillial.history == "Yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Smoking_Current_Former_No == "Current", Hypertension = "AnyType", Positive.famillial.history = "Yes"')
+sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Ruptured_IA"), n = 10^4, evidence = (Smoking_Current_Former_No == "No" & Hypertension == "Never" & Positive.famillial.history == "No"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'Smoking_Current_Former_No == "No" & Hypertension == "Never" & Positive.famillial.history == "No"')
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-smoking-hbp-family"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+} 
+```
 
 ```{r}
 str(data)
