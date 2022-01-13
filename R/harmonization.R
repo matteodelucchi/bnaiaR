@@ -98,7 +98,7 @@ crim4toISGC <- function(data, returnall = FALSE) {
     crim.mod <- crim.mod %>%
       mutate(age.at.time.of.diagnosis = as.numeric(aneuReportPatAge))
   } else {
-    # if not provided by data base, reanonymize age
+    # if not provided by data base, reanonymize age: aneuReportPatAge == aneuReportDate - patDOB
     warning("Age variable is reanonymized. Verify reanonymization process!")
     crim.mod <- crim.mod %>%
       mutate(age.at.time.of.diagnosis = trunc(lubridate::time_length(
