@@ -59,6 +59,27 @@ str(adb.raw)
 ## Remove NAs
 
 ```{r}
+# NA overview: Filter all, with at least one NA in any column.
+adb.raw %>%
+  summarise(across(.cols = everything(), .fns = function(x){is.na(x)})) %>%
+  filter(if_any()) %>%
+  summarise(across(everything(), sum)) %>%
+  
+  t() %>%
+  as.data.frame() %>%
+  mutate(names = rownames(.)) %>%
+
+  ggplot()+
+  aes(y=V1, x=names)+
+  geom_col() +
+  ylab("no. NAs")+
+  coord_flip() 
+
+length(adb.raw$Age.at.diag.grouped[which(adb.raw$Age.at.diag.grouped == "H" | is.na(adb.raw$Age.at.diag.grouped))])
+```
+
+
+```{r}
 df <- adb.raw %>% 
   na.omit() 
 str(df)
