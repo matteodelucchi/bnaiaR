@@ -260,10 +260,10 @@ plt <- adjmat %>%
 
 if (SAVEPLOTS) {
   plt <- plt + 
-    theme(axis.text = element_text(size = 28),
-          legend.text = element_text(size = 28),
-          legend.title = element_text(size = 30),
-          title = element_text(size = 30))
+    theme(axis.text = element_text(size = 30),
+          legend.text = element_text(size = 30),
+          legend.title = element_text(size = 32),
+          title = element_text(size = 32))
   ggsave(
     plot = plt,
     filename = "chisquareplt.png",
