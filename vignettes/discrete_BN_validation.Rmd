@@ -533,10 +533,12 @@ par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
 plot(prop.table(table(sim)),
      main = 'Ruptured_IA == "Yes"')
-
+prop.table(table(sim))
+           
 sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "No"))
 plot(prop.table(table(sim)),
      main = 'Ruptured_IA == "No"')
+prop.table(table(sim))
 
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_rupture-location-gender"
@@ -563,6 +565,45 @@ if (SAVEPLOTS){
   dev.off()
 } 
 ```
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "AnyType"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "P(Multiple.IAs | Hypertension == 'AnyType')")
+prop.table(table(sim))
+
+sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "Never"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "P(Multiple.IAs | Hypertension == 'Never')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_multiple_hbp"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+} 
+
+par(mfrow=c(1,2))
+sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "AnyType"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "P(IA Location | Hypertension == 'AnyType')")
+prop.table(table(sim))
+
+sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "Never"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "P(IA Location | Hypertension == 'Never')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_location_hbp"
+  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+            res = 600, width = 6000)
+  dev.off()
+} 
+```
+
 
 ```{r}
 str(data)
