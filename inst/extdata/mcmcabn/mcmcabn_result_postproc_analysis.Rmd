@@ -771,6 +771,7 @@ result.table <- result.table.basic %>%
 
   # add odds ratio
   mutate(exp.coefficient = exp(coefficient),
+         exp.CI = paste(round(exp(coefficient-SE), 2), "-", round(exp(coefficient+SE), 2)),
          interpretation.exp.coef = case_when(interpretation == "log odds ratio" ~ "odds ratio",
                                              interpretation == "correlation" ~ "exp. corr. coef.",
                                              TRUE ~ NA_character_)) %>%
@@ -823,7 +824,7 @@ result.table.mle <- result.table %>%
   # round to 2 digits
   mutate(across(where(is.numeric), function(x){round(x, 2)})) %>%
   # selct specific columns and reorder
-  select(c(from, fromLevels0, fromLevels1, to, toLevels0, toLevels1, support, exp.coefficient, interpretation.exp.coef, coefficient, SE, interpretation, prob, interpretation.prob, cornames))
+  select(c(from, fromLevels0, fromLevels1, to, toLevels0, toLevels1, support, exp.coefficient, exp.CI, interpretation.exp.coef, coefficient, SE, interpretation, prob, interpretation.prob, cornames))
 
 if (SAVEPLOTS){
   write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"), row.names = F)
@@ -874,6 +875,7 @@ result.table.mle.basicLatex <- result.table.mle %>%
          "To State 0" = "toLevels0",
          "To State 1" = "toLevels1",
          "Coefficient" = "exp.coefficient",
+         "95% CI" = "exp.CI",
          "Interpretation" = "interpretation.exp.coef",
          "log coefficient" = "coefficient",
          "log coef. Interpretation" = "interpretation", 
@@ -938,9 +940,9 @@ For presentation
 result.table.mle.basicLatex %>%
   select(-c(Probability, `Probability Interpretation`, `log coefficient`, SE, `log coef. Interpretation`)) %>%
   filter(`From State 0` != "intercept") %>%
-  mutate(`Interpretation` = case_when(`From State 0` == "" ~ "corr. coefficient",
-                                      `Interpretation` == "exp. corr. coef." ~ "corr. coefficient",
-                                      TRUE ~ `Interpretation`)) %>%
+  # mutate(`Interpretation` = case_when(`From State 0` == "" ~ "exp. corr. coefficient",
+  #                                     # `Interpretation` == "exp. corr. coef." ~ "corr. coefficient",
+  #                                     TRUE ~ `Interpretation`)) %>%
   relocate(`Arc-strength`, .after = `Interpretation`) %>%
   # rename(" " = "From",
          # "State 0" = "From State 0",
@@ -960,6 +962,28 @@ result.table.mle.basicLatex %>%
   kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 3, " " = 1), align = "l") %>%
   kableExtra::landscape() %>%
   cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_pres.tex"))
+```
+
+For paper
+```{r}
+result.table.mle.basicLatex %>%
+  select(-c(Probability, `Probability Interpretation`, `Coefficient`, `95% CI`, `Interpretation`)) %>%
+  filter(`From State 0` != "intercept") %>%
+  relocate(`Arc-strength`, .after = `log coef. Interpretation`) %>%
+  rename("Interpretation" = "log coef. Interpretation",
+         "Coefficient" = "log coefficient") %>%
+  
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(5, 4, 3, 2, 2, 2, 5, 6, 2)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 3, " " = 1), align = "l") %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_paper.tex"))
 ```
 
 

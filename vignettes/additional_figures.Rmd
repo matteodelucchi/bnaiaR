@@ -290,25 +290,25 @@ plt.overlay.age.large <- df.age.cont %>%
     fill = "lightgray"
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
-  geom_text(label = "A", family = "serif", size=7,
+  geom_text(label = "A", family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]))/2), 
             y=df.age.group$AgeDiag.group.n[1]*1.1)+
-  geom_text(label = "B",  family = "serif", size=7,
+  geom_text(label = "B",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]))/2), 
             y=df.age.group$AgeDiag.group.n[2]*1.1)+
-  geom_text(label = "C",  family = "serif", size=7,
+  geom_text(label = "C",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]))/2), 
             y=df.age.group$AgeDiag.group.n[3]*1.1)+
-  geom_text(label = "D",  family = "serif", size=7,
+  geom_text(label = "D",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]))/2), 
             y=df.age.group$AgeDiag.group.n[4]*1.1)+
-  geom_text(label = "E",  family = "serif", size=7,
+  geom_text(label = "E",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]))/2), 
             y=df.age.group$AgeDiag.group.n[5]*1.1)+
-  geom_text(label = "F",  family = "serif", size=7,
+  geom_text(label = "F",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]))/2), 
             y=df.age.group$AgeDiag.group.n[6]*1.1)+
-  geom_text(label = "G",  family = "serif", size=7,
+  geom_text(label = "G",  family = "serif", size=8,
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")]))/2), 
             y=df.age.group$AgeDiag.group.n[7]*1.05)+
   # Age group cont
@@ -328,12 +328,12 @@ plt.overlay.age.large <- df.age.cont %>%
     panel.background = element_rect(fill = "transparent", color = NA),
     plot.background = element_rect(fill = "transparent", colour = NA),
     
-    title = element_text(size = 30),
-          text = element_text(size = 28),
-          axis.text = element_text(size = 28),
-          axis.title = element_text(size = 28),
-          legend.text = element_text(size = 28),
-          legend.title = element_text(size = 30))
+    title = element_text(size = 32),
+          text = element_text(size = 30),
+          axis.text = element_text(size = 30),
+          axis.title = element_text(size = 30),
+          legend.text = element_text(size = 30),
+          legend.title = element_text(size = 32))
 plt.overlay.age.large
   
 if (SAVEPLOTS) {
@@ -469,12 +469,12 @@ plt.loc.comb <- df.loc %>%
   coord_flip()
 
 plt.loc.comb.large <- plt.loc.comb +
-  theme(title = element_text(size = 30),
-          text = element_text(size = 28),
-          axis.text = element_text(size = 28),
-          axis.title = element_text(size = 28),
-          legend.text = element_text(size = 28),
-          legend.title = element_text(size = 30))
+  theme(title = element_text(size = 32),
+          text = element_text(size = 30),
+          axis.text = element_text(size = 30),
+          axis.title = element_text(size = 30),
+          legend.text = element_text(size = 30),
+          legend.title = element_text(size = 32))
   
 print(plt.loc.comb)
 ```
@@ -710,13 +710,13 @@ plt.overlay.size.mm.large <- df.size.cont %>%
     fill = "lightgray"
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
-  geom_text(label = "A≤7mm", family = "serif", fontface = "plain", size = 7,
+  geom_text(label = "A", family = "serif", fontface = "plain", size = 8,
             x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]))/2),
             y=df.size.group$IAsize.group.n[1]/10*1.05)+
-  geom_text(label = "B=7-12mm",  family = "serif", fontface = "plain",size = 7,
+  geom_text(label = "B",  family = "serif", fontface = "plain",size = 8,
             x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]))/2),
             y=df.size.group$IAsize.group.n[2]/10*1.1)+
-  geom_text(label = "C≥13mm",  family = "serif", fontface = "plain", size = 7,
+  geom_text(label = "C",  family = "serif", fontface = "plain", size = 8,
             x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")]))/2),
             y=df.size.group$IAsize.group.n[3]/10*1.3)+
   # geom_text(label = "D",  family = "serif", fontface = "plain",
@@ -749,13 +749,13 @@ plt.overlay.size.mm.large
 
 if (SAVEPLOTS) {
   ggsave(
-    plot = plt.overlay.size.mm,
+    plot = plt.overlay.size.mm.large,
     filename = "IAsize_overlay_mm.png",
     path = PLOTPATH,
     dpi = 600
   )
 } else {
-  plt.overlay.size.mm
+  plt.overlay.size.mm.large
 }
 ```
 
@@ -819,9 +819,9 @@ if (SAVEPLOTS) {
 ```
 
 ```{r}
-multplt.overlay.small <- plot_grid(plotlist = list(plt.overlay.age.large, 
-                                             plt.loc.comb.large, 
-                                             plt.overlay.size.mm.large),
+multplt.overlay.small <- plot_grid(plotlist = list(plt.loc.comb.large,
+                                                   plt.overlay.age.large, 
+                                                   plt.overlay.size.mm.large),
           ncol = 3)
 
 if (SAVEPLOTS) {
