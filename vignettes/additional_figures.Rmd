@@ -876,7 +876,7 @@ dfdbn.renamed <- dfdbn %>%
            # "Ruptured IA = Yes" = "Ruptured_IA.Yes",
            # "Ruptured IA = No" = "Ruptured_IA.No"
            )) %>%
-    select(-c(Age, Location, `IA size`))
+    select(-c(Age, `IA size`))
 variables <- c()
 varlevels <- c()
 varlevn <- c()
