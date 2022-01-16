@@ -442,17 +442,17 @@ ggplot(pltdat)+
   coord_flip()
 
 if (SAVEPLOTS){
-  plt.mod <- plt +
-    sjPlot::font_size(
-                      title = 15,
-                      axis_title.y = 15,
-                      axis_title.x = 15,
-                      labels.x = 15,
-                      labels.y = 15,
-                      base.theme = theme_light())
-  ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH, 
-         dpi = 600, width = 4096, height = 4096, units = "px")
-         # dpi = 600, width = 4096, height = 2304, units = "px")
+  # plt.mod <- plt +
+  #   sjPlot::font_size(
+  #                     title = 15,
+  #                     axis_title.y = 15,
+  #                     axis_title.x = 15,
+  #                     labels.x = 15,
+  #                     labels.y = 15,
+  #                     base.theme = theme_light())
+  # ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH, 
+  #        dpi = 600, width = 4096, height = 4096, units = "px")
+  #        # dpi = 600, width = 4096, height = 2304, units = "px")
 } else {
   plt
 }
