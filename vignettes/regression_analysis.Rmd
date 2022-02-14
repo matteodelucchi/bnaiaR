@@ -262,6 +262,8 @@ if (SAVEPLOTS){
 } else {
   plt
 }
+
+sjPlot::tab_model(glm_model.logreg.all)
 ```
 
 In log-regression, multinomial parameters are binarized.
