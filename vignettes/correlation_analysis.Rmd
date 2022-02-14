@@ -296,6 +296,7 @@ cor.mtest <- function(mat, ...) {
 }
 
 dfcor <- cor(dfonehot, method = "pearson")
+head(dfcor)
 
 # matrix of the p-value of the correlation
 p.mat <- cor.mtest(dfonehot)
