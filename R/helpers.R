@@ -417,9 +417,13 @@ cv.metrics <- function(xval){
   PRED = unlist(lapply(unlist(xval, recursive = F), `[[`, "predicted"))
   conf.mat <- table(OBS, PRED)
   tpr <-conf.mat[1,1]/(conf.mat[1,1]+conf.mat[1,2])
+  tnr <-conf.mat[2,2]/(conf.mat[2,1]+conf.mat[2,2]) # TN/N
   fpr <-conf.mat[2,1]/(conf.mat[2,1]+conf.mat[2,2])
   acc <- (conf.mat[1,1]+conf.mat[2,2])/(conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]+conf.mat[2,2])
-  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc))
+  ba <- (tpr+tnr)/2
+  f1 <- (2*conf.mat[1,1])/(2*conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]) # (2*TP)/(2*TP+FP+FN)
+  carret_confmat <- caret::confusionMatrix(PRED, OBS, positive = "Yes")
+  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1, carret_confmat = carret_confmat))
 }
 
 #' Burn-in Phase after MCMCABN
