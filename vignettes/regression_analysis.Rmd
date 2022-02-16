@@ -42,6 +42,8 @@ set.seed(100)
 
 SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
 ```
 
 ## Load Data
@@ -235,7 +237,11 @@ Cross-validation
 ```{r message=FALSE, warning=FALSE}
 # defining training control
 # as Leave One Out Cross Validation
-train_control <- caret::trainControl(method = "LOOCV")
+train_control <- caret::trainControl(method = "LOOCV",
+                                     summaryFunction = prSummary, 
+                                     # summaryFunction = twoClassSummary, 
+                                     classProbs = TRUE,
+                                     savePredictions = "all")
  
 # training the model by assigning sales column
 # as target variable and rest other column
@@ -249,9 +255,10 @@ model <- caret::train(`Ruptured IA` ~., data = data.logreg.all,
 # along with other details
 print(model)
 
-caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes")
+loocv.cm.logreg <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything")
+df.predmetrics <- data.frame(loocv.logreg = round(c(loocv.cm.logreg$overall, loocv.cm.logreg$byClass), 3))
+df.predmetrics
 ```
-
 
 70:30 split
 
@@ -303,6 +310,14 @@ ANOVA.logreg.all
 pscl::pR2(glm_model.logreg.all)
 pred_glm.logreg.all <- predict(glm_model.logreg.all,newdata=ValidSet,type='response')
 table(ValidSet$`Ruptured IA`, pred_glm.logreg.all > 0.5)
+
+
+conf.mat <- table(as.numeric(ValidSet$`Ruptured IA`), as.numeric(pred_glm.logreg.all>0.5))
+colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+
+split.cm.logreg.all <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
+df.predmetrics <- cbind(df.predmetrics, data.frame(split.logreg = round(c(split.cm.logreg.all$overall, split.cm.logreg.all$byClass), 3)))
+df.predmetrics
 
 roc.logreg.all <- pROC::roc(ValidSet$`Ruptured IA`, pred_glm.logreg.all)
 aucCI.logreg.all <- round(pROC::ci.auc(ValidSet$`Ruptured IA`, pred_glm.logreg.all), 2)
@@ -431,18 +446,84 @@ gam_model <- gam(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Sm
 gam.check(gam_model)
 summary.gam(gam_model)
 par(mfrow = c(1,8))
-plot.gam(gam_model, all.terms = T)
+plot.gam(gam_model, residuals=T, se=TRUE, 
+         shade=T, shade.col='gray90', 
+         all.terms = T, pages = 1)
+abline(h=0)
+
 anova.gam(gam_model)
 ```
+```{r}
+if (SAVEPLOTS){
+  graphics.off()
 
+  PLOTNAME <- "gam_model"
+  png(filename = paste0(PLOTPATH, "/", PLOTNAME, ".png"), PLOTWIDTH, PLOTHEIGHT, res = 600)
+  
+  op <- par(mfrow=c(3,3))
+            # , mai=c(0.01,0.01,0.01,0.01), mar=c(0.1,0.1,0.1,0.1))
+  for (i in 1:9) {
+    plot.gam(gam_model, select = i, residuals=T, se=TRUE,
+             shade=T, shade.col='gray90',
+             all.terms = T)
+    abline(h=0)
+    }
+  par(op)
+  
+  dev.off()
+} else {
+  op <- par(mfrow=c(3,3))
+  for (i in 1:9) {
+    plot.gam(gam_model, select = i, residuals=T, se=TRUE, 
+             shade=T, shade.col='gray90', 
+             all.terms = T)  
+    abline(h=0)
+    }
+  par(op)
+}
+```
 
 ```{r}
 gam_pred <- predict.gam(gam_model, newdata = ValidSet, type = "response")
-table(ValidSet$Ruptured_IA, gam_pred>0.5)
+conf.mat <- table(ValidSet$Ruptured_IA, as.numeric(gam_pred>0.5))
+colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+
+split.cm.gam <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
+df.predmetrics <- cbind(df.predmetrics, data.frame(split.gam = round(c(split.cm.gam$overall, split.cm.gam$byClass), 3)))
+df.predmetrics
 
 roc.gam_model <- pROC::roc(ValidSet$Ruptured_IA, gam_pred)
 aucCI.gam_model <- round(pROC::ci.auc(ValidSet$Ruptured_IA, gam_pred), 2)
-plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH)
+plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH) # TODO: CHeck this function!
+```
+
+Cross-validation gam
+
+```{r message=FALSE, warning=FALSE}
+# defining training control
+# as Leave One Out Cross Validation
+train_control <- caret::trainControl(method = "LOOCV",
+                                     summaryFunction = prSummary, 
+                                     # summaryFunction = twoClassSummary, 
+                                     classProbs = TRUE,
+                                     savePredictions = "all")
+ 
+# training the model by assigning sales column
+# as target variable and rest other column
+# as independent variable
+model <- caret::train(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+IAsize_log+Multiple.IAs+AgeDiag, data = gam_dat,
+               method = "gam",
+               family=binomial(link='logit'),
+               trControl = train_control,
+               tuneGrid = data.frame(method = "GCV.Cp", select = FALSE))
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+
+loocv.cm.gam <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything")
+df.predmetrics <- cbind(df.predmetrics, data.frame(loocv.gam = round(c(loocv.cm.gam$overall, loocv.cm.gam$byClass), 3)))
+df.predmetrics
 ```
 
 ```{r}
@@ -482,6 +563,13 @@ if (SAVEPLOTS){
   plt
 }
 ```
+
+store prediction metrics
+
+```{r}
+write.csv(df.predmetrics, file = paste0(PLOTPATH, "/prediction_metrics_regression.csv"))
+```
+
 
 # Multivariate Cox regression for IA Rupture including all variables
 
