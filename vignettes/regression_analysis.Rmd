@@ -230,7 +230,30 @@ TrainSet <- data.logreg.all[train,]
 ValidSet <- data.logreg.all[-train,]
 ```
 
+Cross-validation
 
+```{r message=FALSE, warning=FALSE}
+# defining training control
+# as Leave One Out Cross Validation
+train_control <- caret::trainControl(method = "LOOCV")
+ 
+# training the model by assigning sales column
+# as target variable and rest other column
+# as independent variable
+model <- caret::train(`Ruptured IA` ~., data = data.logreg.all,
+               method = "glm",
+               family=binomial(link='logit'),
+               trControl = train_control)
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+
+caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes")
+```
+
+
+70:30 split
 
 ```{r}
 glm_model.logreg.all <- glm(`Ruptured IA` ~.,family=binomial(link='logit'),data=TrainSet)
