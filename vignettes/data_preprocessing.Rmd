@@ -60,7 +60,7 @@ str(adb.raw)
 
 ```{r}
 # NA overview: Filter all, with at least one NA in any column.
-adb.raw %>%
+plt <- adb.raw %>%
   summarise(across(.cols = everything(), .fns = function(x){is.na(x)})) %>%
   filter(if_any()) %>%
   summarise(across(everything(), sum)) %>%
@@ -73,8 +73,25 @@ adb.raw %>%
   aes(y=V1, x=names)+
   geom_col() +
   ylab("no. NAs")+
+  xlab(element_blank())+
+  labs(title = "Missing records in raw data") +
+  theme_bw()+
   coord_flip() 
 
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt,
+    filename = "na_overview_plt.png",
+    path = PLOTPATH,
+    dpi = 300
+  )
+} else {
+  plt
+}
+```
+
+
+```{r}
 length(adb.raw$Age.at.diag.grouped[which(adb.raw$Age.at.diag.grouped == "H" | is.na(adb.raw$Age.at.diag.grouped))])
 ```
 
