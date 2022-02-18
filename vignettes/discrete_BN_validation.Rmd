@@ -102,9 +102,10 @@ xval.rupture.bic.custom <- bn.cv(
     loss = "pred",
     loss.args = list(target =  "Ruptured_IA")
   )
-cv.metrics(xval.rupture.bic.part)
-cv.metrics(xval.rupture.bic)
-cv.metrics(xval.rupture.bic.custom)
+df.cvmetrics <- data.frame(loocv.dbn.clerr.bic.part = c(cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.clerr.bic = c(cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.clerr.custom = c(cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$byClass))
+df.cvmetrics
 ```
 
 ```{r}
@@ -207,7 +208,21 @@ xval.bic.custom.bayes <- bn.cv(data = data,
 cv.metrics(xval.bic.bayes.part)
 cv.metrics(xval.bic.bayes)
 cv.metrics(xval.bic.custom.bayes)
+
+df.cvmetrics.postclerr <- data.frame(loocv.dbn.postclerr.bic.part = c(cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.postclerr.bic = c(cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.postclerr.custom = c(cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$byClass))
+df.cvmetrics <- cbind(df.cvmetrics, df.cvmetrics.postclerr)
+df.cvmetrics <- round(df.cvmetrics, 3)
+df.cvmetrics
 ```
+
+Save classification metrics
+
+```{r}
+write.csv(df.cvmetrics, file = paste0(PLOTPATH, "/prediction_metrics_dbn.csv"))
+```
+
 
 ```{r}
 if (SAVEPLOTS) {
