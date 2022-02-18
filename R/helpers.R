@@ -412,7 +412,7 @@ prep.data2plot <- function(eval, newnames = NULL){
 #' loss.args = list(target = "Ruptured_IA")
 #' )
 #' cv.metrics(xval.rupture.bic)}
-cv.metrics <- function(xval){
+cv.metrics <- function(xval, returnConfMat=FALSE){
   OBS = unlist(lapply(unlist(xval, recursive = F), `[[`, "observed"))
   PRED = unlist(lapply(unlist(xval, recursive = F), `[[`, "predicted"))
   conf.mat <- table(OBS, PRED)
@@ -422,8 +422,14 @@ cv.metrics <- function(xval){
   acc <- (conf.mat[1,1]+conf.mat[2,2])/(conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]+conf.mat[2,2])
   ba <- (tpr+tnr)/2
   f1 <- (2*conf.mat[1,1])/(2*conf.mat[1,1]+conf.mat[2,1]+conf.mat[1,2]) # (2*TP)/(2*TP+FP+FN)
-  carret_confmat <- caret::confusionMatrix(PRED, OBS, positive = "Yes")
-  return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1, carret_confmat = carret_confmat))
+
+  if(returnConfMat==TRUE){
+    # carret_confmat <- caret::confusionMatrix(PRED, OBS, positive = "Yes", mode = "everything")
+    carret_confmat <- caret::confusionMatrix(conf.mat, positive = "Yes", mode = "everything")
+    return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1, carret_confmat = carret_confmat))
+  } else{
+    return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1))
+  }
 }
 
 #' Burn-in Phase after MCMCABN

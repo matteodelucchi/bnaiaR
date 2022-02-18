@@ -352,7 +352,7 @@ cor.mtest <- function(mat, ...) {
     diag(p.mat) <- 0
     for (i in 1:(n - 1)) {
         for (j in (i + 1):n) {
-            tmp <- cor.test(mat[, i], mat[, j], ...)
+            tmp <- cor.test(mat[, i], mat[, j], method = "spearman", ...)
             p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
         }
     }
