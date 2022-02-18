@@ -238,7 +238,7 @@ Cross-validation
 # defining training control
 # as Leave One Out Cross Validation
 train_control <- caret::trainControl(method = "LOOCV",
-                                     summaryFunction = prSummary, 
+                                     summaryFunction = caret::prSummary, 
                                      # summaryFunction = twoClassSummary, 
                                      classProbs = TRUE,
                                      savePredictions = "all")
@@ -453,12 +453,13 @@ abline(h=0)
 
 anova.gam(gam_model)
 ```
+
 ```{r}
 if (SAVEPLOTS){
   graphics.off()
 
   PLOTNAME <- "gam_model"
-  png(filename = paste0(PLOTPATH, "/", PLOTNAME, ".png"), PLOTWIDTH, PLOTHEIGHT, res = 600)
+  pdf(file = paste0(PLOTPATH, "/", PLOTNAME, ".pdf"), width = PLOTWIDTH*0.7, height = PLOTHEIGHT)
   
   op <- par(mfrow=c(3,3))
             # , mai=c(0.01,0.01,0.01,0.01), mar=c(0.1,0.1,0.1,0.1))
@@ -503,7 +504,7 @@ Cross-validation gam
 # defining training control
 # as Leave One Out Cross Validation
 train_control <- caret::trainControl(method = "LOOCV",
-                                     summaryFunction = prSummary, 
+                                     summaryFunction = caret::prSummary, 
                                      # summaryFunction = twoClassSummary, 
                                      classProbs = TRUE,
                                      savePredictions = "all")
