@@ -837,6 +837,7 @@ if (SAVEPLOTS) {
 ```
 
 
+# No. of records per category
 
 ```{r}
 dfdbn.renamed <- dfdbn %>%
@@ -877,6 +878,7 @@ dfdbn.renamed <- dfdbn %>%
            # "Ruptured IA = No" = "Ruptured_IA.No"
            )) %>%
     select(-c(Age, `IA size`))
+
 variables <- c()
 varlevels <- c()
 varlevn <- c()
@@ -885,9 +887,16 @@ for(c in names(dfdbn.renamed)){
   variables <- c(variables, rep(c, length(varlevs)))
   varlevels <- c(varlevels, varlevs)
   varlevn <- c(varlevn, as.numeric(summary(dfdbn.renamed[[c]])))
+  # varlevnrel <- c(varlevnrel, )
 }
 
-text_tbl <- data.frame(variables, varlevels, varlevn)
+text_tbl <- data.frame(variables, varlevels, varlevn) %>%
+  group_by(variables, varlevels) %>%
+  summarise(n=varlevn, .groups = "drop_last") %>%
+  mutate(varlevnrel = scales::percent(n/sum(n), accuracy = 0.1)) %>%
+  # mutate(varlevnrel = round(n/sum(n), 2)) %>%
+  ungroup()
+
 text_tbl$variables_cleaned <- " "
 for(r in 2:nrow(text_tbl)){
   current <- text_tbl[r,1]
@@ -901,19 +910,21 @@ for(r in 2:nrow(text_tbl)){
     text_tbl$variables_cleaned[r] <- current
   }
 }
+text_tbl$variables_cleaned <- unlist(text_tbl$variables_cleaned)
 text_tbl
 
 text_tbl %>%
-  select(c(variables_cleaned, varlevels, varlevn)) %>%
+  select(c(variables_cleaned, varlevels, n, varlevnrel)) %>%
   rename("Factor" = "variables_cleaned",
          "Level" = "varlevels",
-         "Number of records" = "varlevn") %>%
+         "Number of records" = "n",
+         "Rel. no. of records" = "varlevnrel") %>%
   
   kbl(format = "latex", booktabs = T) %>%
   # kable_classic(full_width = F) %>%
-  kable_styling(latex_options=c("striped", "hold_position"),
+  kable_styling(latex_options=c("striped", "hold_position", "scale_down"),
                 # stripe_index = c(1,3,5,7,10,12)) %>%
-                stripe_index = c(1,2,5,6,10,11)) %>%
+                stripe_index = c(1,2,5,6,7,10,11)) %>%
   column_spec(3) %>%
   # kableExtra::landscape() %>%
   cat(., file = paste0(PLOTPATH, "/vars_overview_table.tex"))
