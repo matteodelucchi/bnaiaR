@@ -44,7 +44,7 @@ library(forcats)
 # Save plots as files? 
 SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
-PLOTFORMAT <- "png" # "svg" or "png"
+PLOTFORMAT <- "pdf" # "svg", "pdf" or "png"
 ```
 
 # Load Preprocessed Data
@@ -241,6 +241,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   plot(arcstren[["tabu"]])
   # abline(v=0.3)
@@ -272,6 +274,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(
     cpdag(avg.boot, wlbl = TRUE),
@@ -299,6 +303,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(
     avgnet[["tabu"]],
@@ -344,6 +350,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(
     cpdag(avgnet[["tabu.th03"]], wlbl = TRUE),
@@ -373,6 +381,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(avgnet[["tabu.th03"]],
                 arcstren[["tabu"]],
@@ -494,6 +504,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   plot(arcstren[["tabu.bic.custom"]])
   # abline(v = 0.3)
@@ -513,6 +525,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(cpdag(avg.boot, wlbl = TRUE),
               arcstren[["tabu.bic.custom"]],
@@ -537,6 +551,8 @@ if (SAVEPLOTS) {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   strength.plot(avgnet[["tabu.bic.custom"]],
                 arcstren[["tabu.bic.custom"]],

@@ -230,7 +230,9 @@ if (SAVEPLOTS) {
   if (PLOTFORMAT == "svg") {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
-    png(paste0(FILE, PLOTFORMAT))
+    png(paste0(FILE, PLOTFORMAT), res = 300)
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
   }
   plot(xval.bic.bayes.part, xval.bic.bayes, xval.bic.custom.bayes, 
      xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
