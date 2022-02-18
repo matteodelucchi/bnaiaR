@@ -32,8 +32,6 @@ Imports:
     cowplot,
     bnlearn,
     data.table,
-    igraph,
-    mcmcabn,
     kableExtra
 Depends: 
     R (>= 3.5.0)
