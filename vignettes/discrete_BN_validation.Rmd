@@ -564,9 +564,8 @@ if (SAVEPLOTS){
   dev.off()
 } 
 ```
-```{r}
-SAVEPLOTS <- T
 
+```{r}
 par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Ruptured_IA"), n = 10^4, evidence = (Smoking_Current_Former_No == "Current" & Hypertension == "AnyType" & Positive.famillial.history == "Yes"))
 plot(prop.table(table(sim)), col = "grey",
@@ -584,39 +583,48 @@ if (SAVEPLOTS){
 ```
 
 ```{r}
+SAVEPLOTS <- F
 par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "AnyType"))
-plot(prop.table(table(sim)), col = "grey",
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
      main = "P(Multiple.IAs | Hypertension == 'AnyType')")
 prop.table(table(sim))
 
 sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "Never"))
-plot(prop.table(table(sim)), col = "grey",
+barplot(prop.table(table(sim)), col = "grey",
+     ylim = c(0,0.8), 
      main = "P(Multiple.IAs | Hypertension == 'Never')")
 prop.table(table(sim))
 
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_multiple_hbp"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
+  # dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+  #           res = 600, width = 6000)
+  dev.print(pdf, file =paste0(PLOTPATH, "/", PLOTNAME, ".pdf"),
+            width = 16, height = 9)
   dev.off()
 } 
 
 par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "AnyType"))
-plot(prop.table(table(sim)), col = "grey",
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.5), 
      main = "P(IA Location | Hypertension == 'AnyType')")
 prop.table(table(sim))
 
 sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "Never"))
-plot(prop.table(table(sim)), col = "grey",
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.5),
      main = "P(IA Location | Hypertension == 'Never')")
 prop.table(table(sim))
 
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_location_hbp"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
+  # dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
+  #           res = 600, width = 6000)
+  dev.print(pdf, file =paste0(PLOTPATH, "/", PLOTNAME, ".pdf"),
+            width = 16)
   dev.off()
 } 
 ```
