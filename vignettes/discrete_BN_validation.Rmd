@@ -102,9 +102,9 @@ xval.rupture.bic.custom <- bn.cv(
     loss = "pred",
     loss.args = list(target =  "Ruptured_IA")
   )
-df.cvmetrics <- data.frame(loocv.dbn.clerr.bic.part = c(cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.clerr.bic = c(cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.clerr.custom = c(cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$byClass))
+df.cvmetrics <- data.frame(loocv.dbn.clerr.bic.part = c(avgClassError = mean(loss(xval.rupture.bic.part)), sdClassError = sd(loss(xval.rupture.bic.part)), cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.clerr.bic = c(avgClassError = mean(loss(xval.rupture.bic)), sdClassError = sd(loss(xval.rupture.bic)),cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.clerr.custom = c(avgClassError = mean(loss(xval.rupture.bic.custom)), sdClassError = sd(loss(xval.rupture.bic.custom)),cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$byClass))
 df.cvmetrics
 ```
 
@@ -209,11 +209,11 @@ cv.metrics(xval.bic.bayes.part)
 cv.metrics(xval.bic.bayes)
 cv.metrics(xval.bic.custom.bayes)
 
-df.cvmetrics.postclerr <- data.frame(loocv.dbn.postclerr.bic.part = c(cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.postclerr.bic = c(cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.postclerr.custom = c(cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$byClass))
+df.cvmetrics.postclerr <- data.frame(loocv.dbn.postclerr.bic.part = c(avgPostClassError = mean(loss(xval.bic.bayes.part)), sdClassError = sd(loss(xval.bic.bayes.part)), cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.postclerr.bic = c(avgPostClassError = mean(loss(xval.bic.bayes)), sdClassError = sd(loss(xval.bic.bayes)), cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$byClass),
+                           loocv.dbn.postclerr.custom = c(avgPostClassError = mean(loss(xval.bic.custom.bayes)), sdClassError = sd(loss(xval.bic.custom.bayes)), cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$byClass))
 df.cvmetrics <- cbind(df.cvmetrics, df.cvmetrics.postclerr)
-df.cvmetrics <- round(df.cvmetrics, 3)
+df.cvmetrics <- round(df.cvmetrics, 2)
 df.cvmetrics
 ```
 
