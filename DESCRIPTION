@@ -32,13 +32,15 @@ Imports:
     cowplot,
     bnlearn,
     data.table,
-    kableExtra
+    kableExtra,
     pROC,
     pscl,
     ROCR,
     sjPlot,
     survminer,
     survAUC,
-    survival
+    survival,
+    caret,
+    magrittr
 Depends: 
     R (>= 3.5.0)

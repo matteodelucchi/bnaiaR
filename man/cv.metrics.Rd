@@ -4,10 +4,12 @@
 \alias{cv.metrics}
 \title{Prediction Error Metrics}
 \usage{
-cv.metrics(xval)
+cv.metrics(xval, returnConfMat = FALSE)
 }
 \arguments{
 \item{xval}{object returned from `bnlearn::bn.cv()`}
+
+\item{returnConfMat}{if FALSE (the default) no additional metrics are returned. If TRUE `caret::confusionMatrix(., positive = "Yes", mode = "everything")` is returned including additional metrics.}
 }
 \value{
 list of error metrics.

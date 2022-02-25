@@ -108,7 +108,7 @@ f1 <- function(estGraph, trueGraph){
 #' @return integer
 #' @export
 score.ratio <- function(trueGraph, estGraph, data, crt){
-  if (nrow(undirected.arcs(trueGraph)) != 0){
+  if (nrow(bnlearn::undirected.arcs(trueGraph)) != 0){
     warning("Undirected arcs in trueGraph: Can not compute score.ratio.")
     return(NA)
   } else {
@@ -157,8 +157,8 @@ score.ratio <- function(trueGraph, estGraph, data, crt){
 #'  \item{Bayesian factor}
 #' }
 #'
+#' @importFrom bnlearn BF
 #' @export
-#'
 network.metrics <- function(data, estGraph, estGraph.th0, algo, tabulistsize=NULL, b=NULL, trueGraph=NULL, crt=NULL, priorname=NULL){
   allowed_scores <- c("bic", "aic", "bde", "bds", "bdj", "mbde", "bdla", "k2")
   # Handle argument values for print out

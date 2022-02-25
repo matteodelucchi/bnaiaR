@@ -11,6 +11,7 @@
 #'
 #' @return raises warning if appropriate.
 #' @importFrom dplyr filter
+#' @importFrom magrittr %>%
 #' @export
 detectUndefinedValue <- function(df, newvar, oldvar) {
   # Store in data frame all values with UNDEFINED prefix in new variable.
@@ -36,10 +37,11 @@ detectUndefinedValue <- function(df, newvar, oldvar) {
 #'
 #' @return data.frame of variables in ISGC structure
 #'
-#' @importFrom dplyr group_by mutate distinct ungroup case_when rename
+#' @importFrom dplyr group_by mutate distinct ungroup case_when rename select
 #' @importFrom tidyr fill
 #' @importFrom tidyselect everything
 #' @importFrom lubridate time_length interval
+#' @importFrom magrittr %>%
 #'
 #' @export
 crim4toISGC <- function(data, returnall = FALSE) {
@@ -370,10 +372,11 @@ crim4toISGC <- function(data, returnall = FALSE) {
 #'
 #' @return data.frame of variables in ISGC structure
 #'
-#' @importFrom dplyr group_by mutate distinct ungroup case_when rename
+#' @importFrom dplyr group_by mutate distinct ungroup case_when rename coalesce
 #' @importFrom tidyr fill
 #' @importFrom tidyselect everything
 #' @importFrom lubridate time_length interval
+#' @importFrom magrittr %>%
 #'
 #' @export
 crim5toISGC <- function(data, returnall = FALSE) {

@@ -14,6 +14,8 @@
 #'
 #' @importFrom stringr str_subset str_which
 #' @importFrom purrr is_empty
+#' @importFrom dplyr select
+#' @importFrom magrittr %>%
 #'
 #' @examples
 #' \dontrun{prep_exp_data(dat = adb,
@@ -348,6 +350,8 @@ prep_exp_data <- function(dat = adb,
 #' The order must match to the order of names(eval)!
 #'
 #' @return tibble which can be further processed to plot
+#' @importFrom stats setNames
+#' @importFrom magrittr %>%
 #' @export
 prep.data2plot <- function(eval, newnames = NULL){
   # Prepare named vector with (old-names, new-names)
@@ -397,6 +401,7 @@ prep.data2plot <- function(eval, newnames = NULL){
 #' From cross-validation object, calculate a set of prediction error metrics.
 #'
 #' @param xval object returned from `bnlearn::bn.cv()`
+#' @param returnConfMat if FALSE (the default) no additional metrics are returned. If TRUE `caret::confusionMatrix(., positive = "Yes", mode = "everything")` is returned including additional metrics.
 #'
 #' @return list of error metrics.
 #' @export
@@ -521,7 +526,6 @@ amilocal <- function(myuser="delt"){
 #' @param method Currently only "l1" supported.
 #'
 #' @return arc strength threshold
-#' @export
 #'
 #' @examples
 #' \dontrun{dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
@@ -533,6 +537,8 @@ amilocal <- function(myuser="delt"){
 #' # Draw 50% threshold mark
 #' abline(v=0.5)
 #' }
+#' @importFrom stats ecdf knots optimize quantile
+#' @export
 arc.stren.threshold = function(strength, method = "l1") {
 
   # do not blow up with graphs with only 1 node.
@@ -597,7 +603,6 @@ abn2bnlearn.plot <- function(data, abndag, title){
 #' @param SAVE If True, the plot will be saved.
 #'
 #' @return plot or none.
-#' @export
 #'
 #' @examples
 #' \dontrun{roc <- pROC::roc(ValidSet$Ruptured_IA, pred_glm)
@@ -605,6 +610,10 @@ abn2bnlearn.plot <- function(data, abndag, title){
 #' aucCI <- round(pROC::ci.auc(ValidSet$Ruptured_IA, pred_glm), 2)
 #' plotROCAUC(roc, aucCI, FILENAME = "logreg_IArupture_roc.png")
 #' }
+#' @importFrom grDevices dev.off
+#' @importFrom grDevices png
+#' @importFrom graphics text
+#' @export
 plotROCAUC <- function(roc, aucCI, FILENAME, PLOTPATH=NULL, SAVE=SAVEPLOTS){
   if (SAVE){
     if(is.null(PLOTPATH)){

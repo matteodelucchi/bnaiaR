@@ -8,8 +8,9 @@
 #'
 #' @return ggplot object
 #'
-#' @importFrom dplyr group_by summarise mutate arrange desc
+#' @importFrom dplyr group_by summarise mutate arrange desc n
 #' @importFrom tidyr gather
+#' @importFrom magrittr %>%
 #' @importFrom stats reorder
 #' @import ggplot2
 #' @export
@@ -67,6 +68,7 @@ overview_plt <- function(df, x, decreasing = FALSE, warnings = FALSE){
 #' @return ggplot object
 #'
 #' @importFrom tidyr gather
+#' @importFrom magrittr %>%
 #' @import ggplot2
 #' @export
 overview_plt_max <- function(df){
