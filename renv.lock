@@ -12,7 +12,6 @@
     "Version": "3.13"
   },
   "Packages": {
-<<<<<<< HEAD
     "BH": {
       "Package": "BH",
       "Version": "1.75.0-0",
@@ -20,8 +19,6 @@
       "Repository": "CRAN",
       "Hash": "e4c04affc2cac20c8fec18385cd14691"
     },
-=======
->>>>>>> main
     "BiocGenerics": {
       "Package": "BiocGenerics",
       "Version": "0.38.0",
@@ -48,8 +45,6 @@
       "Repository": "CRAN",
       "Hash": "030aaec5bc6553f35347cbb1e70b1a17"
     },
-<<<<<<< HEAD
-=======
     "KMsurv": {
       "Package": "KMsurv",
       "Version": "0.1-5",
@@ -57,7 +52,6 @@
       "Repository": "CRAN",
       "Hash": "aee647d15e5541ad44d157f7b78fda01"
     },
->>>>>>> main
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-20",
@@ -224,21 +218,19 @@
       "Repository": "CRAN",
       "Hash": "9fe98599ca456d6552421db0d6772d8f"
     },
-<<<<<<< HEAD
     "bnlearn": {
       "Package": "bnlearn",
       "Version": "4.7",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b81a2a2181935ba70167bbaf27c58ded"
-=======
+    },
     "bitops": {
       "Package": "bitops",
       "Version": "1.0-7",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b7d8d8ee39869c18d8846a184dd8a1af"
->>>>>>> main
     },
     "boot": {
       "Package": "boot",
@@ -254,8 +246,6 @@
       "Repository": "CRAN",
       "Hash": "9b1e2c1f75b349e3ffa7e9c69eec0c52"
     },
-<<<<<<< HEAD
-=======
     "caTools": {
       "Package": "caTools",
       "Version": "1.18.2",
@@ -263,7 +253,6 @@
       "Repository": "CRAN",
       "Hash": "34d90fa5845004236b9eacafc51d07b2"
     },
->>>>>>> main
     "car": {
       "Package": "car",
       "Version": "3.0-11",
@@ -390,8 +379,6 @@
       "Repository": "CRAN",
       "Hash": "36b67b5adf57b292923f5659f5f0c853"
     },
-<<<<<<< HEAD
-=======
     "datawizard": {
       "Package": "datawizard",
       "Version": "0.2.1",
@@ -399,7 +386,6 @@
       "Repository": "CRAN",
       "Hash": "8edf85932d64cb9c08db13ab73670cc9"
     },
->>>>>>> main
     "digest": {
       "Package": "digest",
       "Version": "0.6.28",
@@ -491,7 +477,6 @@
       "Repository": "CRAN",
       "Hash": "81c3244cab67468aac4c60550832655d"
     },
-<<<<<<< HEAD
     "foreach": {
       "Package": "foreach",
       "Version": "1.5.1",
@@ -499,8 +484,6 @@
       "Repository": "CRAN",
       "Hash": "e32cfc0973caba11b65b1fa691b4d8c9"
     },
-=======
->>>>>>> main
     "foreign": {
       "Package": "foreign",
       "Version": "0.8-81",
@@ -522,7 +505,6 @@
       "Repository": "CRAN",
       "Hash": "f568ce73d3d59582b0f7babd0eb33d07"
     },
-<<<<<<< HEAD
     "gRbase": {
       "Package": "gRbase",
       "Version": "1.8-6.7",
@@ -530,8 +512,6 @@
       "Repository": "CRAN",
       "Hash": "c25e7184815043557e65e5e2d0603db2"
     },
-=======
->>>>>>> main
     "generics": {
       "Package": "generics",
       "Version": "0.1.0",
@@ -698,6 +678,7 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "f1e720796423d6c08bf430fc3be0bf10"
+    },
     "insight": {
       "Package": "insight",
       "Version": "0.14.5",
@@ -725,6 +706,7 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "64778782a89480e9a644f69aad9a2877"
+    },
     "jpeg": {
       "Package": "jpeg",
       "Version": "0.1-9",
@@ -858,6 +840,7 @@
       "RemoteType": "local",
       "RemoteUrl": "/home/delt/ZHAW/bnaiaR/renv/local/mcmcabn_0.4.tar.gz",
       "Hash": "516bde99e2f57d594d8e55300bce00fd"
+    },
     "maxstat": {
       "Package": "maxstat",
       "Version": "0.7-25",
