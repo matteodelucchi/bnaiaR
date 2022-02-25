@@ -1,0 +1,922 @@
+---
+title: "Regression Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Regression Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  out.width = "100%",
+  out.height = "100%",
+  fig.width = 12,
+  fig.height = 9
+)
+```
+
+```{r development, eval=FALSE, include=FALSE}
+# devtools::document()
+# devtools::load_all()
+# renv::snapshot(prompt = F)
+
+```
+
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+library(bnaiaR)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(mgcv)
+library(survival)
+library(survminer)
+
+set.seed(100)
+
+SAVEPLOTS <- F
+PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+## Load Data
+
+```{r load_data}
+data(exp11_dat)
+data = exp11_dat$abndata
+str(data)
+```
+
+# Multiple Logistic Regression Model 
+
+```{r}
+data.reg <- data %>%
+  mutate(location.grouped = fct_relevel(location.grouped, c("Low","Medium","High")))%>%
+  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("No","Former","Current"))) %>%
+  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("No", "Yes"))) %>%
+  mutate(Gender = fct_relevel(Gender,c("Male","Female"))) %>%
+  mutate(Hypertension = fct_relevel(Hypertension,c("Never","AnyType"))) %>%
+  mutate(Ruptured_IA = fct_relevel(Ruptured_IA,c("No","Yes"))) %>%
+  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("No", "Yes"))) %>%
+  mutate(AgeDiag.group = fct_relevel(AgeDiag.group, c(LETTERS[seq(8,1,-1)]))) %>%
+  mutate(IAsize.groups.merged = fct_relevel(IAsize.groups.merged, c(LETTERS[seq(3,1,-1)])))
+```
+
+
+
+## Log reg for IA Rupture
+
+As in Figure 6 in Morel et al. 2021.
+
+```{r}
+data.logreg <- data.reg %>%
+  select(c(location.grouped, Smoking_Current_Former_No, Multiple.IAs, Gender, Hypertension, Ruptured_IA)) 
+```
+
+
+### Data preparation
+
+Morel et al. 2021:
+1. dataset contains the addition column classifying according to NA_EU versus Fin
+2. creation of the cohort with only sporadic cases (`Positive.famillial.history=="No"`)
+
+```{r}
+train <- sample.int(n = nrow(data.logreg), size = 0.7*nrow(data.logreg), replace = FALSE)
+TrainSet <- data.logreg[train,]
+ValidSet <- data.logreg[-train,]
+str(TrainSet)
+summary(TrainSet)
+str(ValidSet)
+summary(ValidSet)
+```
+
+
+
+```{r}
+glm_model <- glm(Ruptured_IA ~.,family=binomial(link='logit'),data=TrainSet)
+summary (glm_model)
+
+plt <- sjPlot::plot_model(glm_model,
+           show.values = TRUE, 
+           value.offset = .3, 
+           sort.est=TRUE,  
+           line.size = 1.5, 
+           dot.size = 3, #
+           # transform="plogis", # plots probabilities
+           # value.size	= 4,
+           title = "Logistic regression for IA rupture in ADB") +
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light()
+
+if (SAVEPLOTS){
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt.mod, filename = "logreg_IArupture.png", path = PLOTPATH, 
+         # dpi = 600, width = 4096, height = 3072, units = "px")
+         dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+```
+
+Very similar to figure 6A of Morel et al. 
+Deviations might come from differences in data set.
+
+
+```{r}
+glm_model
+ANOVA <- anova(glm_model,test="Chisq")
+ANOVA$`Pr(>Chi)`
+ANOVA
+
+
+pscl::pR2(glm_model)
+pred_glm <- predict(glm_model,newdata=ValidSet,type='response')
+table(ValidSet$Ruptured_IA, pred_glm > 0.5)
+
+roc <- pROC::roc(ValidSet$Ruptured_IA, pred_glm)
+auc <- roc$auc
+aucCI <- round(pROC::ci.auc(ValidSet$Ruptured_IA, pred_glm), 2)
+plotROCAUC(roc, aucCI, FILENAME = "logreg_IArupture_roc.png", PLOTPATH = PLOTPATH)
+
+pred_glm.rocr <- ROCR::prediction(pred_glm, ValidSet$Ruptured_IA)
+perf.acc <- ROCR::performance(pred_glm.rocr, measure="acc", x.measure = "cutoff")
+ROCR::plot(perf.acc, main = "Auccuracy")
+# abline(v = 0.5)
+
+perf.precrec <- ROCR::performance(pred_glm.rocr, measure="prec", x.measure="rec")
+plot(perf.precrec, 
+     main = "Precision/recall")
+
+paste("Accuracy = ", max(perf.acc@y.values[[1]]))
+perf.acc@x.values[[1]][which(perf.acc@y.values[[1]] == max(perf.acc@y.values[[1]]))]
+# perf.acc@y.values[[1]][max(which(perf.acc@x.values[[1]] >= 0.5))]
+
+## Accuraccy as in Morel et al 2021 for verification:
+# why 0.48?
+pred_glm <- ifelse(pred_glm > 0.53,"Yes","No")
+misClasificError <- mean(pred_glm != ValidSet$Ruptured_IA)
+format(misClasificError, digits = 2)
+lp_accuracy_glm <- (paste("Accuracy = ",1-misClasificError))
+lp_accuracy_glm
+```
+
+The ROC curve shows only slightly better classification by the model than at 
+random. 
+The AUC is about 0.75 which is comparable to the one in the manuscript of 
+Morel et al. 2021 (AUC=0.73).
+
+Let's include all variables in the model.
+
+## Log reg for IA Rupture including all Variables
+
+```{r}
+data.logreg.all <- data.reg %>%
+  rename(c("Sex" = "Gender",
+           # "Sex = Female" = "Gender.Female",
+           # "Sex = Male" = "Gender.Male",
+           "Fam. History" = "Positive.famillial.history",
+           # "Fam. History = No" = "Positive.famillial.history.No",
+           # "Fam. History = Yes" = "Positive.famillial.history.Yes",
+           "Age" = "AgeDiag.group",           
+           # "Age = F" = "AgeDiag.group.F",
+           # "Age = G" = "AgeDiag.group.G",
+           # "Age = D" = "AgeDiag.group.D",
+           # "Age = E" = "AgeDiag.group.E",
+           # "Age = C" = "AgeDiag.group.C",
+           # "Age = B" = "AgeDiag.group.B",
+           # "Age = A" = "AgeDiag.group.A",
+           "Hypertension" = "Hypertension",
+           # "Hypertension = Never" = "Hypertension.Never",
+           # "Hypertension = AnyType" = "Hypertension.AnyType",
+           "Smoking" = "Smoking_Current_Former_No",
+           # "Smoking = Current" = "Smoking_Current_Former_No.Current",
+           # "Smoking = Former" = "Smoking_Current_Former_No.Former",
+           # "Smoking = No" = "Smoking_Current_Former_No.No",
+           "Location" = "location.grouped",
+           # "Location = High risk" = "location.grouped.High",
+           # "Location = Medium risk" = "location.grouped.Medium",
+           # "Location = Low risk" = "location.grouped.Low",
+           "IA size" = "IAsize.groups.merged",
+           # "IA size = A" = "IAsize.groups.merged.A",
+           # "IA size = B" = "IAsize.groups.merged.B",
+           # "IA size = C" = "IAsize.groups.merged.C",
+           "Multiple IAs" = "Multiple.IAs",
+           # "Multiple IAs = Yes" = "Multiple.IAs.Yes",
+           # "Multiple IAs = No" = "Multiple.IAs.No",
+           "Ruptured IA" = "Ruptured_IA"
+           # "Ruptured IA = Yes" = "Ruptured_IA.Yes",
+           # "Ruptured IA = No" = "Ruptured_IA.No"
+           ))
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(data.logreg.all), size = 0.7*nrow(data.logreg.all), replace = FALSE)
+TrainSet <- data.logreg.all[train,]
+ValidSet <- data.logreg.all[-train,]
+```
+
+Cross-validation
+
+```{r message=FALSE, warning=FALSE}
+# defining training control
+# as Leave One Out Cross Validation
+train_control <- caret::trainControl(method = "LOOCV",
+                                     summaryFunction = caret::prSummary, 
+                                     # summaryFunction = twoClassSummary, 
+                                     classProbs = TRUE,
+                                     savePredictions = "all")
+ 
+# training the model by assigning sales column
+# as target variable and rest other column
+# as independent variable
+model <- caret::train(`Ruptured IA` ~., data = data.logreg.all,
+               method = "glm",
+               family=binomial(link='logit'),
+               trControl = train_control)
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+
+loocv.cm.logreg <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything")
+df.predmetrics <- data.frame(loocv.logreg = round(c(loocv.cm.logreg$overall, loocv.cm.logreg$byClass), 3))
+df.predmetrics
+```
+
+70:30 split
+
+```{r}
+glm_model.logreg.all <- glm(`Ruptured IA` ~.,family=binomial(link='logit'),data=TrainSet)
+summary (glm_model.logreg.all)
+
+plt <- sjPlot::plot_model(glm_model.logreg.all,
+           show.values = TRUE, 
+           value.offset = .3, 
+           sort.est=TRUE,  
+           line.size = 1.5, 
+           dot.size = 3, #,transform="plogis" plots probabilities
+           title = "Logistic regression for IA rupture") +
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light() 
+
+if (SAVEPLOTS){
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt.mod, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
+         dpi = 600, width = 4096, height = 4096, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+
+sjPlot::tab_model(glm_model.logreg.all)
+```
+
+In log-regression, multinomial parameters are binarized.
+Maybe due to the high number of parameters (i.e. from AgeDiag) others become 
+insignificant which are known to have a significant influence though (i.e. Gender).
+
+```{r}
+glm_model.logreg.all
+ANOVA.logreg.all <- anova(glm_model.logreg.all,test="Chisq")
+ANOVA.logreg.all$`Pr(>Chi)`
+ANOVA.logreg.all
+
+
+pscl::pR2(glm_model.logreg.all)
+pred_glm.logreg.all <- predict(glm_model.logreg.all,newdata=ValidSet,type='response')
+table(ValidSet$`Ruptured IA`, pred_glm.logreg.all > 0.5)
+
+
+conf.mat <- table(as.numeric(ValidSet$`Ruptured IA`), as.numeric(pred_glm.logreg.all>0.5))
+colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+
+split.cm.logreg.all <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
+df.predmetrics <- cbind(df.predmetrics, data.frame(split.logreg = round(c(split.cm.logreg.all$overall, split.cm.logreg.all$byClass), 3)))
+df.predmetrics
+
+roc.logreg.all <- pROC::roc(ValidSet$`Ruptured IA`, pred_glm.logreg.all)
+aucCI.logreg.all <- round(pROC::ci.auc(ValidSet$`Ruptured IA`, pred_glm.logreg.all), 2)
+plotROCAUC(roc.logreg.all, aucCI.logreg.all, FILENAME = "logreg_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH)
+
+pred.logreg.all.rocr <- ROCR::prediction(pred_glm.logreg.all, ValidSet$`Ruptured IA`)
+perf.acc.logreg.all <- ROCR::performance(pred.logreg.all.rocr, measure="acc", x.measure = "cutoff")
+ROCR::plot(perf.acc.logreg.all, main = "Auccuracy")
+
+perf.precrec.logreg.all <- ROCR::performance(pred.logreg.all.rocr, measure="prec", x.measure="rec")
+plot(perf.precrec.logreg.all, 
+     main = "Precision/recall")
+
+paste("Accuracy = ", max(perf.acc.logreg.all@y.values[[1]]))
+max.acc.cutoff <- perf.acc.logreg.all@x.values[[1]][which(perf.acc.logreg.all@y.values[[1]] == max(perf.acc.logreg.all@y.values[[1]]))]
+paste("Cutoff with max. Accuracy = ", max.acc.cutoff)
+# perf.acc.logreg.all@y.values[[1]][max(which(perf.acc.logreg.all@x.values[[1]] >= 0.5))]
+
+## Accuraccy as in Morel et al 2021 for verification:
+pred_glm.logreg.all <- ifelse(pred_glm.logreg.all > max.acc.cutoff,"Yes","No")
+misClasificError.logreg.all <- mean(pred_glm.logreg.all != ValidSet$`Ruptured IA`)
+# format(misClasificError.logreg.all, digits = 2)
+lp_accuracy_glm.logreg.all <- (paste("Accuracy = ",1-misClasificError.logreg.all))
+lp_accuracy_glm.logreg.all
+```
+
+The AUC increased to the model above with only a subset of the variables 
+to 0.77.
+In the ANOVA Hypertension become non-significant.
+
+## Log reg for IA Rupture including all Variables but age
+
+```{r}
+data.logreg.all.noage <- data.reg %>%
+  select(-c(AgeDiag.group))
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(data.logreg.all.noage), size = 0.7*nrow(data.logreg.all.noage), replace = FALSE)
+TrainSet <- data.logreg.all.noage[train,]
+ValidSet <- data.logreg.all.noage[-train,]
+```
+
+
+
+```{r}
+glm_model.logreg.all.noage <- glm(Ruptured_IA ~.,family=binomial(link='logit'),data=TrainSet)
+summary(data.logreg.all.noage)
+
+plt <- sjPlot::plot_model(glm_model.logreg.all.noage,
+           show.values = TRUE, 
+           value.offset = .3, 
+           sort.est=TRUE,  
+           line.size = 1.5, 
+           dot.size = 3, #,transform="plogis" plots probabilities
+           title = "Logistic regression for IA rupture in ADB (all variables)") +
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light() 
+
+if (SAVEPLOTS){
+  plt.mod <- plt +
+    sjPlot::font_size(
+                      title = 15,
+                      axis_title.y = 15,
+                      axis_title.x = 15,
+                      labels.x = 15,
+                      labels.y = 15,
+                      base.theme = theme_light())
+  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
+         dpi = 600, width = 4096, height = 4096, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+```
+
+
+
+# Multivariate Generalized Additive Model for IA Rupture including all variables
+
+Replacing categorical `AgeDiag.group` with continuous `AgeDiag`.
+
+```{r}
+gam_dat <- adb %>%
+  select(c(Gender, 
+           AgeDiag, 
+           # AgeDiag.group, 
+           Positive.famillial.history, Smoking_Current_Former_No, Hypertension, location.grouped, Multiple.IAs,
+           # IAsize.groups, 
+           IAsize_log, 
+           Ruptured_IA)) %>%
+  # Remove IA size outliers
+  filter(IAsize_log < 4) %>%
+  # Clean up age values
+  filter(AgeDiag != 0) %>%
+  mutate(location.grouped = fct_relevel(location.grouped, c("Low","Medium","High")))%>%
+  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("No","Former","Current"))) %>%
+  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("No", "Yes"))) %>%
+  mutate(Gender = fct_relevel(Gender,c("Male","Female"))) %>%
+  mutate(Hypertension = fct_relevel(Hypertension,c("Never","AnyType"))) %>%
+  mutate(Ruptured_IA = fct_relevel(Ruptured_IA,c("No","Yes"))) %>%
+  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("No", "Yes"))) 
+  # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, c(LETTERS[seq(8,1,-1)]))) %>%
+  # mutate(IAsize.groups.merged = fct_relevel(IAsize.groups.merged, c(LETTERS[seq(3,1,-1)])))
+  # mutate(Ruptured_IA = as.integer(Ruptured_IA))
+
+str(gam_dat)
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(gam_dat), size = 0.7*nrow(gam_dat), replace = FALSE)
+TrainSet <- gam_dat[train,]
+ValidSet <- gam_dat[-train,]
+```
+
+### Generalized additive model
+
+```{r}
+# gam_model <- gam(Ruptured_IA ~ Positive.famillial.history+location.grouped+s(IAsize_log, k=3)+s(AgeDiag, k=3), data=TrainSet, family = "binomial")
+gam_model <- gam(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+s(IAsize_log, k=3)+Multiple.IAs+s(AgeDiag, k=3), data=TrainSet, family = "binomial")
+gam.check(gam_model)
+summary.gam(gam_model)
+par(mfrow = c(1,8))
+plot.gam(gam_model, residuals=T, se=TRUE, 
+         shade=T, shade.col='gray90', 
+         all.terms = T, pages = 1)
+abline(h=0)
+
+anova.gam(gam_model)
+```
+
+```{r}
+if (SAVEPLOTS){
+  graphics.off()
+
+  PLOTNAME <- "gam_model"
+  pdf(file = paste0(PLOTPATH, "/", PLOTNAME, ".pdf"), width = PLOTWIDTH*0.7, height = PLOTHEIGHT)
+  
+  op <- par(mfrow=c(3,3))
+            # , mai=c(0.01,0.01,0.01,0.01), mar=c(0.1,0.1,0.1,0.1))
+  for (i in 1:9) {
+    plot.gam(gam_model, select = i, residuals=T, se=TRUE,
+             shade=T, shade.col='gray90',
+             all.terms = T)
+    abline(h=0)
+    }
+  par(op)
+  
+  dev.off()
+} else {
+  op <- par(mfrow=c(3,3))
+  for (i in 1:9) {
+    plot.gam(gam_model, select = i, residuals=T, se=TRUE, 
+             shade=T, shade.col='gray90', 
+             all.terms = T)  
+    abline(h=0)
+    }
+  par(op)
+}
+```
+
+```{r}
+gam_pred <- predict.gam(gam_model, newdata = ValidSet, type = "response")
+conf.mat <- table(ValidSet$Ruptured_IA, as.numeric(gam_pred>0.5))
+colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+
+split.cm.gam <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
+df.predmetrics <- cbind(df.predmetrics, data.frame(split.gam = round(c(split.cm.gam$overall, split.cm.gam$byClass), 3)))
+df.predmetrics
+
+roc.gam_model <- pROC::roc(ValidSet$Ruptured_IA, gam_pred)
+aucCI.gam_model <- round(pROC::ci.auc(ValidSet$Ruptured_IA, gam_pred), 2)
+plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH) # TODO: CHeck this function!
+```
+
+Cross-validation gam
+
+```{r message=FALSE, warning=FALSE}
+# defining training control
+# as Leave One Out Cross Validation
+train_control <- caret::trainControl(method = "LOOCV",
+                                     summaryFunction = caret::prSummary, 
+                                     # summaryFunction = twoClassSummary, 
+                                     classProbs = TRUE,
+                                     savePredictions = "all")
+ 
+# training the model by assigning sales column
+# as target variable and rest other column
+# as independent variable
+model <- caret::train(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+IAsize_log+Multiple.IAs+AgeDiag, data = gam_dat,
+               method = "gam",
+               family=binomial(link='logit'),
+               trControl = train_control,
+               tuneGrid = data.frame(method = "GCV.Cp", select = FALSE))
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+
+loocv.cm.gam <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything")
+df.predmetrics <- cbind(df.predmetrics, data.frame(loocv.gam = round(c(loocv.cm.gam$overall, loocv.cm.gam$byClass), 3)))
+df.predmetrics
+```
+
+```{r}
+gam_model_summary <- summary(gam_model)
+pltdat <- data.frame(varnames = names(gam_model_summary$p.coeff), coefs = as.numeric(gam_model_summary$p.coeff), pvalue=as.numeric(gam_model_summary$p.pv)) %>%
+  mutate(expcoefs = exp(coefs))
+
+ggplot(pltdat)+
+  aes(x=varnames, y=coefs)+
+  geom_point()+
+  ylab("Logit") +
+  geom_hline(yintercept = 0) +
+  theme_light() +
+  coord_flip()
+
+ggplot(pltdat)+
+  aes(x=varnames, y=expcoefs)+
+  geom_point()+
+  ylab("Odds ratios") +
+  geom_hline(yintercept = 1) +
+  theme_light() +
+  coord_flip()
+
+if (SAVEPLOTS){
+  # plt.mod <- plt +
+  #   sjPlot::font_size(
+  #                     title = 15,
+  #                     axis_title.y = 15,
+  #                     axis_title.x = 15,
+  #                     labels.x = 15,
+  #                     labels.y = 15,
+  #                     base.theme = theme_light())
+  # ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH, 
+  #        dpi = 600, width = 4096, height = 4096, units = "px")
+  #        # dpi = 600, width = 4096, height = 2304, units = "px")
+} else {
+  plt
+}
+```
+
+store prediction metrics
+
+```{r}
+write.csv(df.predmetrics, file = paste0(PLOTPATH, "/prediction_metrics_regression.csv"))
+```
+
+
+# Multivariate Cox regression for IA Rupture including all variables
+
+Replacing categorical `AgeDiag.group` with continuous `AgeDiag`.
+
+```{r}
+data("exp06_dat")
+coxdat <- exp06_dat$abndata
+data.coxreg.all <- data.reg %>%
+  cbind(coxdat$AgeDiag, coxdat$IAsize_log) %>%
+  rename(AgeDiag = "coxdat$AgeDiag",
+         IAsize_log = "coxdat$IAsize_log") %>%
+  select(-c(AgeDiag.group, IAsize.groups.merged)) %>%
+  # tibble::rowid_to_column("ID") %>%
+  mutate(Ruptured_IA = as.integer(Ruptured_IA))
+
+str(data.coxreg.all)
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(data.coxreg.all), size = 0.7*nrow(data.coxreg.all), replace = FALSE)
+TrainSet <- data.coxreg.all[train,]
+ValidSet <- data.coxreg.all[-train,]
+```
+
+### Cox regression
+
+We fit a survival model with:  
+Event: Rupture_IA == "Yes"  
+Time: AgeDiag  
+
+
+```{r}
+coxreg <- coxph(Surv(time = AgeDiag, event = Ruptured_IA, type = "right") ~ ., data = TrainSet)
+summary(coxreg)
+
+cox.pred <- predict(coxreg, newdata=ValidSet)
+surv.pred <- basehaz(coxreg)
+Surv.rsp <- Surv(time = TrainSet$AgeDiag, event = TrainSet$Ruptured_IA, type = "right")
+Surv.rsp.new <- Surv(time = ValidSet$AgeDiag, event = ValidSet$Ruptured_IA, type = "right")
+AUC_Uno <- survAUC::AUC.uno(Surv.rsp, Surv.rsp.new, cox.pred, surv.pred$time)
+plot(AUC_Uno)
+AUC_Uno$iauc
+
+# survAUC::IntAUC(AUC_Uno$auc, surv.pred$time, surv.pred$hazard, max(surv.pred$time))
+```
+
+The p-value for all three overall tests (likelihood, Wald, and score) are significant, 
+indicating that the model is significant. 
+These tests evaluate the omnibus null hypothesis that all of the betas (𝛽) are 0. 
+In the above example, the test statistics are in close agreement, 
+and the omnibus null hypothesis is soundly rejected.
+
+Gender Female is slightly significant and the HR=0.71 indicates a relationship
+between the patients’ sex and decreased risk of death.
+
+A positive fam. history of aSAH is significant and the HR=0.51 indicates a strong
+relationship between patient's awareness of aSAH casses in the family and decreased risk of death.
+
+Multiple IAs is significant and HR=1.43 indicates a relationship between IA
+multiplicity and decreased risk of death.
+
+Interesting: Former Smoking is not significant! but decreases risk of death!
+
+The AUC of the cox model is lower than the one from the MlogReg.
+
+```{r}
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all)
+survplt.all <- ggsurvplot(surffit, palette = "#2E9FDF",
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.all$plot, filename = "survival_all.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.all
+}
+```
+
+70% survive the AgeDiag of 75y. This means, that about 70% of the patients 
+didn't suffer a ruptured IA before the age of 75y.
+
+```{r}
+cox.sex <- data.coxreg.all %>%
+  group_by(Gender) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.sex
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.sex)
+survplt.gender <- ggsurvplot(surffit, conf.int = TRUE, legend.labs=c("Sex=Male", "Sex=Female"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.gender$plot, filename = "survival_gender.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.gender
+}
+```
+
+IAs rupture later in females than males (in accordance with Morel et al. 2021)
+but this is not significant (see above).
+
+```{r}
+cox.multiple <- data.coxreg.all %>%
+  group_by(Multiple.IAs) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.multiple
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.multiple)
+survplt.multiple <- ggsurvplot(surffit, conf.int = TRUE, 
+           legend.labs=c("Multiple IAs=No", "Multiple IAs=Yes"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.multiple$plot, filename = "survival_multiple.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.multiple
+}
+```
+
+
+With multiple IAs, an event of rupture occurs earlier (not significant).
+This is in accordance with Morel et al. 2021.
+
+```{r}
+cox.location <- data.coxreg.all %>%
+  group_by(location.grouped) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.location
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.location)
+survplt.location <- ggsurvplot(surffit, conf.int = TRUE, 
+           legend.labs=c("Low risk location", "Medium risk location", "High risk location"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.location$plot, filename = "survival_location.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.location
+}
+```
+
+Median age at rupture is for IAs in high risk location at about 40y, 50y for 
+medium risk locations and couldn't be determined for low risk locations.
+This is in accordance to Morel et al. 2021:
+"Mean age at rupture was significantly higher in high-risk locations
+(53 years (IQR 44-62)) compared with medium-risk locations (51 years (43-60), p<0.001). A
+trend was observed when comparing to low-risk locations (47 years (41-54), p=0.0014). No
+relevant difference in age distribution at rupture was found between medium- and low-risk
+locations (Figure 3D)."
+
+
+```{r}
+cox.smoking <- data.coxreg.all %>%
+  group_by(Smoking_Current_Former_No) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.smoking
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.smoking)
+survplt.smoking <- ggsurvplot(surffit, conf.int = TRUE, 
+           legend.labs=c("Non Smoker", "Former Smoker", "Current Smoker"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.smoking$plot, filename = "survival_smoking.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.smoking
+}
+```
+
+IAs tend to rupture earlier in current smokers than in non smoker (non-significant). 
+Former smokers have the highest survival probability.
+This is in accordance to Morel et al 2021:
+"Rupture in current smokers occurred at a younger age (50 (42-58) compared
+with former (54 (47-63), p<0.001) and non-smokers (55 (45-64), p<0.001) (Figure 4E). No
+difference was found between former smokers and non-smokers."
+
+```{r}
+cox.hbp <- data.coxreg.all %>%
+  group_by(Hypertension) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.hbp
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.hbp)
+survplt.hbp <- ggsurvplot(surffit, conf.int = TRUE, 
+           legend.labs=c("Hypertension = Never", "Hypertension = AnyType"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.hbp$plot, filename = "survival_HBP.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.hbp
+}
+```
+
+Having some form of HBP (i.e. awareness, treated, not treated) increases
+the time to rupture.
+
+```{r}
+cox.pfh <- data.coxreg.all %>%
+  group_by(Positive.famillial.history) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.pfh
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.pfh)
+survplt.pfh <- ggsurvplot(surffit, conf.int = TRUE, 
+           legend.labs=c("Pos. Fam. History = No", "Pos. Fam. History = Yes"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.pfh$plot, filename = "survival_posfamhist.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.pfh
+}
+```
+
+Knowledge about familial cases of aSAH increases the age at time of diagnosis.
+
+```{r}
+cox.discsize <- data.coxreg.all %>%
+  group_by(IAsize.groups.merged) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.discsize
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all, newdata = cox.discsize)
+survplt.discsize <- ggsurvplot(surffit, conf.int = TRUE,
+           legend.labs=c("IA size = large", "IA size = medium", "IA size = small"),
+           ggtheme = theme_minimal())
+
+if (SAVEPLOTS){
+  ggsave(plot = survplt.discsize$plot, filename = "survival_discsize.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.discsize
+}
+```
+
+Patients with small IAs (A) tend to have a higher age at rupture than patients
+with large IAs (C).
+
+
+### Manuscript Figure
+
+Create multiplot:
+
+```{r}
+plt.comb.surv <- cowplot::plot_grid(survplt.gender$plot, 
+                                    survplt.multiple$plot,
+                                    survplt.hbp$plot,
+                                    survplt.location$plot,
+                                    survplt.pfh$plot,
+                                    survplt.smoking$plot,
+                                    survplt.discsize$plot,
+                                    labels = "AUTO", ncol = 2)+
+  theme(plot.caption = element_text(hjust = 0.5),
+        plot.caption.position = "plot",
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA))
+
+if (SAVEPLOTS){
+  ggsave(plot = plt.comb.surv, filename = "survival_multiplot.png", path = PLOTPATH, dpi = 600,
+         height = 13, width = 10, bg = "transparent")
+} else {
+  plt.comb.surv
+}
+```
+
+
+## Cox regression with continuous size variable
+
+We create a data set with size discrete
+
+```{r}
+data.coxreg.all.contSize <- prep_exp_data(
+  dat = adb,
+  EXPNO = 06,
+  age = "cont",
+  location = "byRisk-multinomial",
+  size = "log",
+  smoking = "mult",
+  SAVE = F) 
+data.coxreg.all.contSize <- data.coxreg.all.contSize$abndata %>%
+  # relevel as above
+  mutate(location.grouped = fct_relevel(location.grouped, c("Low","Medium","High")))%>%
+  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("No","Former","Current"))) %>%
+  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("No", "Yes"))) %>%
+  mutate(Gender = fct_relevel(Gender,c("Male","Female"))) %>%
+  mutate(Hypertension = fct_relevel(Hypertension,c("Never","AnyType"))) %>%
+  mutate(Ruptured_IA = fct_relevel(Ruptured_IA,c("No","Yes"))) %>%
+  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("No", "Yes"))) %>%
+  # rupture as integer
+  mutate(Ruptured_IA = as.integer(Ruptured_IA))
+str(data.coxreg.all.contSize)
+
+# Check if same as above (except size)
+sum(data.coxreg.all$Gender != data.coxreg.all.contSize$Gender) == 0
+sum(data.coxreg.all$AgeDiag != data.coxreg.all.contSize$AgeDiag) == 0
+```
+
+Using size as continuous variable reduced the degrees of freedom and increases
+AUC:
+
+```{r}
+train <- sample.int(n = nrow(data.coxreg.all.contSize), size = 0.7*nrow(data.coxreg.all.contSize), replace = FALSE)
+TrainSet <- data.coxreg.all.contSize[train,]
+ValidSet <- data.coxreg.all.contSize[-train,]
+
+coxreg <- coxph(Surv(time = AgeDiag, event = Ruptured_IA, type = "right") ~ ., data = TrainSet)
+coxreg
+summary(coxreg)
+
+cox.pred <- predict(coxreg, newdata=ValidSet)
+surv.pred <- basehaz(coxreg)
+Surv.rsp <- Surv(time = TrainSet$AgeDiag, event = TrainSet$Ruptured_IA, type = "right")
+Surv.rsp.new <- Surv(time = ValidSet$AgeDiag, event = ValidSet$Ruptured_IA, type = "right")
+AUC_Uno <- survAUC::AUC.uno(Surv.rsp, Surv.rsp.new, cox.pred, surv.pred$time)
+plot(AUC_Uno)
+AUC_Uno$iauc
+
+# survAUC::IntAUC(AUC_Uno$auc, surv.pred$time, surv.pred$hazard, max(surv.pred$time))
+
+# Plot the baseline survival function
+surffit <- survfit(coxreg, data = data.coxreg.all.contSize)
+ggsurvplot(surffit, palette = "#2E9FDF",
+           ggtheme = theme_minimal())
+```
+
