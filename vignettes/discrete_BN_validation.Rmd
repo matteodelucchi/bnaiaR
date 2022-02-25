@@ -172,6 +172,7 @@ summary(accs.bic.custom, na.rm = T)
 
 BIC.th03 used three parents (pos.fam.hist, size, location) to predict rupture
 whereas BIC.custom uses only the later two parent nodes to predict rupture.
+
 From `?bnlearn::bn.cv()`:  
 "...  
 Classification Error (pred): the prediction error for a single node in a discrete network. Frequentist predictions are used, so the values of the target node are predicted using only the information present in its local distribution (from its parents). Lower values are better.  
@@ -319,150 +320,6 @@ if (SAVEPLOTS){
 ```
 
 
-
-```{r cpquery_smoking_gender}
-plot(tabu_th03_fit$Smoking_Current_Former_No$prob)
-```
-
-Less former smokers than current or non-smokers.
-Males more frequently are current smokers and females more frequently are former smokers.
-Males most often stopped smoking.
--> Due to prior IA diagnosis?
--> Due to IA rupture?
--> Due to pos. fam. history?
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = 'Ruptured_IA == "Yes"')
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Ruptured_IA == "No"))
-plot(sim, col = "grey",
-     main = 'Ruptured_IA == "No"')
-```
-
-P(smoking | ruptured = Y)
-P(smoking | ruptured = N)
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Multiple.IAs == "Yes" & Gender == "Male"))
-plot(sim, col = "grey",
-     main = 'Multiple.IAs == "Yes" & Gender == "Male"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Multiple.IAs"), n = 10^4, evidence = (Gender == "Male"))
-plot(sim, col = "grey",
-     main = 'Gender == "Male"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Gender == "Male"))
-plot(sim, col = "grey",
-     main = 'Gender == "Male"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Positive.famillial.history"), n = 10^4, evidence = (Gender == "Male"))
-plot(sim, col = "grey",
-     main = 'Gender == "Male"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = 'Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Gender == "Male" & Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = 'Multiple.IAs == "Yes" & Gender == "Male" & Ruptured_IA == "Yes"')
-```
-
-
-```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^5, evidence = (Gender == "Female"))
-plot(sim, col = "grey",
-     main = 'Gender == "Female"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^5, evidence = (Gender == "Male"))
-plot(sim, col = "grey",
-     main = 'Gender == "Male"')
-```
-
-Former Smokers have a slightly increased rupture risk compared to the others.
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Ruptured_IA"), n = 10^4, evidence = (Positive.famillial.history == "Yes"))
-plot(sim, col = "grey")
-table(sim)
-
-# sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Positive.famillial.history == "No" & Ruptured_IA == "Yes"))
-# plot(sim, col = "grey")
-# prop.table(table(sim))
-# sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No"), n = 10^4, evidence = (Positive.famillial.history == "Yes" & Ruptured_IA == "Yes"))
-# plot(sim, col = "grey")
-# prop.table(table(sim))
-```
-
-But being aware of IA cases in relatives decreases rupture risk of former smokers.
-
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "Hypertension", "Positive.famillial.history"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey")
-prop.table(table(sim))
-```
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Multiple.IAs == "Yes" ))
-prop.table(table(sim))
-plot(sim)
-
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Multiple.IAs == "No" ))
-prop.table(table(sim))
-plot(sim)
-```
-
-No clear tendency for rupture with and withouth multiple IAs.
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "IAsize.groups.merged"), n = 10^4, evidence = (Multiple.IAs == "Yes" ))
-prop.table(table(sim))
-plot(sim)
-
-sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs", "IAsize.groups.merged"), n = 10^4, evidence = (Ruptured_IA == "Yes" ))
-prop.table(table(sim))
-plot(sim)
-```
-
-Having multiple IAs, they tend to rupture at larger size.
-
-
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA"), n = 10^4, evidence = (Gender == "Female" & location.grouped == "High"))
-prop.table(table(sim))
-
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "IAsize.groups.merged"), n = 10^4, evidence = (Gender == "Female" & Hypertension == "AnyType" & Multiple.IAs == "Yes" ))
-prop.table(table(sim))
-```
-
-
-
-smoking -> rupture
-```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = 'Ruptured_IA == "Yes"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
-plot(sim, col = "grey",
-     main = 'Ruptured_IA == "No"')
-
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current"))
-plot(sim, col = "grey",
-     main = 'Smoking_Current_Former_No == "Current"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "No"))
-plot(sim, col = "grey",
-     main = 'Smoking_Current_Former_No == "No"')
-```
-
-
-smoking -> IA size
 ```{r}
 SAVEPLOTS <- F
 
@@ -511,41 +368,8 @@ if (SAVEPLOTS){
   dev.off()
 } 
 ```
-plot1: former smoker rupture larger as current or non-smoker. Treatment bias in non-ruptured IAs towards smaller size.
-plot2: non-smoker rupture later as current smoker. Former smoker around the age of 50 are less likely for IA rupture.
-
-
-
-
-Awareness of HBP leads to higher age at rupture:
-```{r}
-sim = cpdist(tabu_th03_fit, nodes = c("Ruptured_IA", "AgeDiag.group"), n = 10^4, evidence = (Hypertension == "AnyType"))
-plot(prop.table(table(sim)))
-
-sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)))
-```
-
 
 ```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Gender", "IAsize.groups.merged"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)))
-
-sim = cpdist(tabu_th03_fit, nodes = c("Gender", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)))
-
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes" & Gender == "Female"))
-plot(prop.table(table(sim)))
-
-sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes" & Gender == "Male"))
-plot(prop.table(table(sim)))
-```
-
-```{r}
-SAVEPLOTS <- F
-
 par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
 plot(prop.table(table(sim)),
@@ -583,7 +407,6 @@ if (SAVEPLOTS){
 ```
 
 ```{r}
-SAVEPLOTS <- F
 par(mfrow=c(1,2))
 sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "AnyType"))
 barplot(prop.table(table(sim)), col = "grey",
