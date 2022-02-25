@@ -53,22 +53,6 @@ PLOTHEIGHT = 9
 BEWARE, THIS IS DRAFT CODE WITH PERSONAL NOTES OF MATTEO NOT INTENDED TO BE
 REPRODUCIBLE IN ANY WAY!
 
-# Method Background
-One actual strong limitation of the R package abn is that it cannot deal with
-multinomial distributed random variables. Indeed, in applied epidemiology,
-the data are often composed of a mixture of different distributions. The
-most common are categorical, continuous and discrete random variable. 
-The R package abn has an implementation of binomial, Gaussian and Poisson
-Bayesian regression. This implies that when dealing with categorical random
-variable one has to split the random variable in a pairs. This is interesting
-from a modelling perspective as this is very flexible. But it destroys the
-intrinsic link between the dichotomised variables which can negatively affects
-the modelling. Additionally, it increases the number of variables which is
-computationally not desirable.
-(CP from Kratzer et al 2018, Information-Theoretic Scoring Rules to Learn
-Additive Bayesian Network Applied to Epidemiology)
-See this paper for more details on ABN and it's implementation.
-
 # Experiment 6
 ## Load Data and take a first glimpse
 ```{r}
@@ -173,6 +157,7 @@ fabn.maxpar.bayes <- fitAbn(dag = dag.maxpar$dag,
               compute.fixed = T,
               create.graph = T)
 ```
+
 ### Prior distributions
 ```{r}
 ncolsplot <- length(fabn.maxpar.bayes$marginals)
@@ -525,53 +510,6 @@ df.mle
 ```
 
 
-### Numerical Stability Check: Parameter estimation
-Once the trimmed DAG is obtained to keep robust structural features, we can extract the
-marginal posterior densities. Indeed, a BN has a qualitative part (the structure) and a
-quantitative part (parameters estimates). They are both equally important for interpreting
-and reporting the findings. As the estimation is based on the Laplace approximation and the
-R package abn does not rely on conjugate priors, a numerical check is performed. Figure 13
-shows the marginal densities. This figure is much more ambitious than the structural learning
-phase. The critical assumption is that the data contains sufficient information to accurately
-estimate the density of individual parameter of the model. This is a stronger requirement
-than simply being able to estimate an overall goodness of fit metric. It could happen that
-INLA or the internal C code cannot estimate the densities with enough numerical stability.
-Many user-tunable parameters can be supplie to fitabn() by providing a list to the control
-argument.
-(from abn vignette Appendix D) 
-
-### Bayesian
-(from help of "abn::fitAbn()")
-The procedure fitAbn fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); or an unbounded count (Poisson). The model comprises of a set of conditionally independent generalized linear regressions with or without random effects. Internal code is used by default for numerical estimation in nodes without random effects, and INLA is the default for nodes with random effects. This default behavior can be overridden using max.mode.error. The default is max.mode.error=10, which means that the modes estimated from INLA output must be within 10% of those estimated using internal code. Otherwise, the internal code is used rather than INLA. To force the use of INLA on all nodes, use max.mode.error=100, which then ignores this check, to force the use of internal code then use max.mode.error=0. For the numerical reliability and perform of abn see http://r-bayesian-networks.org. Generally speaking, INLA can be swift and accurate, but in several cases, it can perform very poorly and so some care is required (which is why there is an internal check on the modes). Binary variables must be declared as factors with two levels, and the argument data.dists must be a list with named arguments, one for each of the variables in data.df (except a grouping variable - if present), where each entry is either "poisson","binomial", or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
-
-If the data are grouped into correlated blocks - wherein a standard regression context a mixed model might be used - then a network comprising of one or more nodes where a generalized linear mixed model is used (but limited to only a single random effect). This is achieved by specifying parameters group.var and cor.vars. Where the former defines the group membership variable, which should be a factor indicating which observations belong to the same grouping. The parameter cor.vars is a character vector that contains the names of the nodes for which a mixed model should be used. For example, in some problems, it may be appropriate for all variables (except group.var) in data.df to be parametrized as a mixed model while in others it may only be a single variable for which grouping adjustment is required (as the remainder of variables are covariates measured at group level).
-
-In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
-
-If compute.fixed=TRUE then the marginal posterior distributions for all parameters are computed. Note the current algorithm used to determine the evaluation grid is rather crude and may need to be manually refined using variate.vec (one parameter at a time) for publication-quality density estimates. Note that a manual grid can only be used with internal code and not INLA (which uses its own grid). The end points are defined as where the value of the marginal density drops below a given threshold pdf.min.
-
-If create.graph=TRUE then the model definition matrix in dag.m is used to create an R graph object (of type graphAM-class). See ?"graph-class" for details and the Rgraphviz documentation (which is extensive). The main purpose of this is to allow easy visualization of the DAG structure via the graphviz library. A graph plot can easily be created by calling the method plot on this object (see example below). Note, however, that the fonts and choice of scaling used here may be far less visually optimal than using graphviz direct (e.g., via toGraphviz) for publication-quality output. Also, re-scaling the plotting window may not result in a callback to re-optimize the visual position of the nodes and edges, and so if the window is re-sized, then re-run the plot command to re-draw to the new scale.
-
-When estimating the log marginal likelihood in models with random effects (using internal code rather than INLA), an attempt is made to minimize the error by comparing the estimates given between a 3pt and 5pt rule when estimating the Hessian in the Laplace approximation. The modes used in each case are identical. The first derivatives are computed using gsl's adaptive finite difference function, and this is embedding inside the standard 3pt and 5pt rules for the second derivatives. In all cases, a central difference approximation is tried first with a forward difference being a fall back (as the precision parameters are strictly positive). The error is minimized through choosing an optimal step size using gsl's Nelder-Mead optimization, and if this fails, (e.g., is larger than max.hessian.error) then the Brent-Dekker root bracketing method is used as a fallback. If the error cannot be reduced to below max.hessian.error, then the step size, which gave the lowest error during the searches (across potentially many different initial bracket choices), is used for the final Hessian evaluations in the Laplace approximation.
-
-#### Marginals for each parameter in model (Bayesian)
-
-Bayesian Parameter uncertainy is analyzed by looking at their credible intervals. 
-
-##### Recap credible intervals
-
-- similar goal to confidence intervals in frequentist statistics but different definition and meaning.
-- the Bayesian framework allows us to say “given the observed data, the effect has 95% probability of falling within this range”, compared to the less straightforward, frequentist alternative (the 95% Confidence* Interval) would be “there is a 95% probability that when computing a confidence interval from data of this sort, the effect falls within this range”.
-- Bayesian inference returns a distribution of possible effect values (posterior distribution). 
-The credible interval is the range containing a particular percentage (i.e. 95%, or 89%) of probable values. 
-
-
-```{r}
-# str(fabn.boot.th.bayes$marginals["Hypertension"])
-str(fabn.boot.th.bayes[[20]]["Hypertension"])
-str(fabn.boot.th.bayes[[21]]["Hypertension"])
-```
-
 ##### Plot posterior marginal distribution for each parameter seperately
 For example, the probability that the Hypertension|Gender parameter fals within a given range with it's credible intervals.
 ```{r}
@@ -740,20 +678,6 @@ if (SAVEPLOTS){
 
 
 ### Maximum Likelihood Estimation 
-(from help of "abn::fitAbn()")
-The procedure fitAbn with the argument method= "mle" fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); an unbounded count (Poisson); or a discrete variable (Multinomial). The model comprises of a set of conditionally independent generalized linear regressions with or without adjustment.
-
-Binary and discrete variables must be declared as factors and the argument data.dists must be a list with named arguments, one for each of the variables in data.df, where each entry is either "poisson","binomial", "multinomial" or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
-
-In the context of fitAbn adjustment means that irrespective to the adjacency matrix the adjustment variable set (adj.vars) will be add as covariate to every node defined by cor.vars. If cor.vars is NULL then adjustment is over all variables in the data.df.
-
-In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
-
-The Information-theoretic based network scores used in fitAbn with argument method="mle" are the maximum likelihood (mlik, called marginal likelihood in this context as it is computed node wise), the Akaike Information Criteria (aic), the Bayesian Information Criteria (bic) and the Minimum distance Length (mdl). The classical definitions of those metrics are given in Kratzer and Furrer (2018).
-
-The numerical routine is based on an iterative scheme to estimate the regression coefficients. The Iterative Reweighed Least Square (IRLS) programmed using Rcpp/RcppArmadrillo. One hard coded feature of fitAbn with argument method="mle" is a conditional use of a bias reduced binomial regression when a classical Generalized Linear Model (GLM) fails to estimate the maximum likelihood of the given model accurately. Additionally, a QR decomposition is performed to check for rank deficiency. If the model is rank deficient and the BR GLM fails to estimate it, then predictors are sequentially removed. This feature aims at better estimating network scores when data sparsity is present.
-
-A special care should be taken when interpreting or even displaying p-values computed with fitAbn. Indeed, the full model is already selected using goodness of fit metrics based on the (same) full dataset.
 
 
 ### Regression coefficient estimates and 95% Confidence Intervals (CI)
@@ -878,87 +802,12 @@ Start with support == 1.
 result.table.mle[which(result.table.mle$support == 1),]
 ```
 
-Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke.
-
-Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke.
-
-Gender -> high risk location: positive association. gender is male, High risk location
-Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location.
-
-Gender -> low risk location: negative association. gender is femalem, IAs at low risk location.
-Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location. 
-
-pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no)
-Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs.
-
-Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?)
-AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA.
-high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n).
-low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n).
-IA size -> Ruptured IA: positive associated. Large IAs tend to rupture.
-
 
 
 Arcs with less support
 ```{r}
 result.table.mle[which(result.table.mle$support != 1),]
 ```
-
-Gender -> Hypertension: negative association. Females tend to have never Hypertension. (verify! Vera says: Males tend to have HBP)
-AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension.
-
-AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked.
-AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location.
-
-Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location.
-
-Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location.
-non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location.
-
-Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs.
-
-
-
-
-### Queries
-
-From Kratzer et al 2020 BN modeling applied to FC infection... they model on the
-complete mcmc sample and not the pruned consensus dag. 
-
-```{r}
-mcmc.out.query<- list(dags=list.mc.out.burn.thin.dag,
-                      data.dist=dist,scores=list.mc.out.burn.thin.score)
-```
-
-What is the probability that IA rupture is associated with current smokers?
-```{r}
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|Smoking_Current_Former_No__Current)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~Smoking_Current_Former_No__Current|Ruptured_IA)
-```
-
-What is the probability that IA rupture is associated with Age and current smokers?
-```{r}
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__Current|AgeDiag)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__Current)
-
-query(mcmcabn = mcmc.out.query,
-      formula = ~Ruptured_IA|AgeDiag+Smoking_Current_Former_No__No|AgeDiag)-
-  query(mcmcabn = mcmc.out.query,
-      formula = ~AgeDiag|Ruptured_IA+AgeDiag|Smoking_Current_Former_No__No)
-```
-
-Positive familial history - Gender?
-```{r}
-mcmcabn::query(mcmcabn = mcmc.out.query,
-      formula = ~Hypertension|Gender)
-```
-
-
-Hypertension is higher in higher age.
 
 
 ### Arc-histogram
@@ -987,48 +836,6 @@ num_100 <- apply(X = u.list.dag, MARGIN = 3, FUN = function(x){
     if(identical(x,y)){1}else{0}
   }))
 })
-
-# # Attempt to make it faster
-# 
-# # Same as above, but only on a subset
-# num_100 <- apply(X = u.list.dag[,,1:3], MARGIN = 3, FUN = function(x){
-#   sum(apply(X = list.mc.out.burn.thin.dag[,,1:3],MARGIN = 3,FUN = function(y){
-#       if(identical(x,y)){1}else{0}
-#   }))
-# })
-#
-# # This works:
-# ident <- 0
-# for(i in 1:dim(u.list.dag[,,1:3])[3]){
-#   x <- u.list.dag[,,i]
-#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
-#     y <- list.mc.out.burn.thin.dag[,,j]
-#     
-#     if(identical(x,y)){
-#       ident <- ident+1
-#     }
-#   }
-# }
-# print(ident)
-# 
-# # This doesn't work:
-# library(foreach)
-# library(parallel)
-# cl <- makeCluster(detectCores()-1)
-# registerDoParallel(cl)
-# ident <- 0
-# foreach(i=1:dim(u.list.dag[,,1:3])[3], .combine = '+') %do% {
-#   x <- u.list.dag[,,i]
-#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
-#     y <- list.mc.out.burn.thin.dag[,,j]
-#     
-#     if(identical(x,y)){
-#       1
-#     }
-#   }
-# }
-# print(ident)
-
 
 max(which((cumsum(sort(num_100,decreasing = FALSE)))/1000<0.80,arr.ind = TRUE))
 ```
@@ -1100,30 +907,3 @@ if (SAVEPLOTS){
   save(list= obj, file = paste0(PLOTPATH, FILENAME, filename_results, ".RData"))
 }
 ```
-
-
-# Plot abn data as dot
-
-```{r}
-getwd()
-load(paste0("exp6_100k_analysis_results.RData"))
-```
-
-```{r}
-if (SAVEPLOTS){
-  PLOTNAME <- "consensus_dag"
-  dev.print(svg, filename = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
-  cons.dag.plt 
-  dev.off()
-  abn::toGraphviz(dag.mcmc.boot.th, 
-                  data.dists = dist, 
-                  data.df = abndata, 
-                  outfile =paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".dot"),
-                  directed=TRUE)
-  saveRDS(dag.mcmc.boot.th, file = paste0("~/ZHAW/paragraphlayout/", FILENAME, PLOTNAME, ".rds"))
-
-  } else {
-  cons.dag.plt
-  }
-```
-
