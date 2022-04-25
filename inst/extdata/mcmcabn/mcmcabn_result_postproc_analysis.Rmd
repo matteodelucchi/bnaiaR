@@ -245,8 +245,8 @@ summary(fabn.maxpar)
 
 ## Gelman
 ```{r}
-gelman.diag(x = list.mc.out.thin.score,autoburnin = T) # if higher than 1.1 or 1.2, run chain longer to improve convergence
-gelman.plot(list.mc.out.thin.score, autoburnin = T)
+gelman.diag(x = list.mc.out.thin.score,autoburnin = F) # if higher than 1.1 or 1.2, run chain longer to improve convergence
+gelman.plot(list.mc.out.thin.score, autoburnin = F)
 
 if (SAVEPLOTS){
   PLOTNAME <- "_gelmanplot"
