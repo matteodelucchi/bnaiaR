@@ -12,7 +12,7 @@ library(ggplot2)
 #####
 # Settings
 #####
-DEBUG <- T
+DEBUG <- FALSE
 EXPNO <- "ABNmultinomialVesselLoc"
 FILENAME <- paste0("exp", EXPNO)
 FILENAMEbase <- "./inst/extdata/mcmcabn/results/raw/"
@@ -102,60 +102,42 @@ abndata <- abndata %>%
   # Clean up age values
   filter(AgeDiag != 0)
 
-# Fix NAs introduced by coercion.
-# Error in abn::build_score_cache_mle for multinomial case:
-# Error in { : task 2 failed - "object 'fit' not found"
-# For some reason, a strange reformatting for Y occurs just before
-# https://git.math.uzh.ch/reinhard.furrer/abn/-/blob/master/R/build_score_cache_mle.R#L306
-# The NAs introduced by coercion warning can be reproduced with:
-for (c in seq(1:ncol(abndata))){
-  print(colnames(abndata)[c])
-  print(as.numeric(as.character(abndata[,c])))
-}
-as.numeric(as.character(abndata$IA_Location))
-typeof(abndata$IA_Location)
-# maybe a workaround is converting the factors to integers first.
+# Reorder Levels
 abndata <- abndata %>%
-  mutate(across(where(is.factor), function(x){as.factor(as.integer(x))})) # also converting them back to integers still doesn't work...
-str(abndata)
-# Then the following code for factors has to be commented:
-#
-# # Reorder Levels
-# abndata <- abndata %>%
-#   mutate(Gender = forcats::fct_relevel(Gender, c("Male", "Female")))%>%
-#   mutate(Positive.famillial.history = forcats::fct_relevel(Positive.famillial.history, c("No", "Yes")))%>%
-#   # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, LETTERS[1:length(levels(AgeDiag.group))])) %>%
-#   mutate(Hypertension = forcats::fct_relevel(Hypertension, c("Never", "AnyType")))%>%
-#   mutate(Smoking_Current_Former_No = forcats::fct_relevel(Smoking_Current_Former_No, c("No", "Former", "Current")))%>%
-#   # mutate(location.grouped = forcats::fct_relevel(location.grouped, c( "Low", "Medium",  "High"))) %>%
-#   # mutate(IAsize.groups = fct_relevel(IAsize.groups, LETTERS[1:length(levels(IAsize.groups))]))%>%
-#   mutate(Multiple.IAs = forcats::fct_relevel(Multiple.IAs, c("No", "Yes")))%>%
-#   mutate(Ruptured_IA = forcats::fct_relevel(Ruptured_IA, c("No", "Yes")))
-#
-# # Plot continuous vars again
-# df <- abndata %>%
-#   mutate(ID = seq(1,nrow(abndata)))%>%
-#   reshape2::melt(id.vars=c("ID"),
-#                  measure.vars=c("AgeDiag", "IAsize_log"))
-#
-# p.nooutliers <- ggplot(df, aes(x=value))+
-#   facet_wrap(~variable, scales = "free")+
-#   geom_boxplot(notch = TRUE) +
-#   coord_flip() +
-#   theme_bw() +
-#   ggtitle("Raw multinomial mixed data",
-#           subtitle = "Outliers removed in continuous variables")
-#
-# ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_noOutliers.png"),
-#        p.nooutliers)
-#
-# p.outliers.comb <- cowplot::plot_grid(p.outliers, p.nooutliers, labels = "AUTO", ncol = 1)+
-#   theme(plot.caption = element_blank(),
-#         plot.caption.position = "plot",
-#         panel.background = element_rect(fill = "transparent", color = NA),
-#         plot.background = element_rect(fill = "transparent", colour = NA))
-# ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_outliers_multiplt.png"),
-#        p.outliers.comb)
+  mutate(Gender = forcats::fct_relevel(Gender, c("Male", "Female")))%>%
+  mutate(Positive.famillial.history = forcats::fct_relevel(Positive.famillial.history, c("No", "Yes")))%>%
+  # mutate(AgeDiag.group = fct_relevel(AgeDiag.group, LETTERS[1:length(levels(AgeDiag.group))])) %>%
+  mutate(Hypertension = forcats::fct_relevel(Hypertension, c("Never", "AnyType")))%>%
+  mutate(Smoking_Current_Former_No = forcats::fct_relevel(Smoking_Current_Former_No, c("No", "Former", "Current")))%>%
+  # mutate(location.grouped = forcats::fct_relevel(location.grouped, c( "Low", "Medium",  "High"))) %>%
+  # mutate(IAsize.groups = fct_relevel(IAsize.groups, LETTERS[1:length(levels(IAsize.groups))]))%>%
+  mutate(Multiple.IAs = forcats::fct_relevel(Multiple.IAs, c("No", "Yes")))%>%
+  mutate(Ruptured_IA = forcats::fct_relevel(Ruptured_IA, c("No", "Yes")))
+
+# Plot continuous vars again
+df <- abndata %>%
+  mutate(ID = seq(1,nrow(abndata)))%>%
+  reshape2::melt(id.vars=c("ID"),
+                 measure.vars=c("AgeDiag", "IAsize_log"))
+
+p.nooutliers <- ggplot(df, aes(x=value))+
+  facet_wrap(~variable, scales = "free")+
+  geom_boxplot(notch = TRUE) +
+  coord_flip() +
+  theme_bw() +
+  ggtitle("Raw multinomial mixed data",
+          subtitle = "Outliers removed in continuous variables")
+
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_noOutliers.png"),
+       p.nooutliers)
+
+p.outliers.comb <- cowplot::plot_grid(p.outliers, p.nooutliers, labels = "AUTO", ncol = 1)+
+  theme(plot.caption = element_blank(),
+        plot.caption.position = "plot",
+        panel.background = element_rect(fill = "transparent", color = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_outliers_multiplt.png"),
+       p.outliers.comb)
 
 # create empty retain matrix
 retain <- matrix(0, ncol(abndata), ncol(abndata))
