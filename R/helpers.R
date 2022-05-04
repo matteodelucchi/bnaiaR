@@ -96,7 +96,6 @@ prep_exp_data <- function(dat = adb,
     ))
   }
 
-
   ### Aneurysm Properties
   if (location == "byVessel-multinomial") {
     IAprops.loc <- names(abndata)[names(abndata) == "IA_Location"]
@@ -156,7 +155,7 @@ prep_exp_data <- function(dat = adb,
   # select variables from data set
   #####
   abndata <- abndata %>%
-    select(varsofinterest)
+    select(all_of(varsofinterest))
 
   #####
   # set distributions
