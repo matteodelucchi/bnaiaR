@@ -1,3 +1,4 @@
+*.RData filter=lfs diff=lfs merge=lfs -text
 *.Rbuildignore filter=lfs diff=lfs merge=lfs -text
 *.Rprofile filter=lfs diff=lfs merge=lfs -text
 *.gitignore filter=lfs diff=lfs merge=lfs -text
@@ -6,7 +7,6 @@
 *.Rproj filter=lfs diff=lfs merge=lfs -text
 *.rda filter=lfs diff=lfs merge=lfs -text
 *.Rmd filter=lfs diff=lfs merge=lfs -text
-*.RData filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
 *.svg filter=lfs diff=lfs merge=lfs -text
 *.dot filter=lfs diff=lfs merge=lfs -text
