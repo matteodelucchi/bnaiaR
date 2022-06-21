@@ -64,29 +64,29 @@ prep_exp_data <- function(dat = adb,
   } else if (age == "disc.grouped-multinomial") {
     nonmod <- names(abndata)[names(abndata) == "AgeDiag.group"]
   } else if (age == "disc.grouped-binomial") {
-    nonmod <- str_subset(names(abndata), pattern = "AgeDiag.group__")
+    nonmod <- stringr::str_subset(names(abndata), pattern = "AgeDiag.group__")
   } else {
     warning(paste("age is ", age, "but must be one of: ",
                   "cont",
                   "disc.grouped-multinomial",
                   "disc.grouped-binomial"))
   }
-  nonmod <- c(str_subset(names(abndata), pattern = "Gender|famillial"),
+  nonmod <- c(stringr::str_subset(names(abndata), pattern = "Gender|famillial"),
               nonmod)
 
   ### modifiable risk factors:
   modfact <-
-    str_subset(names(abndata), pattern = "Hypertension")
+    stringr::str_subset(names(abndata), pattern = "Hypertension")
 
   if (smoking == "mult") {
     modfact <- c(modfact,
                  names(abndata)[names(abndata) == "Smoking_Current_Former_No"])
   } else if (smoking == "binCFN") {
     modfact <- c(modfact,
-                 str_subset(names(abndata), pattern = "Smoking_Current_Former_No__"))
+                 stringr::str_subset(names(abndata), pattern = "Smoking_Current_Former_No__"))
   } else if (smoking == "binCnC") {
     modfact <- c(modfact,
-                 str_subset(names(abndata), pattern = "Smoking_CurrentNotCurrent"))
+                 stringr::str_subset(names(abndata), pattern = "Smoking_CurrentNotCurrent"))
   } else {
     warning(paste(
       "smoking is ", smoking, "but must be one of: ",
@@ -96,17 +96,16 @@ prep_exp_data <- function(dat = adb,
     ))
   }
 
-
   ### Aneurysm Properties
   if (location == "byVessel-multinomial") {
     IAprops.loc <- names(abndata)[names(abndata) == "IA_Location"]
   } else if (location == "byVessel-binomial") {
-    IAprops.loc <- str_subset(names(abndata), pattern = "IA_Location__")
+    IAprops.loc <- stringr::str_subset(names(abndata), pattern = "IA_Location__")
   } else if (location == "byRisk-multinomial") {
     IAprops.loc <- names(abndata)[names(abndata) == "location.grouped"]
   } else if (location == "byRisk-binomial") {
     IAprops.loc <-
-      str_subset(names(abndata), pattern = "location.grouped__")
+      stringr::str_subset(names(abndata), pattern = "location.grouped__")
   } else {
     warning(paste(
       "location is ", location, "but must be one of: ",
@@ -127,10 +126,10 @@ prep_exp_data <- function(dat = adb,
     IAprops.size <- names(abndata)[names(abndata) == "IAsize_log"]
   } else if (size == "grouped-binomial") {
     IAprops.size <-
-      str_subset(names(abndata), pattern = "IAsize.groups__")
+      stringr::str_subset(names(abndata), pattern = "IAsize.groups__")
   } else if (size == "grouped.merged-binomial") {
     IAprops.size <-
-      str_subset(names(abndata), pattern = "IAsize.groups.merged__")
+      stringr::str_subset(names(abndata), pattern = "IAsize.groups.merged__")
   } else {
     warning(paste(
       "size is ", size, "but must be one of: ",
@@ -156,7 +155,7 @@ prep_exp_data <- function(dat = adb,
   # select variables from data set
   #####
   abndata <- abndata %>%
-    select(varsofinterest)
+    select(all_of(varsofinterest))
 
   #####
   # set distributions
@@ -203,6 +202,8 @@ prep_exp_data <- function(dat = adb,
     IA_Location__PC = "binomial",
     IA_Location__Pcom = "binomial",
     IA_Location__VB = "binomial",
+    # Location by vessel (multinomial)
+    IA_Location = "multinomial",
     #Location grouped binomial (exp04-63, 10-12)
     location.grouped__High = "binomial",
     location.grouped__Low = "binomial",
@@ -242,11 +243,11 @@ prep_exp_data <- function(dat = adb,
     names(dist)[which(!(names(dist) %in% names(abndata)))]
   testnames_abndata <-
     names(abndata)[which(!(names(abndata) %in% names(dist)))]
-  if (is_empty(testnames_dist) & is_empty(testnames_abndata)) {
+  if (purrr::is_empty(testnames_dist) & purrr::is_empty(testnames_abndata)) {
     cat("ok")
   } else {
     print(paste("Not ok. "))
-    if (!is_empty(testnames_dist)) {
+    if (!purrr::is_empty(testnames_dist)) {
       warning(paste(
         "Present in dist list but missing in abndata list:",
         testnames_dist
@@ -271,16 +272,16 @@ prep_exp_data <- function(dat = adb,
   colnames(banned) <- rownames(banned) <- names(abndata)
 
   ### Ban some arcs
-  gend_idx <- str_which(names(abndata), "Gender")
+  gend_idx <- stringr::str_which(names(abndata), "Gender")
   fam_idx <-
-    str_which(names(abndata), "Positive.famillial.history")
-  age_idx <- str_which(names(abndata), "AgeDiag")
-  smok_idx <- str_which(names(abndata), "Smoking")
-  hyp_idx <- str_which(names(abndata), "Hypertension")
-  loc_idx <- str_which(names(abndata), "location|IA_Location")
-  size_idx <- str_which(names(abndata), "IAsize")
-  multi_idx <- str_which(names(abndata), "Multiple.IAs")
-  rupt_idx <- str_which(names(abndata), "Ruptured_IA")
+    stringr::str_which(names(abndata), "Positive.famillial.history")
+  age_idx <- stringr::str_which(names(abndata), "AgeDiag")
+  smok_idx <- stringr::str_which(names(abndata), "Smoking")
+  hyp_idx <- stringr::str_which(names(abndata), "Hypertension")
+  loc_idx <- stringr::str_which(names(abndata), "location|IA_Location")
+  size_idx <- stringr::str_which(names(abndata), "IAsize")
+  multi_idx <- stringr::str_which(names(abndata), "Multiple.IAs")
+  rupt_idx <- stringr::str_which(names(abndata), "Ruptured_IA")
 
   banned[gend_idx, -gend_idx] <- 1 # Nothing pointing to Gender
   banned[fam_idx, -c(gend_idx, fam_idx, age_idx)] <- 1 # Nothing pointing to fam. history, except age

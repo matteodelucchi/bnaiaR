@@ -1,8 +1,3 @@
-external.libraries:
-ignored.packages:
-package.dependency.fields: Imports, Depends, LinkingTo
-r.version:
-snapshot.type: implicit
-use.cache: TRUE
-vcs.ignore.library: TRUE
-vcs.ignore.local: TRUE
+version https://git-lfs.github.com/spec/v1
+oid sha256:1211876a1d8c2c50bdc497fbb8988f22a9b8d8deb48d7c66859823307aebfbf5
+size 243

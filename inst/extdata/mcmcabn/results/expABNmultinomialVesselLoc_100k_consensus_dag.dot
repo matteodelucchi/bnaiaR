@@ -1,0 +1,25 @@
+digraph dag { 
+
+"Gender"[shape=square];
+"Positive.famillial.history"[shape=square];
+"AgeDiag"[shape=oval];
+"Hypertension"[shape=square];
+"IAsize_log"[shape=oval];
+"Multiple.IAs"[shape=square];
+"Ruptured_IA"[shape=square];
+
+
+
+"Gender"->"Hypertension";
+"Gender"->"Smoking_Current_Former_No";
+"Positive.famillial.history"->"IAsize_log";
+"Positive.famillial.history"->"Ruptured_IA";
+"AgeDiag"->"Hypertension";
+"AgeDiag"->"Smoking_Current_Former_No";
+"AgeDiag"->"Ruptured_IA";
+"Hypertension"->"Multiple.IAs";
+"IA_Location"->"Ruptured_IA";
+"IAsize_log"->"Ruptured_IA";
+"Multiple.IAs"->"IAsize_log";
+
+}
