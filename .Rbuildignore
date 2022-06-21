@@ -8,3 +8,4 @@
 .gitignore
 ^/inst/doc
 ^LICENSE\.md$
+^CITATION\.cff$
