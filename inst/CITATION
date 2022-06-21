@@ -1,0 +1,12 @@
+citHeader("To cite bnaiaR in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "Bayesian network analysis reveals the interplay of intracranial aneurysm rupture risk factors",
+  author   = "Matteo Delucchi, Georg R. Spinner, Marco Scutari, Philippe Bijlenga, Sandrine Morel, Christoph M. Friedrich, Reinhard Furrer, Sven Hirsch",
+  journal  = "Computers in Biology and Medicine",
+  year     = "2022",
+  volume   = "105740",
+  url      = "https://doi.org/10.1016/j.compbiomed.2022.105740",
+  textVersion = paste("M. Delucchi bnaiaR: Bayesian network analysis of intracranial aneurysms in R.")
+)
