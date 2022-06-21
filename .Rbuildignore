@@ -5,3 +5,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+.gitignore
+^/inst/doc
+^LICENSE\.md$

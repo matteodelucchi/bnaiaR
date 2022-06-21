@@ -54,3 +54,21 @@ variable selection for each analysis scenario.
 
 9. For the publication [additional figures](vignettes/additional_figures.Rmd) and [tables](vignettes/datastructure.Rmd) were produced.
 
+
+## Citations
+
+If you make use of this R package or one of its data sets in your research we would appreciate a 
+citation of the following article:
+
+Matteo Delucchi, Georg R. Spinner, Marco Scutari, Philippe Bijlenga, Sandrine Morel, Christoph M. Friedrich, Reinhard Furrer and Sven Hirsch. 
+2022.
+**Bayesian network analysis reveals the interplay of intracranial aneurysm rupture risk factors**.
+Computers in Biology and Medicine. [10.1016/j.compbiomed.2022.105740](https://doi.org/10.1016/j.compbiomed.2022.105740).
+
+you can get it as BibTeX entry with
+
+``` r
+citation("bnaiaR")
+``` 
+
+

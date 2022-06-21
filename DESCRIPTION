@@ -1,18 +1,30 @@
 Package: bnaiaR
 Type: Package
 Title: Bayesian Network Analysis of Intracranial Aneurysm
-Version: 0.0.0.9000
-Date: 2021-11-01
+Version: 1.0.0.0000
+Date: 2022-06-21
 Authors@R: person("Matteo", "Delucchi", email = "matteo.delucchi@zhaw.ch",
   role = c("aut", "cre"))
 Description: Data preparation and analysis of risk factors for intracranial aneurysms. 
 URL: https://github.com/matteodelucchi/bnaiaR
-License: GPL-3
+License: CC BY 4.0
 Encoding: UTF-8
 LazyData: true
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    kableExtra,
+    pROC,
+    pscl,
+    ROCR,
+    sjPlot,
+    survminer,
+    survAUC,
+    survival,
+    Rgraphviz,
+    BiocManager,
+    cowplot,
+    correlationfunnel
 VignetteBuilder: knitr
 RoxygenNote: 7.1.2
 Imports: 
@@ -25,21 +37,9 @@ Imports:
     stringr,
     dplyr,
     tidyselect,
-    correlationfunnel,
     abn,
-    Rgraphviz,
-    BiocManager,
-    cowplot,
     bnlearn,
     data.table,
-    kableExtra,
-    pROC,
-    pscl,
-    ROCR,
-    sjPlot,
-    survminer,
-    survAUC,
-    survival,
     caret,
     magrittr
 Depends: 
