@@ -14346,3 +14346,370 @@ Step1. completed max alpha_i(S) for all i and S
 Total sets g(S) to be evaluated over: 512
 Step1. completed max alpha_i(S) for all i and S
 Total sets g(S) to be evaluated over: 512
+starting worker pid=278284 on localhost:11389 at 16:15:24.539
+starting worker pid=278301 on localhost:11389 at 16:15:24.984
+starting worker pid=278320 on localhost:11389 at 16:15:25.447
+starting worker pid=278339 on localhost:11389 at 16:15:25.910
+starting worker pid=278358 on localhost:11389 at 16:15:26.373
+starting worker pid=278377 on localhost:11389 at 16:15:26.831
+starting worker pid=278396 on localhost:11389 at 16:15:27.294
+starting worker pid=278415 on localhost:11389 at 16:15:27.750
+starting worker pid=278434 on localhost:11389 at 16:15:28.203
+starting worker pid=278453 on localhost:11389 at 16:15:28.663
+starting worker pid=278472 on localhost:11389 at 16:15:29.131
+starting worker pid=278491 on localhost:11389 at 16:15:29.595
+starting worker pid=278510 on localhost:11389 at 16:15:30.064
+starting worker pid=278529 on localhost:11389 at 16:15:30.522
+starting worker pid=278548 on localhost:11389 at 16:15:30.972
+starting worker pid=278567 on localhost:11389 at 16:15:31.434
+starting worker pid=278588 on localhost:11389 at 16:15:31.888
+starting worker pid=278608 on localhost:11389 at 16:15:32.341
+starting worker pid=278627 on localhost:11389 at 16:15:32.799
+starting worker pid=278646 on localhost:11389 at 16:15:33.261
+starting worker pid=278665 on localhost:11389 at 16:15:33.723
+starting worker pid=278684 on localhost:11389 at 16:15:34.177
+starting worker pid=278703 on localhost:11389 at 16:15:34.635
+starting worker pid=278722 on localhost:11389 at 16:15:35.083
+starting worker pid=278741 on localhost:11389 at 16:15:35.543
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Es gab 13 Warnungen (Anzeige mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 40 Warnungen (Anzeige mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+starting worker pid=279071 on localhost:11389 at 16:18:28.374
+starting worker pid=279090 on localhost:11389 at 16:18:28.842
+starting worker pid=279109 on localhost:11389 at 16:18:29.304
+starting worker pid=279128 on localhost:11389 at 16:18:29.766
+starting worker pid=279147 on localhost:11389 at 16:18:30.231
+starting worker pid=279166 on localhost:11389 at 16:18:30.690
+starting worker pid=279185 on localhost:11389 at 16:18:31.143
+starting worker pid=279204 on localhost:11389 at 16:18:31.610
+starting worker pid=279223 on localhost:11389 at 16:18:32.083
+starting worker pid=279247 on localhost:11389 at 16:18:32.546
+starting worker pid=279266 on localhost:11389 at 16:18:33.012
+starting worker pid=279285 on localhost:11389 at 16:18:33.471
+starting worker pid=279304 on localhost:11389 at 16:18:33.932
+starting worker pid=279323 on localhost:11389 at 16:18:34.391
+starting worker pid=279342 on localhost:11389 at 16:18:34.855
+starting worker pid=279361 on localhost:11389 at 16:18:35.313
+starting worker pid=279380 on localhost:11389 at 16:18:35.763
+starting worker pid=279399 on localhost:11389 at 16:18:36.218
+starting worker pid=279418 on localhost:11389 at 16:18:36.683
+starting worker pid=279440 on localhost:11389 at 16:18:37.151
+starting worker pid=279459 on localhost:11389 at 16:18:37.608
+starting worker pid=279478 on localhost:11389 at 16:18:38.194
+starting worker pid=279497 on localhost:11389 at 16:18:38.645
+starting worker pid=279516 on localhost:11389 at 16:18:39.110
+starting worker pid=279535 on localhost:11389 at 16:18:39.569
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+abn version 2.7-1 (2022-04-21) is loaded.
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Es gab 13 Warnungen (Anzeige mit warnings())
+Es gab 40 Warnungen (Anzeige mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+Es gab 50 oder mehr Warnungen (Anzeige der ersten 50 mit warnings())
+starting worker pid=280706 on localhost:11797 at 16:36:07.695
+starting worker pid=280723 on localhost:11797 at 16:36:08.150
+starting worker pid=280742 on localhost:11797 at 16:36:08.584
+starting worker pid=280761 on localhost:11797 at 16:36:09.046
+starting worker pid=280780 on localhost:11797 at 16:36:09.507
+starting worker pid=280799 on localhost:11797 at 16:36:09.971
+starting worker pid=280818 on localhost:11797 at 16:36:10.438
+starting worker pid=280837 on localhost:11797 at 16:36:10.896
+starting worker pid=280856 on localhost:11797 at 16:36:11.350
+starting worker pid=280875 on localhost:11797 at 16:36:11.811
+starting worker pid=280894 on localhost:11797 at 16:36:12.268
+starting worker pid=280913 on localhost:11797 at 16:36:12.731
+starting worker pid=280932 on localhost:11797 at 16:36:13.190
+starting worker pid=280951 on localhost:11797 at 16:36:13.657
+starting worker pid=280970 on localhost:11797 at 16:36:14.105
+starting worker pid=280989 on localhost:11797 at 16:36:14.562
+starting worker pid=281008 on localhost:11797 at 16:36:15.023
+starting worker pid=281027 on localhost:11797 at 16:36:15.623
+starting worker pid=281046 on localhost:11797 at 16:36:16.082
+starting worker pid=281065 on localhost:11797 at 16:36:16.521
+starting worker pid=281084 on localhost:11797 at 16:36:16.969
+starting worker pid=281103 on localhost:11797 at 16:36:17.435
+starting worker pid=281122 on localhost:11797 at 16:36:17.899
+starting worker pid=281141 on localhost:11797 at 16:36:18.363
+starting worker pid=281160 on localhost:11797 at 16:36:18.818
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+starting worker pid=282377 on localhost:11797 at 17:14:05.443
+starting worker pid=282394 on localhost:11797 at 17:14:05.907
+starting worker pid=282413 on localhost:11797 at 17:14:06.375
+starting worker pid=282432 on localhost:11797 at 17:14:06.833
+starting worker pid=282451 on localhost:11797 at 17:14:07.293
+starting worker pid=282470 on localhost:11797 at 17:14:07.759
+starting worker pid=282489 on localhost:11797 at 17:14:08.230
+starting worker pid=282508 on localhost:11797 at 17:14:08.688
+starting worker pid=282527 on localhost:11797 at 17:14:09.133
+starting worker pid=282546 on localhost:11797 at 17:14:09.591
+starting worker pid=282565 on localhost:11797 at 17:14:10.051
+starting worker pid=282584 on localhost:11797 at 17:14:10.640
+starting worker pid=282603 on localhost:11797 at 17:14:11.096
+starting worker pid=282622 on localhost:11797 at 17:14:11.555
+starting worker pid=282641 on localhost:11797 at 17:14:12.035
+starting worker pid=282660 on localhost:11797 at 17:14:12.503
+starting worker pid=282679 on localhost:11797 at 17:14:12.963
+starting worker pid=282698 on localhost:11797 at 17:14:13.430
+starting worker pid=282717 on localhost:11797 at 17:14:13.891
+starting worker pid=282736 on localhost:11797 at 17:14:14.350
+starting worker pid=282755 on localhost:11797 at 17:14:14.832
+starting worker pid=282774 on localhost:11797 at 17:14:15.291
+starting worker pid=282793 on localhost:11797 at 17:14:15.746
+starting worker pid=282812 on localhost:11797 at 17:14:16.201
+starting worker pid=282831 on localhost:11797 at 17:14:16.665
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+starting worker pid=283778 on localhost:11797 at 17:19:20.866
+starting worker pid=283797 on localhost:11797 at 17:19:21.327
+starting worker pid=283816 on localhost:11797 at 17:19:21.790
+starting worker pid=283835 on localhost:11797 at 17:19:22.254
+starting worker pid=283854 on localhost:11797 at 17:19:22.717
+starting worker pid=283873 on localhost:11797 at 17:19:23.312
+starting worker pid=283892 on localhost:11797 at 17:19:23.778
+starting worker pid=283911 on localhost:11797 at 17:19:24.517
+starting worker pid=283930 on localhost:11797 at 17:19:24.986
+starting worker pid=283949 on localhost:11797 at 17:19:25.465
+starting worker pid=283968 on localhost:11797 at 17:19:25.928
+starting worker pid=283987 on localhost:11797 at 17:19:26.391
+starting worker pid=284006 on localhost:11797 at 17:19:26.849
+starting worker pid=284025 on localhost:11797 at 17:19:27.311
+starting worker pid=284044 on localhost:11797 at 17:19:27.775
+starting worker pid=284063 on localhost:11797 at 17:19:28.236
+starting worker pid=284083 on localhost:11797 at 17:19:28.697
+starting worker pid=284102 on localhost:11797 at 17:19:29.166
+starting worker pid=284121 on localhost:11797 at 17:19:29.636
+starting worker pid=284140 on localhost:11797 at 17:19:30.100
+starting worker pid=284159 on localhost:11797 at 17:19:30.567
+starting worker pid=284179 on localhost:11797 at 17:19:31.027
+starting worker pid=284198 on localhost:11797 at 17:19:31.496
+starting worker pid=284217 on localhost:11797 at 17:19:31.959
+starting worker pid=284236 on localhost:11797 at 17:19:32.415
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+Fehler in unserialize(node$con) : Lesefehler aus Verbindung
+Ruft auf: <Anonymous> ... doTryCatch -> recvData -> recvData.SOCKnode -> unserialize
+Ausführung angehalten
+starting worker pid=285264 on localhost:11807 at 17:29:21.263
+starting worker pid=285283 on localhost:11807 at 17:29:21.727
+starting worker pid=285302 on localhost:11807 at 17:29:22.197
+starting worker pid=285321 on localhost:11807 at 17:29:22.652
+starting worker pid=285340 on localhost:11807 at 17:29:23.115
+starting worker pid=285359 on localhost:11807 at 17:29:23.572
+starting worker pid=285378 on localhost:11807 at 17:29:24.029
+starting worker pid=285397 on localhost:11807 at 17:29:24.497
+starting worker pid=285416 on localhost:11807 at 17:29:24.963
+starting worker pid=285435 on localhost:11807 at 17:29:25.420
+starting worker pid=285454 on localhost:11807 at 17:29:25.884
+starting worker pid=285473 on localhost:11807 at 17:29:26.343
+starting worker pid=285492 on localhost:11807 at 17:29:26.804
+starting worker pid=285511 on localhost:11807 at 17:29:27.264
+starting worker pid=285530 on localhost:11807 at 17:29:27.726
+starting worker pid=285549 on localhost:11807 at 17:29:28.188
+starting worker pid=285569 on localhost:11807 at 17:29:28.646
+starting worker pid=285588 on localhost:11807 at 17:29:29.122
+starting worker pid=285607 on localhost:11807 at 17:29:29.601
+starting worker pid=285626 on localhost:11807 at 17:29:30.046
+starting worker pid=285645 on localhost:11807 at 17:29:30.494
+starting worker pid=285664 on localhost:11807 at 17:29:31.081
+starting worker pid=285683 on localhost:11807 at 17:29:31.519
+starting worker pid=285702 on localhost:11807 at 17:29:31.969
+starting worker pid=285721 on localhost:11807 at 17:29:32.431
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512
+Step1. completed max alpha_i(S) for all i and S
+Total sets g(S) to be evaluated over: 512

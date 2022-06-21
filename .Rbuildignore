@@ -1,4 +1,5 @@
 .Renviron
+.Rprofile
 ^renv$
 ^renv\.lock$
 ^.*\.Rproj$
