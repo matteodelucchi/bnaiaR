@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f810fb1882a178e6a9f31642585680f2eb2ecd3aefab74a9f8ce3cfae39f9158
-size 79
+.Renviron
+.Rprofile
+^renv$
+^renv\.lock$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$

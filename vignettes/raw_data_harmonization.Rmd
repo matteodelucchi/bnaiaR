@@ -1,3 +1,302 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:9123ce5c33e48345eb05be98238f5f6f8e4dc818a1d4a7aebb44b74683acd1b0
-size 6933
+---
+title: "Harmonizing Raw Data"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{Harmonizing Raw Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(RMariaDB)
+library(forcats)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+```
+
+# Raw Data
+
+Raw data is stored in two SQL data bases which are not public. 
+
+## Dependencies
+
+This file connects to the database docker container published on port 6603 on
+`localhost`.
+The instructions to set up the container stack are available on:
+[`github.zhaw.ch/delt/aneurysmDB`](https://github.zhaw.ch/delt/aneurysmDB) in a 
+private, unpublished repo.
+
+```{r debug, include=FALSE}
+# Secrets are stored in unpublished environment variables.
+USERNAME <- Sys.getenv("USERNAME")
+PASSWORD <- Sys.getenv("PASSWORD")
+DB_CONFIG <- Sys.getenv("DB_CONFIG")
+```
+
+
+We set up the connection to the DBs.
+
+```{r warning=FALSE}
+# Connect to my-db as defined in ~/.my.cnf
+conaneux_CRIM_ANEUQUEST_2021_06 <- connectDBstack(dbname="aneux_CRIM_ANEUQUEST_2021_06",
+                      username=USERNAME,
+                      password=PASSWORD,
+                      default.file = DB_CONFIG)
+conaneux_CRIM_ANEUX_2021_06 <- connectDBstack(dbname="aneux_CRIM_ANEUX_2021_06",
+                      username=USERNAME,
+                      password=PASSWORD,
+                      default.file = DB_CONFIG)
+
+# All connection variable names in one vector
+cons <- ls(pattern = "^con")
+```
+
+Query the raw data from the two data bases: aneuquest and aneux.
+
+```{r}
+aneuquest.raw <- dbGetQuery(conaneux_CRIM_ANEUQUEST_2021_06, "
+SELECT
+    ROOT.patientID,
+    ROOT.patDOB,
+    ROOT.aneuristID,
+    ROOT.recruBasis,
+    ROOT.patSex,
+    ROOT.patEthnicity,
+    ROOT.prf_PosFamHis,
+    ROOT.prf_SmokedTobacco,
+    ROOT.prf_HyperTension,
+    aneu.ID,
+    aneu.ruptureStatus,
+    aneu.aneuLoca,
+    aneu.maxDiam,
+    aneu.aneuReportDate,
+    aneu.aneuReportPatAge,
+    aneu.aneuUniqueID    
+FROM
+    ROOT
+LEFT JOIN EventID AS ev
+ON
+    ROOT.ID = ev.ParentID
+RIGHT JOIN ANEUDETAILEVENT AS aneu
+ON
+      ev.ID = aneu.ParentID
+")
+
+
+aneux.raw <- dbGetQuery(conaneux_CRIM_ANEUX_2021_06, "
+SELECT
+    ROOT.patientID,
+    ROOT.patDOB,
+    ROOT.aneuristID,
+    ROOT.recruBasis,
+    ROOT.patSex,
+    ROOT.patEthnicity,
+    ROOT.prf_PosFamHis,
+    ROOT.prf_SmokedTobacco,
+    ROOT.prf_HyperTension,
+    aneu.ID,
+    aneu.ruptureStatus,
+    aneu.aneuLoca,
+    aneu.maxDiam,
+    aneu.aneuReportDate,
+    aneu.initialDiagDate,
+    aneu.aneuReportPatAge,
+    aneu.noAnevrisme,
+    aneu.aneuUniqueID
+FROM
+    ROOT
+LEFT JOIN EventID AS ev
+ON
+    ROOT.ID = ev.ParentID
+RIGHT JOIN ANEUDETAILEVENT AS aneu
+ON
+    ev.ID = aneu.ParentID
+")
+```
+
+```{r}
+str(aneuquest.raw)
+str(aneux.raw)
+```
+
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(aneuquest.raw)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "AneuQuest_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(aneux.raw)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "AneuX_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
+
+## Harmonization
+
+```{r}
+aneuquest <- crim4toISGC(aneuquest.raw) 
+```
+
+```{r}
+aneux <- crim5toISGC(aneux.raw) 
+```
+
+## Transformation 
+### Add reference to data base source
+For later reference we add a column with the name of the data source
+```{r}
+aneuquest[["db"]] <- "aneuquest"
+aneux[["db"]] <- "aneux"
+```
+
+### Join all ADB together
+
+```{r}
+adb.raw <- aneuquest %>%
+  bind_rows(aneux) 
+```
+
+Take care about the patient anonymisation by removing the patient hash.
+
+```{r}
+identifier <- paste0("pat", sample(1:1000000, nrow(adb.raw))) 
+
+adb.raw <- adb.raw %>%
+  mutate(ID_2 = identifier) 
+```
+
+
+The raw data then looks like this:
+
+```{r}
+str(adb.raw)
+```
+
+The number of entries by data base:
+
+```{r}
+table(adb.raw$db)
+```
+
+## Validation
+
+```{r, fig.height=14, out.height= "100%"}
+plt <- overview_plt_max(adb.raw)
+
+if (SAVEPLOTS){
+  ggsave(plot = plt, filename = "ADB_overview_raw.png", path = PLOTPATH, 
+         width = 14, height = 20, dpi = 300)
+  }
+```
+
+### Age
+
+```{r}
+table(adb.raw$age.at.time.of.diagnosis, useNA = "always")
+```
+
+Filter impossible age values:
+
+```{r}
+patientsWithWrongAge <- adb.raw %>%
+  filter(age.at.time.of.diagnosis > 130 | is.na(age.at.time.of.diagnosis) | age.at.time.of.diagnosis <= 0) %>%
+  select(ID_2, age.at.time.of.diagnosis)
+str(patientsWithWrongAge)
+```
+
+
+### Size
+
+```{r}
+table(adb.raw$IA_size.at.time.of.SAH, useNA = "always")
+```
+
+
+```{r}
+summary(as.numeric(adb.raw$IA_size.at.time.of.SAH))
+```
+
+## save ADB raw data set to R package
+
+### Make all variables factors
+```{r}
+adb.raw <- adb.raw %>%
+  # convert all variables to factors
+  mutate(across(where(purrr::is_character), forcats::as_factor),
+         # across(where(is_numeric),as_factor)
+         ) %>%
+  # order
+  mutate(Positive.famillial.history = forcats::fct_relevel(Positive.famillial.history, c("Yes","No")))%>%
+  mutate(Smoking_Current_Former_No = forcats::fct_relevel(Smoking_Current_Former_No, c("Current","Former","No")))%>%
+  mutate(Ruptured_IA = forcats::fct_relevel(Ruptured_IA, c("Yes","No")))%>%
+  mutate(Multiple.IAs = forcats::fct_relevel(Multiple.IAs, c("Yes", "No")))%>%
+  mutate(IA_size.at.time.of.SAH.groups = forcats::fct_relevel(IA_size.at.time.of.SAH.groups, LETTERS[1:length(levels(IA_size.at.time.of.SAH.groups))]))%>%
+  mutate(Age.at.diag.grouped = forcats::fct_relevel(Age.at.diag.grouped, LETTERS[1:length(levels(Age.at.diag.grouped))])) %>%
+  mutate(Hypertension = forcats::fct_relevel(Hypertension, c("AnyType", "Never")))%>%
+  mutate(IA_Location = forcats::fct_relevel(IA_Location, c("Acom", "Pcom","V-B", "A2","PC","MCA","ICA","Basilar","Other","A1 segment ant","CavICA","OphtICA")))%>%
+  mutate(Gender = forcats::fct_relevel(Gender, c("Female", "Male"))) %>%
+  # as data frame
+  as.data.frame()
+```
+
+## Save ADB_raw as RData
+
+```{r}
+str(as.data.frame(adb.raw))
+```
+
+To make this data set available in other vignettes, we store it in `inst/extdata`.
+
+```{r save adb_raw}
+# save(adb.raw, file = "../inst/extdata/adb_raw.RData")
+```
+
+The data set can then be loaded via:
+
+```{r}
+# rm(list=ls())
+# load(system.file("extdata", "adb_raw.RData", package = "bnaiaR"))
+```
+
+## Include Preprocessed Data in bnaiaR package
+
+```{r}
+# usethis::use_data(adb.raw, overwrite = TRUE)
+# devtools::document()
+```
+

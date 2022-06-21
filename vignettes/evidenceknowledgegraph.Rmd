@@ -1,3 +1,103 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0608a9905c6a4070f6488c2dbb47f63bfe00b5fd3d957579ebd552e691438db8
-size 4041
+---
+title: "Evidence Knowledge Graph"
+author: "Matteo Delucchi"
+output:
+  rmarkdown::html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    toc_depth: 3
+  rmarkdown::html_vignette: default
+vignette: >
+  %\VignetteIndexEntry{evidenceknowledgegraph}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(bnlearn)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+# Save plots as files? 
+# Warning: Bad layout with knitr. Works well if chunks are run without rendering.
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "png" # "svg" or "png"
+```
+
+# Build Evidence Knowledge Graph Structure
+
+```{r evidenceknowledgegraph}
+# Create Evidence graph
+ekg <- empty.graph(names(exp11_dat$abndata))
+arc.set <- data.frame(matrix(c("Ruptured_IA", "location.grouped", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+                               "Ruptured_IA", "Hypertension", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+                               "Ruptured_IA", "Smoking_Current_Former_No", # 1) IA rupture was associated with IA location, hypertension history and former smoking
+                               "Ruptured_IA", "Positive.famillial.history", # aware of pos. fam. hist -> no rupture
+                               
+                               "location.grouped", "IAsize.groups.merged", # 2) IA size at rupture and patient age at rupture were associated with IA location;
+                               "location.grouped", "AgeDiag.group", # 2) IA size at rupture and patient age at rupture were associated with IA location;
+                               "location.grouped", "Ruptured_IA", # high risk location -> ruptured IA
+
+                               "Gender", "IAsize.groups.merged", # 5) IAs in females ruptured at smaller sizes and at older age;
+                               "Gender", "AgeDiag.group", # 5) IAs in females ruptured at smaller sizes and at older age;
+
+                               "IAsize.groups.merged", "AgeDiag.group", # 6) IA size at rupture correlated with patient age
+                               "IAsize.groups.merged", "Positive.famillial.history",
+                               "IAsize.groups.merged", "Smoking_Current_Former_No", # Current smoker -> larger IA
+                               "IAsize.groups.merged", "Multiple.IAs", # If multiple IAs then they rupture larger
+                               
+                               "AgeDiag.group", "Positive.famillial.history", # If pos. fam. hist -> IA rupture at younger age
+                               "AgeDiag.group", "Hypertension", # If aware of HBP, then rupture later
+                               "AgeDiag.group", "Smoking_Current_Former_No" # Current smoker rupture younger compared to former or none (no diff. between former and none)
+                               ), 
+                             byrow = TRUE,
+                             ncol = 2),
+                      stringsAsFactors = FALSE)
+names(arc.set) <- c("from", "to")
+
+# make undirected arcs:
+inv.arc.set <- data.frame(from = arc.set$to, to = arc.set$from)
+arc.set <- rbind(arc.set, inv.arc.set)
+
+names(arc.set) <- c("from", "to")
+arcs(ekg) <- arc.set
+```
+
+
+```{r display.evidenceknowledgegraph}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "evidence_knowledge_graph", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  }
+  graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
+  dev.off()
+} else {
+graphviz.plot(ekg, shape = "rectangle", main = "Evidence Knowledge Graph")
+}
+```
+
+## save to package data
+
+```{r save ekg}
+# usethis::use_data(ekg, overwrite = TRUE)
+# devtools::document()
+```

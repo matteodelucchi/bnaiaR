@@ -1,3 +1,1185 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c674d22def9abc53b71a8e0f5241ffa09926d30712586da91c4d23deabee5628
-size 47480
+---
+title: "ABN MCMC Postprocessing and Result Analysis"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    df_print: paged
+  rmarkdown::html_vignette: default
+# runtime: shiny
+vignette: >
+  %\VignetteIndexEntry{ABNAIA results analysis}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::knitr}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache.path="./"
+)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+rm(list = ls())
+library(parallel)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(reshape2)
+library(svglite)
+library(mcmcabn)
+library(bnlearn)
+library(bnaiaR)
+library(coda)
+library(abn)
+```
+
+# Document Settings
+```{r}
+SAVEPLOTS <- F
+EXPNO <- "ABNmultinomial"
+FILENAME <- paste0("exp", EXPNO)
+FILENAMEbase <- "/inst/extdata/mcmcabn/results/raw/"
+PLOTPATH <- "/results/"
+DATPATH <- "/results/raw/"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+# Disclosure
+
+BEWARE, THIS IS DRAFT CODE WITH PERSONAL NOTES OF MATTEO NOT INTENDED TO BE
+REPRODUCIBLE IN ANY WAY!
+
+# Load Data and take a first glimpse
+```{r}
+load(paste0(getwd(), "/results/raw/", FILENAME, "_final.RData"))
+```
+
+
+```{r}
+FILENAME <- paste0(FILENAME, "_100k")
+FILENAME
+```
+
+
+List of all mcmcabn outputs. 
+```{r}
+length(mcmc.out.list)
+```
+
+Show first mcmcabn output.
+```{r}
+str(mcmc.out.list[1])
+```
+
+DAG from first mcmcabn output. [rows, columns, dags]. dags = number of returned DAGS specified in mcmcscheme.
+
+```{r}
+str(mcmc.out.list[[1]]$dags)
+```
+
+## Max. parents plot
+
+```{r}
+df <- net.scores %>%
+  mutate(
+    scoretype = as.factor(scoretype),
+    npar = as.factor(npar),
+    scorevalue = as.numeric(scorevalue)) %>%
+  
+  group_by(scoretype) %>%
+  summarise(
+    scorevalue.norm = (1 - abs(1 - scorevalue / max(scorevalue))) * 100,
+    .groups = "keep",
+    npar = npar,
+    scorevalue = scorevalue) %>%
+  ungroup(
+  )
+df
+```
+
+### Plot Network score by increasing max parents
+
+```{r}
+plt.rel <- ggplot(df, aes(x=npar, color = scoretype, y = scorevalue.norm)) +
+  geom_point(aes(shape = scoretype, alpha = 0.5, size = 1))+
+  # facet_wrap(.~dist_type)+
+  labs(title = "Relative network score per no. parent nodes",
+       x="number of parent nodes",
+       y="network score [%]") +
+  scale_x_discrete(limits = unique(df$npar))+
+  theme_bw()
+
+plt.abs <- ggplot(df, aes(color = scoretype, y = scorevalue, group = scoretype)) +
+  geom_point(aes(x=npar, shape = scoretype, alpha = 0.5, size = 1))+
+  # facet_wrap(.~dist_type)+
+  
+  labs(title = "Absolute network score per no. parent nodes",
+       x="number of parent nodes",
+       y="network score") +
+  scale_x_discrete(limits = unique(df$npar))+
+  theme_bw()
+
+plt.comb <- cowplot::plot_grid(plt.rel, plt.abs, labels = "AUTO", ncol = 1)
+
+if (SAVEPLOTS){
+  plotname <-paste0(getwd(), "/results/", FILENAME, "_netscore_per_no.parent_nodes")
+  ggsave(paste0(plotname, ".png"),
+         plot = plt.comb,
+         width =9, height = 10, dpi = 600)
+} else {
+  plt.comb
+}
+```
+
+### Plot DAGs with different max parents
+
+```{r}
+parents <- 1
+plt <- list()
+for (i in net.scores.dags) {
+  # plotAbn(i, dist, edge.direction = "undirected")
+  
+  dag = bnlearn::empty.graph(names(abndata))
+  bnlearn::amat(dag) = t(i$dag)
+  
+  temp.plt <- bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = paste0("DAG with max.par=", parents),
+                         render = F)
+  plt[[parents]] <- temp.plt
+  parents <- parents+1
+}
+
+png(filename = paste0(getwd(), "/results/", FILENAME, "_maxparentDAGs.png"),width = 1920, height = 1080)
+par(mfrow=c(3,3))
+parents <- 1
+for(i in plt){
+  plot(i)
+  title(paste0("DAG with max.par=", parents))
+  parents <- parents + 1
+}
+dev.off()
+```
+
+
+
+# Preprocess
+## Thin and Burn-in
+
+thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
+
+```{r}
+# THINNING <- 2 # keep every second draw
+# BURNIN.LEN <- 2500 # remove the first n draws
+THINNING <- 7
+BURNIN.LEN <- 25000 # remove the first n draws
+
+mcmc.out.list.burn <- postBURNin(mcmc.out.list = mcmc.out.list, burnin.length = BURNIN.LEN)
+mcmc.out.list.thin <- postTHINN(mcmc.out.list = mcmc.out.list, thinningsteps = THINNING)
+mcmc.out.list.burn.thin <- postTHINN(mcmc.out.list = mcmc.out.list.burn, thinningsteps = THINNING)
+str(mcmc.out.list.burn[1])
+str(mcmc.out.list.thin[1])
+str(mcmc.out.list.burn.thin[1])
+```
+
+## Reformat
+
+```{r}
+# thinned only
+mc.out.thin.1 <- mcmc.out.list.thin[[1]]
+mc.out.thin.2 <- mcmc.out.list.thin[[2]]
+mc.out.thin.3 <- mcmc.out.list.thin[[3]]
+mc.out.thin.4 <- mcmc.out.list.thin[[4]]
+
+mc.out.thin.score.1 <- mcmc(mc.out.thin.1$scores)
+mc.out.thin.score.2 <- mcmc(mc.out.thin.2$scores)
+mc.out.thin.score.3 <- mcmc(mc.out.thin.3$scores)
+mc.out.thin.score.4 <- mcmc(mc.out.thin.4$scores)
+
+list.mc.out.thin.score <- mcmc.list(mc.out.thin.score.1, mc.out.thin.score.2, mc.out.thin.score.3, mc.out.thin.score.4)
+
+# burned and thinned
+mc.out.burn.thin.1 <- mcmc.out.list.burn.thin[[1]]
+mc.out.burn.thin.2 <- mcmc.out.list.burn.thin[[2]]
+mc.out.burn.thin.3 <- mcmc.out.list.burn.thin[[3]]
+mc.out.burn.thin.4 <- mcmc.out.list.burn.thin[[4]]
+
+mc.out.burn.thin.score.1 <- mcmc(mc.out.burn.thin.1$scores)
+mc.out.burn.thin.score.2 <- mcmc(mc.out.burn.thin.2$scores)
+mc.out.burn.thin.score.3 <- mcmc(mc.out.burn.thin.3$scores)
+mc.out.burn.thin.score.4 <- mcmc(mc.out.burn.thin.4$scores)
+
+# list.mc <- mcmc.list(mc.score.1, mc.score.2, mc.score.3, mc.score.4)
+list.mc.out.burn.thin.score <- mcmc.list(mc.out.burn.thin.score.1, mc.out.burn.thin.score.2, mc.out.burn.thin.score.3, mc.out.burn.thin.score.4)
+
+mc.out.burn.thin.dag.1 <- mc.out.burn.thin.1$dags
+mc.out.burn.thin.dag.2 <- mc.out.burn.thin.2$dags
+mc.out.burn.thin.dag.3 <- mc.out.burn.thin.3$dags
+mc.out.burn.thin.dag.4 <- mc.out.burn.thin.4$dags
+
+list.mc.out.burn.thin.dag <- abind::abind(mc.out.burn.thin.dag.1, mc.out.burn.thin.dag.2, mc.out.burn.thin.dag.3, mc.out.burn.thin.dag.4)
+```
+
+# Best fitting DAG
+
+number of max parents per node.
+
+```{r}
+max.par
+```
+
+total arcs.
+
+```{r}
+sum(dag.maxpar$dag)
+summary(fabn.maxpar)
+```
+
+TODO: Can't fit bayes with multinomial. Only mle.
+
+# MCMC Quality check
+
+## Gelman
+```{r}
+gelman.diag(x = list.mc.out.thin.score,autoburnin = T) # if higher than 1.1 or 1.2, run chain longer to improve convergence
+gelman.plot(list.mc.out.thin.score, autoburnin = T)
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_gelmanplot"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+} else {
+  gelman.plot(list.mc.out.thin.score, autoburnin = T)
+}
+```
+
+## Raftery
+
+calculate no. of iterations and no. of burn-ins to satisfy specified conditions.
+
+```{r}
+raftery.diag(unlist(list.mc.out.thin.score))
+```
+
+## Heidelberg and Welch Diagnostics
+
+test H0: The Markov Chain is from a stationary distribution. If not passed, chain must run longer.
+
+```{r}
+for (chain in 1:length(list.mc.out.thin.score)){
+  print("------------------------")
+  print(paste("Chain no: ", chain))
+  print(heidel.diag(list.mc.out.thin.score[[chain]]))
+}
+
+```
+
+## Trace Plot
+
+```{r}
+mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+if (SAVEPLOTS){
+  PLOTNAME <- "_traceplot"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  
+  dev.off()
+  } else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+  }
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "_traceplot_maxscore"
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+  }
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "_traceplot_classic"
+  plot(list.mc.out.burn.thin.score)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else {
+  plot(list.mc.out.burn.thin.score)
+}
+```
+
+```{r}
+## traceplot
+fabn <-fitAbn(dag = dag.maxpar$dag,
+              data.df = abndata,
+              data.dists = dist, 
+              method = METHOD) 
+
+max.score <- -fabn$bic
+
+dta <- data.frame(mc.out.thin.1[2:4],
+                  mc.out.thin.2[2:4],
+                  mc.out.thin.3[2:4],
+                  mc.out.thin.4[2:4]) # Thinned but not burned
+
+dta <- dta[,c(1,4,7,10)]
+# dta <- dta[thin, ]
+names(dta) <- c("Run1","Run2","Run3","Run4")
+dta$X <- (1:length(dta$Run1))
+dta <- reshape2::melt(dta, "X", value.name = "scores")
+
+dta$cummax[1] <- dta$scores[1]
+for (i in 2:length(dta$scores)) {
+  if (dta$scores[i] > dta$cummax[i - 1]) {
+    dta$cummax[i] <- dta$scores[i]
+    } else {
+      dta$cummax[i] <- dta$cummax[i - 1]
+    }
+}
+
+# Create a text
+
+original_plot <- ggplot(data = dta, aes_string(x = "X", y="scores", color = "variable")) +
+  geom_line(alpha = 0.8,lwd=1.1) +
+  geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+  geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+  labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+  ggpubr::theme_pubr()+
+  ylim(min(dta$scores),max(dta$scores)) 
+  # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score,alpha = .3) +
+  # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# print(original_plot)
+
+# Plot
+y_density <- cowplot::axis_canvas(original_plot, axis = "y", coord_flip = TRUE) +
+  geom_density(data = dta, aes_string(x = "scores",fill = "factor(variable)"), alpha = 0.5) +
+  coord_flip()
+
+cummax_plt <- ggplot(data = dta, aes_string(x = "X", y="cummax", color = "variable")) +
+  geom_line(alpha = 0.8,lwd=1.1, inherit.aes = T) +
+  geom_point(aes_string(color = "variable"), inherit.aes = T)+
+  geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+  geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+  labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+  ggpubr::theme_pubr()+
+  ylim(min(dta$scores),max(dta$scores)) 
+  # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score, alpha = .3) +
+  # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# cummax_plt
+
+# create the combined plot
+combined_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right"))
+combined_cummax_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = cummax_plt, position = "right"))
+# ggsave(paste0(FILENAMEbase, FILENAME, "traceplot_combined.png"),
+#        plot = cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right")),
+#        width = 9,height = 7)
+# dev.off()
+# print(combined_plot)
+
+if (SAVEPLOTS){
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns")
+  ggsave(paste0(PLOTNAME, ".svg"),
+         width = PLOTWIDTH, height = PLOTHEIGHT)
+
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_combined")
+  ggsave(paste0(PLOTNAME, ".svg"),
+         width = PLOTWIDTH, height = PLOTHEIGHT)  
+
+  PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_cummax")
+  ggsave(paste0(PLOTNAME, ".svg"),
+         width = PLOTWIDTH, height = PLOTHEIGHT)  
+  } else {
+  original_plot
+  combined_plot 
+  cummax_plt
+}
+```
+
+# Consensus DAG
+
+best dag trimmed for controlling overfitting
+
+```{r}
+# Best DAG not trimmed 
+dag.mcmc.boot <- apply(list.mc.out.burn.thin.dag, 1:2, mean)
+colnames(dag.mcmc.boot) <- rownames(dag.mcmc.boot) <- names(dist)
+
+# Best DAG Trimmed on THRESHOLD
+dag.mcmc.boot.th <- dag.mcmc.boot
+dag.mcmc.boot.th[dag.mcmc.boot.th>THRESHOLD]<-1
+dag.mcmc.boot.th[dag.mcmc.boot.th<=THRESHOLD]<-0
+
+# Plot Best DAG trimmed
+cons.dag.plt <- plotAbn(dag = dag.mcmc.boot.th,data.dists = dist, plot = F)
+
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_consensus_dag"
+  dag = bnlearn::empty.graph(names(abndata))
+  bnlearn::amat(dag) = t(dag.mcmc.boot.th)
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = "MCMC ABN DAG")  
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  dev.off()
+  abn::toGraphviz(dag.mcmc.boot.th,
+                  data.dists = dist,
+                  data.df = abndata,
+                  outfile =paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".dot"),
+                  directed=TRUE)
+  saveRDS(dag.mcmc.boot.th, file = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".rds"))
+
+  } else {
+  cons.dag.plt
+  dag = bnlearn::empty.graph(names(abndata))
+  bnlearn::amat(dag) = t(dag.mcmc.boot.th)
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = "MCMC ABN DAG")
+  }
+```
+
+
+# Arc strength significance threshold
+
+```{r}
+dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
+arc.stren.sign.threshold <-arc.stren.threshold(dag.mcmc.boot.stren)
+
+
+# relative arc strength
+plot(ecdf(dag.mcmc.boot.stren))
+abline(v = arc.stren.sign.threshold, lty=2)
+abline(v=0.5)
+
+# # absolute arc strength
+# plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_cdf_arcstrength"
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  dev.off()
+  } 
+```
+
+Difference in DAG between two arc strength thresholds:
+```{r}
+# relative frequency of an arc appearing in the MCMC sample
+x <- dag.mcmc.boot
+
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold)]
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold-0.01)] <- 100 # Assign impossible value to highlight arc
+x
+```
+
+
+```{r}
+# Fit best DAG trimmed 
+fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
+              data.df = abndata,
+              data.dists = dist, 
+              method = METHOD,
+              compute.fixed = T,
+              create.graph = T)
+
+fabn.boot.th.mle$bic
+infoDag(dag.mcmc.boot.th)
+
+# plot with arc strength
+plotdag <- dag.mcmc.boot
+plotdag[plotdag>THRESHOLD]<-1
+plotdag[plotdag<=THRESHOLD]<-0
+
+fitvals <- fabn.boot.th.mle$coef
+
+for (i in 1:length(fitvals)){
+  names(fitvals[[i]]) <- colnames(fitvals[[i]])
+}
+
+edgestren <- round(dag.mcmc.boot, 2)
+edgestren[edgestren<=THRESHOLD]<-0
+
+# svg(filename = paste0(FILENAMEbase, FILENAME, "consensus_dag_edgestrength.svg"))
+cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
+        data.dists = dist,
+        # fitted.values = fitvals,
+        digits = 2,
+        edge.strength = edgestren,
+        plot = F)
+# dev.off()
+
+if (SAVEPLOTS){
+  PLOTNAME <- "consensus_dag_edgestrength"
+  plot(cons.dag.plt.edgestrength)
+  dev.print(svg, filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH/2, height = PLOTHEIGHT/2)
+  dev.off()
+  } else {
+  plot(cons.dag.plt.edgestrength)
+}
+```
+
+
+# Inference
+
+```{r}
+# Fit best trimmed DAG with MLE framework to compute marginals
+fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
+              data.df = abndata,
+              data.dists = dist, 
+              method = "mle",
+              compute.fixed = T,
+              create.graph = T)
+
+# out.bayes <- unlist(fabn.boot.th.bayes$modes)
+out.mle <- unlist(fabn.boot.th.mle$coef)
+```
+
+```{r}
+##numeric
+df.mle <- as.data.frame(out.mle) %>%
+  tibble::rownames_to_column()%>%
+  filter(!stringr::str_detect(rowname, "precision") &
+           !stringr::str_detect(rowname, "Intercept"))
+
+# df.bayes
+df.mle
+```
+
+## Maximum Likelihood Estimation 
+
+(from help of "abn::fitAbn()")
+The procedure fitAbn with the argument method= "mle" fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); an unbounded count (Poisson); or a discrete variable (Multinomial). The model comprises of a set of conditionally independent generalized linear regressions with or without adjustment.
+
+Binary and discrete variables must be declared as factors and the argument data.dists must be a list with named arguments, one for each of the variables in data.df, where each entry is either "poisson","binomial", "multinomial" or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
+
+In the context of fitAbn adjustment means that irrespective to the adjacency matrix the adjustment variable set (adj.vars) will be add as covariate to every node defined by cor.vars. If cor.vars is NULL then adjustment is over all variables in the data.df.
+
+In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
+
+The Information-theoretic based network scores used in fitAbn with argument method="mle" are the maximum likelihood (mlik, called marginal likelihood in this context as it is computed node wise), the Akaike Information Criteria (aic), the Bayesian Information Criteria (bic) and the Minimum distance Length (mdl). The classical definitions of those metrics are given in Kratzer and Furrer (2018).
+
+The numerical routine is based on an iterative scheme to estimate the regression coefficients. The Iterative Reweighed Least Square (IRLS) programmed using Rcpp/RcppArmadrillo. One hard coded feature of fitAbn with argument method="mle" is a conditional use of a bias reduced binomial regression when a classical Generalized Linear Model (GLM) fails to estimate the maximum likelihood of the given model accurately. Additionally, a QR decomposition is performed to check for rank deficiency. If the model is rank deficient and the BR GLM fails to estimate it, then predictors are sequentially removed. This feature aims at better estimating network scores when data sparsity is present.
+
+A special care should be taken when interpreting or even displaying p-values computed with fitAbn. Indeed, the full model is already selected using goodness of fit metrics based on the (same) full dataset.
+
+
+### Regression coefficient estimates and 95% Confidence Intervals (CI)
+
+with their interpretation and data support (computed with structural MCMC).
+
+Second table `spportdag` is the percentage of the individual arcs supported by the 
+MCMC sample. 
+
+```{r}
+basicresulttable <- function(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot){
+  fabn.boot.th.mle <- FITABN
+  dag.mcmc.boot <- SUPPORTDAG
+  
+  # Look-up table for interpretation of results depending on variable distribution
+  interpretLUT <- lapply(fabn.boot.th.mle$abnDag$data.dists, function(x){
+    if(x=="binomial"){
+      "log odds ratio"
+    } else if(x=="gaussian"){
+      "correlation"
+    } else if(x=="poisson"){
+      "log rate ratio"
+    } else if(x=="multinomial"){
+      "log odds ratio"
+    }
+  })
+  
+  # Extract each edge (cornames) and it's interpretation
+  cornames <- c()
+  interpret <- c()
+  for (i in 1:length(fabn.boot.th.mle$coef)){
+    for (j in colnames(fabn.boot.th.mle$coef[[i]])){
+      interpret <- c(interpret, interpretLUT[which(names(unlist(interpretLUT)) == names(fabn.boot.th.mle$coef[i]))][[1]])
+      if(stringr::str_detect(j, "intercept")){
+        cornames <- c(cornames, j)
+      } else {
+          cornames <- c(cornames, paste0(names(fabn.boot.th.mle$coef[i]), "|", j))
+        }
+    }
+  }
+  
+  # each edge's support aka. arc-strength
+  possibleLevels <- c("\\.Former", "\\.No", "\\.Current", "\\.No", "\\.Yes", "\\.Low", "\\.Medium", "\\.High", "High", "Low", "Medium")
+  support <- c()
+  from_names <- c()
+  from_levels <- c()
+  to_names <- c()
+  to_levels <- c()
+  supportdag <- dag.mcmc.boot
+  supportdag[supportdag<=THRESHOLD] <- 0
+  for (i in 1:length(cornames)){
+    # iterate through all edges in cornames (i.e. "Multiple.IAs|Hypertension")
+    
+    # split up cornames in from and to names
+    edgename <- stringr::str_split(cornames[[i]], pattern = "\\|", simplify = T)
+    fromname <- stringr::str_split(edgename[2], "\\.", simplify = T)[1]
+    toname <- stringr::str_split(edgename[1], "\\.", simplify = T)[1]
+    
+    # Look up levels of from and to nodes
+    tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)
+    if (length(tolevels) == 1){
+      tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)[1]
+    } else if (length(tolevels) >= 2){
+      tolevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)[1,2]
+    } else if (length(tolevels) == 0){
+      tolevels <- NA
+    }
+    
+    if(fromname == "location"){
+      fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[2], possibleLevels))), "\\.", simplify = T)
+    } else {
+      fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)
+        if (length(fromlevels) == 1){
+          fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)[1]
+        } else if (length(fromlevels) >= 2){
+          fromlevels <- stringr::str_split(as.character(na.omit(stringr::str_match(edgename[1], possibleLevels))), "\\.", simplify = T)[1,2]
+        } else if (length(fromlevels) == 0){
+          fromlevels <- NA
+        }
+      }
+    
+    # fix from and to names here to match in supportdag
+    if (fromname == "location"){
+      fromname <- "location.grouped"
+    } else if(fromname == "Positive"){
+      fromname <- "Positive.famillial.history"
+    } else if(fromname == "Multiple"){
+      fromname <- "Multiple.IAs"
+    }
+    
+    if (toname == "location"){
+      toname <- "location.grouped"
+    } else if(toname == "Positive"){
+      toname <- "Positive.famillial.history"
+    } else if(toname == "Multiple"){
+      toname <- "Multiple.IAs"
+    }
+    
+    # Fill missing from and to levels
+    if (is.na(fromlevels) & fromname != "intercept"){
+      fromlevels <- stringr::str_flatten(levels(abndata[,fromname]), collapse=", ")
+    }
+    if (is.na(tolevels) & fromname != "intercept"){
+      tolevels <- stringr::str_flatten(levels(abndata[,toname]), collapse=", ")
+    }
+    
+    # Retrieve arc strength from supportdag
+    fromidx <- which(colnames(supportdag) == fromname)
+    toidx <- which(colnames(supportdag) == toname)
+    if(identical(fromidx, integer(0)) | identical(toidx, integer(0))){
+      support <- c(support, NA)
+    } else {
+      support <- c(support, round(supportdag[toidx, fromidx], 2))
+    }
+    
+    # collect results
+    from_names <- c(from_names, fromname)
+    from_levels <- c(from_levels, fromlevels)
+    to_names <- c(to_names, toname)
+    to_levels <- c(to_levels, tolevels)
+  }
+  
+  # put all together
+  result.table <- data.frame(cornames = cornames,
+                             from = from_names,
+                             fromLevels = from_levels,
+                             to = to_names,
+                             toLevels = to_levels,
+                             coefficient = unlist(fabn.boot.th.mle$coef, use.names = F),
+                             SE = unlist(fabn.boot.th.mle$Stderror, use.names = F),
+                             interpretation= interpret,
+                             support = support)
+  return(result.table)
+} #EOF basicresulttable
+
+result.table.basic <- basicresulttable(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot)
+result.table.basic
+```
+
+
+```{r}
+result.table <- result.table.basic %>%
+  # Fix toLevels of Ruptured_IA
+  mutate(toLevels = case_when(to == "Ruptured_IA" ~ "No, Yes",
+                              TRUE ~ toLevels)) %>%
+  # Handle intercepts: fromLevels = intercept and from = to-label (this happens due to some bad algorithm design above)
+  mutate(from = case_when(stringr::str_detect(cornames, "intercept") & is.na(fromLevels) & is.na(toLevels) ~ to,
+                          stringr::str_detect(cornames, "intercept") & is.na(fromLevels) & !is.na(toLevels) ~ paste(to, toLevels, sep = "="),
+                          (from %in% c("location.grouped", "Smoking_Current_Former_No")) & (fromLevels %in% c("Low", "Medium", "High", "Current", "Former", "No")) ~ paste(from, fromLevels, sep = "="),
+                          TRUE ~ from),
+         fromLevels = case_when(stringr::str_detect(cornames, "intercept") & is.na(fromLevels) ~ "intercept",
+                                fromLevels %in% c("Low", "Medium", "High", "Current", "Former", "No") ~ "No, Yes",
+                          TRUE ~ fromLevels),
+         to = case_when(stringr::str_detect(cornames, "intercept") ~ NA_character_,
+                        (to %in% c("location.grouped", "Smoking_Current_Former_No")) & (toLevels %in% c("Low", "Medium", "High", "Current", "Former", "No")) ~ paste(to, toLevels, sep = "="),
+                        TRUE ~ to),
+         toLevels = case_when((fromLevels == "intercept") ~ NA_character_,
+                              toLevels %in% c("Low", "Medium", "High", "Current", "Former", "No") ~ "No, Yes",
+                              TRUE ~ toLevels)) %>%
+  
+  # Clean up node labels
+  mutate(fromDirty = from,
+         toDirty = to,
+         from = case_when(from == "Gender" ~ "Sex",
+                          from == "AgeDiag" ~ "Age at Diagnosis",
+                          from == "Positive.famillial.history" ~ "Pos. Fam. History",
+                          from == "Smoking_Current_Former_No" ~ "Smoking Status",
+                          from == "Smoking_Current_Former_No=Current" ~ "Smoking Status=Current",
+                          from == "Smoking_Current_Former_No=Former" ~ "Smoking Status=Former",
+                          from == "Smoking_Current_Former_No=No" ~ "Smoking Status=No",
+                          from == "location.grouped" ~ "IA Location",
+                          from == "location.grouped=Low" ~ "IA Location=Low risk",
+                          from == "location.grouped=Medium" ~ "IA Location=Medium risk",
+                          from == "location.grouped=High" ~ "IA Location=High risk",
+                          from == "Multiple.IAs" ~ "Multiple IAs",
+                          from == "IAsize_log" ~ "IA Size",
+                          from == "Ruptured_IA" ~ "Ruptured IA",
+                          TRUE ~ from),
+         to = case_when(to == "Gender" ~ "Sex",
+                        to == "AgeDiag" ~ "Age at Diagnosis",
+                        to == "Positive.famillial.history" ~ "Pos. Fam. History",
+                        to == "Smoking_Current_Former_No" ~ "Smoking Status",
+                        to == "Smoking_Current_Former_No=Current" ~ "Smoking Status=Current",
+                        to == "Smoking_Current_Former_No=Former" ~ "Smoking Status=Former",
+                        to == "Smoking_Current_Former_No=No" ~ "Smoking Status=No",
+                        to == "location.grouped" ~ "IA Location",
+                        to == "location.grouped=Low" ~ "IA Location=Low risk",
+                        to == "location.grouped=Medium" ~ "IA Location=Medium risk",
+                        to == "location.grouped=High" ~ "IA Location=High risk",
+                        to == "Multiple.IAs" ~ "Multiple IAs",
+                        to == "IAsize_log" ~ "IA Size",
+                        to == "Ruptured_IA" ~ "Ruptured IA",
+                          TRUE ~ to)) %>%
+  
+  # split levels in two columns
+  separate(col = fromLevels, into = c("fromLevels0", "fromLevels1")) %>%
+  separate(col = toLevels, into = c("toLevels0", "toLevels1")) %>%
+
+  # add odds ratio
+  mutate(exp.coefficient = exp(coefficient),
+         exp.CI = paste(round(exp(coefficient-SE), 2), "-", round(exp(coefficient+SE), 2)),
+         interpretation.exp.coef = case_when(interpretation == "log odds ratio" ~ "odds ratio",
+                                             interpretation == "correlation" ~ "exp. corr. coef.",
+                                             TRUE ~ NA_character_)) %>%
+  # add probabilities
+  mutate(prob = exp(coefficient)/(1+exp(coefficient)) # odds/(1+odds)
+  )
+
+# Probability interpretation
+for (i in 1:nrow(result.table)){
+  if (stringr::str_detect(result.table$cornames[i], "intercept") & !(result.table$from[i] %in% c("Age at Diagnosis", "IA Size", "Smoking Status=Former", "Smoking Status=No", "IA Location", "IA Location=Low risk", "IA Location=Medium risk", "IA Location=High risk"))){
+    # Intercept
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", levels(abndata[ , which(colnames(abndata) == stringr::str_split(result.table$fromDirty[i], "=", simplify = T)[1])])[2], ")")
+  } else if (stringr::str_detect(result.table$cornames[i], "intercept") & result.table$from[i] %in% c("Age at Diagnosis", "IA Size")){
+    # Intercept continuous
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], ")")
+  } else if (stringr::str_detect(result.table$cornames[i], "intercept") & result.table$from[i] %in% c("Smoking Status=Former", "Smoking Status=No", "IA Location", "IA Location=Low risk", "IA Location=Medium risk", "IA Location=High risk")){
+    # Intercept multinomial
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], ")")
+  } else if(result.table$fromLevels0[i] == "") { 
+    # continuous: From
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "= cont. |", result.table$to[i], "=", result.table$toLevels1[i],")")
+  } else if(result.table$toLevels0[i] == "") { 
+    # continuous: to
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", result.table$fromLevels1[i], "|", result.table$to[i], "= cont.)")
+  } else if(result.table$fromLevels0[i] == "") { 
+    # continuous: From and to
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "= cont. |", result.table$to[i], "= cont.)")
+  } else if((is.na(result.table$fromLevels1[i])) & (!is.na(result.table$toLevels1[i]))) { 
+    # Multinomial or continuous: From
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", result.table$fromLevels0[i], "|", result.table$to[i], "=", result.table$toLevels1[i],")")
+  } else if((!is.na(result.table$fromLevels1[i])) & (is.na(result.table$toLevels1[i]))) { 
+    # Multinomial or continuous: to
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", result.table$fromLevels1[i], "|", result.table$to[i], "=", result.table$toLevels0[i],")")
+  } else if (is.na(result.table$fromLevels1[i]) & is.na(result.table$toLevels1[i])) { 
+    # Multinomial or continuous: From and to
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", result.table$fromLevels0[i], "|",result.table$to[i], "=", result.table$toLevels0[i],")")
+  } else if (!is.na(result.table$fromLevels1[i]) & !is.na(result.table$toLevels1[i])) { 
+    # Dichotome/Binomial
+    result.table$interpretation.prob[i] <- paste0("P(", result.table$from[i], "=", result.table$fromLevels1[i], "|", result.table$to[i], "=", result.table$toLevels1[i],")")
+  } else {
+    result.table$interpretation.prob[i] <- paste0("WARNING UNCATCHED CASE: P(", result.table$from[i], "=", result.table$fromLevels1[i], "|", result.table$to[i], "=", result.table$toLevels1[i],")")
+  }
+}
+result.table
+```
+1/(1+exp(fabn.maxpar$coef$Hypertension[1])) * (1-1/(1+exp(fabn.maxpar$coef$Hypertension[2]))) * 1/(1+exp(fabn.maxpar$coef$Hypertension[3]))
+
+```{r}
+result.table.mle <- result.table %>%
+  # round to 2 digits
+  mutate(across(where(is.numeric), function(x){round(x, 2)})) %>%
+  # selct specific columns and reorder
+  select(c(from, fromLevels0, fromLevels1, to, toLevels0, toLevels1, support, exp.coefficient, exp.CI, interpretation.exp.coef, coefficient, SE, interpretation, prob, interpretation.prob, cornames))
+
+if (SAVEPLOTS){
+  write.csv(result.table.mle, file = paste0(getwd(), PLOTPATH, FILENAME, "results_table_mle.csv"), row.names = F)
+  # write.csv(supportdag, file = paste0(getwd(), PLOTPATH, FILENAME, "individual_arc_support.csv"))
+  } else {
+    print(result.table.mle)
+  }
+```
+
+#### As LaTeX table
+
+```{r}
+linesep<-function(x,y=character()){
+  if(!length(x))
+    return(y)
+  linesep(x[-length(x)], c(rep('',x[length(x)]-1),'\\addlinespace',y))  
+}
+
+result.table.mle.basicLatex <- result.table.mle %>%
+  # sort by parent nodes first and then by child nodes
+  arrange(from, fromLevels0, fromLevels1, to, toLevels0, toLevels1) %>%
+  # 
+  # # Clean up node labels
+  # mutate(from = case_when(from == "Gender" ~ "Sex",
+  #                         from == "AgeDiag" ~ "Age at Diagnosis",
+  #                         from == "Positive.famillial.history" ~ "Pos. Fam. History",
+  #                         from == "Smoking_Current_Former_No" ~ "Smoking Status",
+  #                         from == "location.grouped" ~ "IA Location",
+  #                         from == "Multiple.IAs" ~ "Multiple IAs",
+  #                         from == "IAsize_log" ~ "IA Size",
+  #                         from == "Ruptured_IA" ~ "Ruptured IA",
+  #                         TRUE ~ from)) %>%
+  # mutate(to = case_when(to == "Gender" ~ "Sex",
+  #                       to == "AgeDiag" ~ "Age at Diagnosis",
+  #                       to == "Positive.famillial.history" ~ "Pos. Fam. History",
+  #                       to == "Smoking_Current_Former_No" ~ "Smoking Status",
+  #                       to == "location.grouped" ~ "IA Location",
+  #                       to == "Multiple.IAs" ~ "Multiple IAs",
+  #                       to == "IAsize_log" ~ "IA Size",
+  #                       to == "Ruptured_IA" ~ "Ruptured IA",
+  #                         TRUE ~ to)) %>%
+  
+  # Clean column names
+  rename("From" = "from",
+         "From State 0" = "fromLevels0",
+         "From State 1" = "fromLevels1",
+         "To" = "to",
+         "To State 0" = "toLevels0",
+         "To State 1" = "toLevels1",
+         "Coefficient" = "exp.coefficient",
+         "95% CI" = "exp.CI",
+         "Interpretation" = "interpretation.exp.coef",
+         "log coefficient" = "coefficient",
+         "log coef. Interpretation" = "interpretation", 
+         "Probability" = "prob",
+         "Probability Interpretation" = "interpretation.prob",
+         "Arc-strength" = "support") %>%
+  
+  # Display NAs as empty cells
+  mutate(across(where(is.character), ~replace_na(.x, ""))) %>%
+  
+  mutate(`Arc-strength` = as.character(sprintf("%.2f", `Arc-strength`))) %>% # keep tailing zeros of arc-strength
+  mutate(`Arc-strength` = case_when(`Arc-strength` == "NA" ~ "", # replace NAs manually
+                                    TRUE ~ `Arc-strength`)) %>%
+  # Finishing
+  select(-c(cornames)) %>%
+  tibble::remove_rownames() 
+result.table.mle.basicLatex
+```
+
+show everything.
+```{r}
+result.table.mle.basicLatex %>%
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(4, 5, 3, 1, 3, 1, 4)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 8, " " = 1)) %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_full.tex"))
+```
+
+Only odds ratios and log odds
+```{r}
+result.table.mle.basicLatex %>%
+  select(-c(Probability, `Probability Interpretation`)) %>%
+  # rename(" " = "From",
+         # "State 0" = "From State 0",
+         # "State 1" = "From State 1",
+         # " " ="To",
+         # "State 0" = "To State 0",
+         # "State 1" = "To State 1") %>%
+  
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(5, 4, 3, 2, 2, 2, 5, 6, 2)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 6, " " = 1), align = "l") %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_short.tex"))
+```
+
+For presentation
+```{r}
+result.table.mle.basicLatex %>%
+  select(-c(Probability, `Probability Interpretation`, `log coefficient`, SE, `log coef. Interpretation`)) %>%
+  filter(`From State 0` != "intercept") %>%
+  # mutate(`Interpretation` = case_when(`From State 0` == "" ~ "exp. corr. coefficient",
+  #                                     # `Interpretation` == "exp. corr. coef." ~ "corr. coefficient",
+  #                                     TRUE ~ `Interpretation`)) %>%
+  relocate(`Arc-strength`, .after = `Interpretation`) %>%
+  # rename(" " = "From",
+         # "State 0" = "From State 0",
+         # "State 1" = "From State 1",
+         # " " ="To",
+         # "State 0" = "To State 0",
+         # "State 1" = "To State 1") %>%
+  
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(5, 4, 3, 2, 2, 2, 5, 6, 2)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 3, " " = 1), align = "l") %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_pres.tex"))
+```
+
+For paper
+```{r}
+result.table.mle.basicLatex %>%
+  select(-c(Probability, `Probability Interpretation`, `Coefficient`, `95% CI`, `Interpretation`)) %>%
+  filter(`From State 0` != "intercept") %>%
+  relocate(`Arc-strength`, .after = `log coef. Interpretation`) %>%
+  rename("Interpretation" = "log coef. Interpretation",
+         "Coefficient" = "log coefficient") %>%
+  
+  # Latex table
+  kableExtra::kbl(format = "latex",
+                  label = "expABNmultinom_100k_results_table_mle",
+                  booktabs = T,
+                  linesep = linesep(c(5, 4, 3, 2, 2, 2, 5, 6, 2)), # manually add linespace after each group in "From" by group size.
+                  caption = "Result Table Caption"
+                  ) %>%
+  kableExtra::kable_styling(latex_options=c("striped", "hold_position", "scale_down")) %>%
+  kableExtra::add_header_above(c("Parent" = 3, "Children" = 3, "Association" = 3, " " = 1), align = "l") %>%
+  kableExtra::landscape() %>%
+  cat(., file = paste0(Sys.getenv("PLOTPATH"), "/", "results_table_mle_paper.tex"))
+```
+
+
+### Interpretations
+
+```{r}
+str(abndata)
+```
+
+```{r}
+result.table.mle
+```
+
+> TODO: Check interpretation!
+
+<!-- Gender -> Hypertension: negative association. Females tend to have never Hypertension.  -->
+<!-- AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension. -->
+<!-- pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no) -->
+<!-- Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs. -->
+<!-- Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs. -->
+<!-- Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?) -->
+<!-- AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA. -->
+<!-- high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n). -->
+<!-- low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n). -->
+<!-- IA size -> Ruptured IA: positive associated. Large IAs tend to rupture. -->
+
+
+<!-- Not included but from binary graph: -->
+<!-- Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke. -->
+
+<!-- TODO: Check if those match: -->
+<!-- AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked. -->
+<!-- AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location. -->
+
+<!-- Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location. -->
+
+<!-- Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location. -->
+<!-- non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location. -->
+
+<!-- Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke. -->
+
+<!-- Gender -> high risk location: positive association. gender is male, High risk location -->
+<!-- Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location. -->
+
+<!-- Gender -> low risk location: negative association. gender is femalem, IAs at low risk location. -->
+<!-- Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location.  -->
+
+
+### Arc-histogram
+
+```{r}
+# Arc histogram
+arcsdist <- apply(list.mc.out.burn.thin.dag, 3, sum)
+
+df.archist <- as.data.frame(table(arcsdist)) %>% 
+  mutate(totalarcs = case_when(arcsdist == sum(dag.maxpar$dag) ~ "1",
+                               TRUE ~ "0"))
+plt.archist <- ggplot(df.archist, aes(x = arcsdist, y = Freq, fill=totalarcs)) +
+  geom_col(width=0.5) +
+  labs(title="Arc Histogram")+
+  xlab("Number of arcs in the DAG")+
+  ylab("Number of DAGs") +
+  scale_fill_manual( values = c("1"="red", "0"="darkgray"), guide = "none")+
+  theme_minimal()
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_arc_histogram"
+  ggsave(path = paste0(getwd(), PLOTPATH), filename = paste0(FILENAME, PLOTNAME, ".png"),
+       plt.archist)
+} else {
+  plt.archist
+}
+```
+
+### Most frequent DAGS in MCMC sample
+
+```{r WARNING_takes_long_time, cache=TRUE}
+u.list.dag <- unique.array(x = list.mc.out.burn.thin.dag,MARGIN = 3) # remove duplicate elements/rows
+
+num_100 <- apply(X = u.list.dag, MARGIN = 3, FUN = function(x){
+  sum(apply(X = list.mc.out.burn.thin.dag,MARGIN = 3,FUN = function(y){
+    if(identical(x,y)){1}else{0}
+  }))
+})
+
+# # Attempt to make it faster
+# 
+# # Same as above, but only on a subset
+# num_100 <- apply(X = u.list.dag[,,1:3], MARGIN = 3, FUN = function(x){
+#   sum(apply(X = list.mc.out.burn.thin.dag[,,1:3],MARGIN = 3,FUN = function(y){
+#       if(identical(x,y)){1}else{0}
+#   }))
+# })
+#
+# # This works:
+# ident <- 0
+# for(i in 1:dim(u.list.dag[,,1:3])[3]){
+#   x <- u.list.dag[,,i]
+#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
+#     y <- list.mc.out.burn.thin.dag[,,j]
+#     
+#     if(identical(x,y)){
+#       ident <- ident+1
+#     }
+#   }
+# }
+# print(ident)
+# 
+# # This doesn't work:
+# library(foreach)
+# library(parallel)
+# cl <- makeCluster(detectCores()-1)
+# registerDoParallel(cl)
+# ident <- 0
+# foreach(i=1:dim(u.list.dag[,,1:3])[3], .combine = '+') %do% {
+#   x <- u.list.dag[,,i]
+#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
+#     y <- list.mc.out.burn.thin.dag[,,j]
+#     
+#     if(identical(x,y)){
+#       1
+#     }
+#   }
+# }
+# print(ident)
+
+
+max(which((cumsum(sort(num_100,decreasing = FALSE)))/1000<0.80,arr.ind = TRUE))
+```
+
+
+```{r, cache=TRUE}
+freqDAGstoplot <- 100
+
+##plot
+scores.dags <- vector(length = freqDAGstoplot)
+num.arcs <- vector(length = freqDAGstoplot)
+shd <- vector(length = freqDAGstoplot)
+for(i in 1:freqDAGstoplot){
+
+  dag <- u.list.dag[,,order(num_100,decreasing = TRUE)[i]]
+  colnames(dag) <- rownames(dag) <- names(dist)
+  fabn <- fitAbn(dag = dag,
+                 data.df = abndata,
+                 data.dists = dist,
+                 method = METHOD)
+  scores.dags[i] <- -fabn$bic
+  num.arcs[i] <- sum(dag)
+  shd[i] <- compareDag(ref = u.list.dag[,,order(num_100,decreasing = TRUE)[1]],u.list.dag[,,order(num_100,decreasing = TRUE)[i]])$`Hamming-distance`
+}
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_mcmc_diversity"
+  svg(filename = paste0(getwd(), PLOTPATH, FILENAME, PLOTNAME, ".svg"), width = PLOTWIDTH, height = PLOTHEIGHT)
+  
+  par(mar=c(5,4,4,4))
+  plot(1:freqDAGstoplot, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], type = 'n',ylab = "",xlab = "Number of arcs",xaxt="n",yaxt="n", ylim = c(0,20))
+  axis(2,at = c(0, 5,10,15, 20),labels = c("0.0%","0.5%","1%", "1.5%", "2%"),col.axis = "#4393C3")
+  mtext("Occurence of DAGs", side=2, line=2, col="#4393C3")
+  rect(1:freqDAGstoplot - .4, 0, 1:freqDAGstoplot + .4, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], col = '#4393C3')
+  par(new = TRUE)
+  plot(x = 1:freqDAGstoplot,y = scores.dags,col="red", type = 'b', lwd=2, axes = FALSE, xlab = "",ylab="")
+  axis(4, col.axis = 'red')
+  mtext("DAGs scores", side=4, line=2, col="red")
+  axis(1, col.axis = 'black',at = 1:freqDAGstoplot,labels = num.arcs)
+  axis(3, col.axis = 'orange',at = 1:freqDAGstoplot,labels = shd)
+  mtext("Structural Hamming distances", side=3, line=2, col="orange")
+
+  dev.off()
+} else {
+  
+  par(mar=c(5,4,4,4))
+  plot(1:freqDAGstoplot, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], type = 'n',ylab = "",xlab = "Number of arcs",xaxt="n",yaxt="n", ylim = c(0,20))
+  axis(2,at = c(0, 5,10,15, 20),labels = c("0.0%","0.5%","1%", "1.5%", "2%"),col.axis = "#4393C3")
+  mtext("Occurence of DAGs", side=2, line=2, col="#4393C3")
+  rect(1:freqDAGstoplot - .4, 0, 1:freqDAGstoplot + .4, sort(num_100,decreasing = TRUE)[1:freqDAGstoplot], col = '#4393C3')
+  par(new = TRUE)
+  plot(x = 1:freqDAGstoplot,y = scores.dags,col="red", type = 'b', lwd=2, axes = FALSE, xlab = "",ylab="")
+  axis(4, col.axis = 'red')
+  mtext("DAGs scores", side=4, line=2, col="red")
+  axis(1, col.axis = 'black',at = 1:freqDAGstoplot,labels = num.arcs)
+  axis(3, col.axis = 'orange',at = 1:freqDAGstoplot,labels = shd)
+  mtext("Structural Hamming distances", side=3, line=2, col="orange")
+
+}
+```
+
+## Save Analysis Results for reporting
+
+```{r}
+obj <- ls() # save current workspace
+
+if (SAVEPLOTS){
+  filename_results <- "_analysis_results"
+  save(list= obj, file = paste0(getwd(), PLOTPATH, FILENAME, filename_results, ".RData"))
+}
+```
+
+
