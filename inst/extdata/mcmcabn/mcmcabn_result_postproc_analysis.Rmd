@@ -241,14 +241,12 @@ sum(dag.maxpar$dag)
 summary(fabn.maxpar)
 ```
 
-TODO: Can't fit bayes with multinomial. Only mle.
-
 # MCMC Quality check
 
 ## Gelman
 ```{r}
-gelman.diag(x = list.mc.out.thin.score,autoburnin = T) # if higher than 1.1 or 1.2, run chain longer to improve convergence
-gelman.plot(list.mc.out.thin.score, autoburnin = T)
+gelman.diag(x = list.mc.out.thin.score,autoburnin = F) # if higher than 1.1 or 1.2, run chain longer to improve convergence
+gelman.plot(list.mc.out.thin.score, autoburnin = F)
 
 if (SAVEPLOTS){
   PLOTNAME <- "_gelmanplot"
@@ -557,22 +555,6 @@ df.mle
 
 ## Maximum Likelihood Estimation 
 
-(from help of "abn::fitAbn()")
-The procedure fitAbn with the argument method= "mle" fits an additive Bayesian network model to data where each node (variable - a column in data.df) can be either: presence/absence (Bernoulli); continuous (Gaussian); an unbounded count (Poisson); or a discrete variable (Multinomial). The model comprises of a set of conditionally independent generalized linear regressions with or without adjustment.
-
-Binary and discrete variables must be declared as factors and the argument data.dists must be a list with named arguments, one for each of the variables in data.df, where each entry is either "poisson","binomial", "multinomial" or "gaussian", see examples below. The "poisson" and "binomial" distributions use log and logit link functions, respectively. Note that "binomial" here actually means only binary, one Bernoulli trial per row in data.df.
-
-In the context of fitAbn adjustment means that irrespective to the adjacency matrix the adjustment variable set (adj.vars) will be add as covariate to every node defined by cor.vars. If cor.vars is NULL then adjustment is over all variables in the data.df.
-
-In the network structure definition, dag.m, each row represents a node in the network, and the columns in each row define the parents for that particular node, see the example below for the specific format. The dag.m can be provided using a formula statement (similar to GLM). A typical formula is ~ node1|parent1:parent2 + node2:node3|parent3. The formula statement have to start with ~. In this example, node1 has two parents (parent1 and parent2). node2 and node3 have the same parent3. The parents names have to exactly match those given in data.df. : is the separator between either children or parents, | separates children (left side) and parents (right side), + separates terms, . replaces all the variables in data.df.
-
-The Information-theoretic based network scores used in fitAbn with argument method="mle" are the maximum likelihood (mlik, called marginal likelihood in this context as it is computed node wise), the Akaike Information Criteria (aic), the Bayesian Information Criteria (bic) and the Minimum distance Length (mdl). The classical definitions of those metrics are given in Kratzer and Furrer (2018).
-
-The numerical routine is based on an iterative scheme to estimate the regression coefficients. The Iterative Reweighed Least Square (IRLS) programmed using Rcpp/RcppArmadrillo. One hard coded feature of fitAbn with argument method="mle" is a conditional use of a bias reduced binomial regression when a classical Generalized Linear Model (GLM) fails to estimate the maximum likelihood of the given model accurately. Additionally, a QR decomposition is performed to check for rank deficiency. If the model is rank deficient and the BR GLM fails to estimate it, then predictors are sequentially removed. This feature aims at better estimating network scores when data sparsity is present.
-
-A special care should be taken when interpreting or even displaying p-values computed with fitAbn. Indeed, the full model is already selected using goodness of fit metrics based on the (same) full dataset.
-
-
 ### Regression coefficient estimates and 95% Confidence Intervals (CI)
 
 with their interpretation and data support (computed with structural MCMC).
@@ -846,26 +828,6 @@ linesep<-function(x,y=character()){
 result.table.mle.basicLatex <- result.table.mle %>%
   # sort by parent nodes first and then by child nodes
   arrange(from, fromLevels0, fromLevels1, to, toLevels0, toLevels1) %>%
-  # 
-  # # Clean up node labels
-  # mutate(from = case_when(from == "Gender" ~ "Sex",
-  #                         from == "AgeDiag" ~ "Age at Diagnosis",
-  #                         from == "Positive.famillial.history" ~ "Pos. Fam. History",
-  #                         from == "Smoking_Current_Former_No" ~ "Smoking Status",
-  #                         from == "location.grouped" ~ "IA Location",
-  #                         from == "Multiple.IAs" ~ "Multiple IAs",
-  #                         from == "IAsize_log" ~ "IA Size",
-  #                         from == "Ruptured_IA" ~ "Ruptured IA",
-  #                         TRUE ~ from)) %>%
-  # mutate(to = case_when(to == "Gender" ~ "Sex",
-  #                       to == "AgeDiag" ~ "Age at Diagnosis",
-  #                       to == "Positive.famillial.history" ~ "Pos. Fam. History",
-  #                       to == "Smoking_Current_Former_No" ~ "Smoking Status",
-  #                       to == "location.grouped" ~ "IA Location",
-  #                       to == "Multiple.IAs" ~ "Multiple IAs",
-  #                       to == "IAsize_log" ~ "IA Size",
-  #                       to == "Ruptured_IA" ~ "Ruptured IA",
-  #                         TRUE ~ to)) %>%
   
   # Clean column names
   rename("From" = "from",
@@ -997,41 +959,6 @@ str(abndata)
 result.table.mle
 ```
 
-> TODO: Check interpretation!
-
-<!-- Gender -> Hypertension: negative association. Females tend to have never Hypertension.  -->
-<!-- AgeDiag -> Hypertension: negative association. High age tend to have AnyType Hypertension. -->
-<!-- pos fam hist -> IA size: positive association. no positive fam. history., leads to bigger IAs (levels are 1:yes, 2:no) -->
-<!-- Multiplicity -> IA size: negative association. not multiple IAs, leads to bigger IAs. -->
-<!-- Hypertension -> Multiplicity: positive association. AnyType of Hypertension, leads to not having multiple IAs. -->
-<!-- Pos. fam. history -> Ruptured IA: negative associated. Positive familial history, leads to not ruptured IAs (levels are 1:yes, 2:no) (check!? Because of awareness?) -->
-<!-- AgeDiag -> Ruptured IA: positive associated. High age, leads to ruptured IA. -->
-<!-- high risk location -> Ruptured IA: negative associated. High risk location (0,1) leads to ruptured IA (y/n). -->
-<!-- low risk location -> Ruptured IA: positive associated. Low risk location (0,1) leads to not ruptured IA (y/n). -->
-<!-- IA size -> Ruptured IA: positive associated. Large IAs tend to rupture. -->
-
-
-<!-- Not included but from binary graph: -->
-<!-- Age -> Current smoker: negative association. High age, current smoker (levels are 0, 1) -> old people tend to smoke. -->
-
-<!-- TODO: Check if those match: -->
-<!-- AgeDiag -> Smoking No: positive association. High age at diagnosis tend to have never smoked. -->
-<!-- AgeDiag -> high risk location: positive association. High age at diagnosis tend to have IAs at high risk location. -->
-
-<!-- Hypertension -> high risk location: negative association. AnyType of Hypertension, leads to have an IA not at a high risk location. -->
-
-<!-- Current smoker -> medium risk location: positive association. Current smoker, tend to have an IA at a medium risk location. -->
-<!-- non smoker -> medium risk location: negative association. Non smoker, tend to not have an IA at a medium risk location. -->
-
-<!-- Gender -> non-smoker: negative association. Gender is Male, not non-smoker. -> males tend to smoke. -->
-
-<!-- Gender -> high risk location: positive association. gender is male, High risk location -->
-<!-- Pos. fam hist -> high risk location: positive association. positive fam. hist., IA at high risk location -> pos. fam history results in IAs in a high risk location. -->
-
-<!-- Gender -> low risk location: negative association. gender is femalem, IAs at low risk location. -->
-<!-- Hypertension -> low risk location: positive association. never hypertension, IAs at low risk location.  -->
-
-
 ### Arc-histogram
 
 ```{r}
@@ -1068,48 +995,6 @@ num_100 <- apply(X = u.list.dag, MARGIN = 3, FUN = function(x){
     if(identical(x,y)){1}else{0}
   }))
 })
-
-# # Attempt to make it faster
-# 
-# # Same as above, but only on a subset
-# num_100 <- apply(X = u.list.dag[,,1:3], MARGIN = 3, FUN = function(x){
-#   sum(apply(X = list.mc.out.burn.thin.dag[,,1:3],MARGIN = 3,FUN = function(y){
-#       if(identical(x,y)){1}else{0}
-#   }))
-# })
-#
-# # This works:
-# ident <- 0
-# for(i in 1:dim(u.list.dag[,,1:3])[3]){
-#   x <- u.list.dag[,,i]
-#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
-#     y <- list.mc.out.burn.thin.dag[,,j]
-#     
-#     if(identical(x,y)){
-#       ident <- ident+1
-#     }
-#   }
-# }
-# print(ident)
-# 
-# # This doesn't work:
-# library(foreach)
-# library(parallel)
-# cl <- makeCluster(detectCores()-1)
-# registerDoParallel(cl)
-# ident <- 0
-# foreach(i=1:dim(u.list.dag[,,1:3])[3], .combine = '+') %do% {
-#   x <- u.list.dag[,,i]
-#   for(j in 1:dim(list.mc.out.burn.thin.dag[,,1:3])[3]){
-#     y <- list.mc.out.burn.thin.dag[,,j]
-#     
-#     if(identical(x,y)){
-#       1
-#     }
-#   }
-# }
-# print(ident)
-
 
 max(which((cumsum(sort(num_100,decreasing = FALSE)))/1000<0.80,arr.ind = TRUE))
 ```

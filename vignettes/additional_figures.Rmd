@@ -151,37 +151,8 @@ df.age.group <- adb %>%
   arrange(AgeDiag) %>%
   count(AgeDiag.group,  name="AgeDiag.group.n")
 
-# df.age.group.coarse <- adb %>% 
-#   select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-#   arrange(AgeDiag) %>%
-#   count(AgeDiag.group.coarse, name="AgeDiag.group.coarse.n")
-
-
-
 plt.overlay.age <- df.age.cont %>%
   ggplot() +
-  # # Age group coarse
-  # annotate(
-  #   "rect",
-  #   xmin = c(
-  #     min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "A")]),
-  #     min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "B")]),
-  #     min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "C")]),
-  #     min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "D")])
-  #   ),
-  #   xmax = c(
-  #     max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "A")]),
-  #     max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "B")]),
-  #     max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "C")]),
-  #     max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "D")])
-  #   ),
-  #   ymin = rep(0, 4),
-  #   ymax = df.age.group.coarse$AgeDiag.group.coarse.n,
-  #   alpha = 0.2,
-  #   color = "orange",
-  #   fill = "yellow"
-  # ) +
-  # Age group fine
   annotate(
     "rect",
     xmin = c(
@@ -230,21 +201,12 @@ plt.overlay.age <- df.age.cont %>%
   geom_text(label = "G",  family = "serif",
             x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")]))/2), 
             y=df.age.group$AgeDiag.group.n[7]*1.05)+
-  # geom_text(label = "H",  family = "serif",
-  #           x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "H")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "H")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "H")]))/2), 
-  #           y=df.age.group$AgeDiag.group.n[8]*1.05)+
   # Age group cont
   geom_col(aes(x = AgeDiag, y = AgeDiag.n), width = 0.5) +
   # Layouting
   theme_tufte()+
   scale_x_continuous(breaks = c(min(df.age.cont$AgeDiag), 40, seq(40, 65, 5), max(df.age.cont$AgeDiag)),
                      minor_breaks = seq(45, 65, 5)) +
-  # labs(
-  #   title = "Case-distribution of age at time of IA diagnosis",
-  #   subtitle = "Grouped in bins of 5y (blue) and 10y (yellow) for patients between 40y and 65y.",
-  #   y = "Number of records",
-  #   x = "Age at diagnosis"
-  # ) +
   labs(
     title = "Age",
     y = "Number of records",

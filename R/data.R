@@ -131,15 +131,6 @@
 #'
 "exp11_dat"
 
-#' Evidence Knowledge Graph
-#'
-#' For details consider the vignette
-#' \code{vignette("evidenceknowledgegraph", package = "bnaiaR")}.
-#'
-#' @format A list of 3 items and class "bn".
-#'
-"ekg"
-
 #' Discrete Bayesian Network Models
 #'
 #' For details consider the vignette

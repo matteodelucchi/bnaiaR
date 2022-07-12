@@ -4,9 +4,10 @@ Title: Bayesian Network Analysis of Intracranial Aneurysm
 Version: 1.0.0.0000
 Date: 2022-06-21
 Authors@R: person("Matteo", "Delucchi", email = "matteo.delucchi@zhaw.ch",
+  comment = c(ORCID = "0000-0002-9327-1496"),
   role = c("aut", "cre"))
 Description: Data preparation and analysis of risk factors for intracranial aneurysms. 
-URL: https://github.com/matteodelucchi/bnaiaR
+URL: https://github.com/hirsch-lab/bnaiaR/releases/tag/v1.0
 License: CC BY 4.0
 Encoding: UTF-8
 LazyData: true

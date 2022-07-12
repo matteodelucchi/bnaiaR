@@ -403,7 +403,7 @@ if (SAVEPLOTS) {
 ```
 
 # Structure Learning with TABU search and custom BIC
-(From Marco Scutari:)
+
 There are two possible way to remediate this issue. One is to lower the 
 threshold in averaged.network(). However, this is likely to let noisy arcs in
 the network and it is difficult to decide how much the threshold should be 
