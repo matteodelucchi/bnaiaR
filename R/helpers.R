@@ -632,3 +632,45 @@ plotROCAUC <- function(roc, aucCI, FILENAME, PLOTPATH=NULL, SAVE=SAVEPLOTS){
     text(0.5, 0.01, paste("AUC=", aucCI[2], "(95% CI =", aucCI[1], "-", aucCI[3], ")"))
   }
 }
+
+
+#' Pipe Message and Intermediate Structure Output
+#'
+#' Print pipe status messages and the current ungrouped data structure.
+#'
+#' @param .data intermediate data in a pipe-line
+#' @param status character string of custom message
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   aneuquest.raw %>%
+#'     # Construct number of NAs per row
+#'     pipe_message("Construct number of NAs per row") %>%
+#'     mutate(n_NAs = rowSums(is.na(.)))  %T>% { . ->> tmp_IAs_aneuquest_raw } %>%
+#'
+#'     # filter for largest size
+#'     group_by(patientID) %>%
+#'     pipe_message("filter for largest size") %>%
+#'     filter(maxDiam == max(maxDiam, na.rm = T)|is.na(maxDiam))  %>%
+#'
+#'     # if two IAs of equal size, filter for high risk location
+#'     pipe_message("filter for high risk location") %>%
+#'     filter(locrisk_isgc_aneuLoca == max(locrisk_isgc_aneuLoca, na.rm = T)|is.na(locrisk_isgc_aneuLoca))  %>%
+#'
+#'     # filter for the IA with more information (less NA)
+#'     pipe_message("filter for least missing values") %>%
+#'     filter(n_NAs == min(n_NAs, na.rm = T)|is.na(n_NAs)) %>%
+#'     ungroup() %T>% { . ->> tmp_IAs_aneuquest } %>%
+#'
+#'     # Remove entries with IAs <= 0
+#'     filter(maxDiam > 0) %>%
+#'     # Remove entries with IAs > 70
+#'     filter(maxDiam <= 70) %>%
+#'     # Remove unrealistic high patient age values
+#'     filter(aneuReportPatAge <= 130)
+#'     }
+pipe_message <- function(.data, status) {
+  cat(status, "\n--------------\n", str(ungroup(.data))); .data}
