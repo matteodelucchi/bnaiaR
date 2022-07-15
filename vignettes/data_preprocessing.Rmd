@@ -480,14 +480,20 @@ str(adbisgc_tmp_ohe)
 adbisgc <-adbisgc_tmp
 adbisgc_ohe <- adbisgc_tmp_ohe
 
+summary_adbisgc <- summarytools::dfSummary(adbisgc, max.distinct.values = 20)
+summary_adbisgc_ohe <- summarytools::dfSummary(adbisgc_ohe, max.distinct.values = 20)
+
+summarytools::view(summary_adbisgc, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc.html")
+summarytools::view(summary_adbisgc_ohe, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc_ohe.html")
+
 saveRDS(adbisgc,
-        file = "/home/delt/ZHAW/BNstructureLearning/2207_adbisgc.rds")
+        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.rds")
 write.csv(adbisgc, 
-          file = "/home/delt/ZHAW/BNstructureLearning/2207_adbisgc.csv")
+          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.csv")
 saveRDS(adbisgc_ohe,
-        file = "/home/delt/ZHAW/BNstructureLearning/2207_adbisgc_ohe.rds")
+        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.rds")
 write.csv(adbisgc_ohe, 
-          file = "/home/delt/ZHAW/BNstructureLearning/2207_adbisgc_ohe.csv")
+          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.csv")
 ```
 
 # Include Preprocessed Data in bnaiaR package
