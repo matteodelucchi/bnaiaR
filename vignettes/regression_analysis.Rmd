@@ -44,28 +44,138 @@ PLOTWIDTH = 16
 PLOTHEIGHT = 9
 ```
 
-## Load Data
+# Load and Prepare Data for Regression Modelling
 
 ```{r load_data}
-data(exp11_dat)
-data = exp11_dat$abndata
-str(data)
+data("adbisgc")
+str(adbisgc, give.attr=F)
+summarytools::dfSummary(adbisgc)
 ```
 
-# Multiple Logistic Regression Model 
 
 ```{r}
-data.reg <- data %>%
-  mutate(location.grouped = fct_relevel(location.grouped, c("Low","Medium","High")))%>%
-  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("No","Former","Current"))) %>%
-  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("No", "Yes"))) %>%
-  mutate(Gender = fct_relevel(Gender,c("Male","Female"))) %>%
-  mutate(Hypertension = fct_relevel(Hypertension,c("Never","AnyType"))) %>%
-  mutate(Ruptured_IA = fct_relevel(Ruptured_IA,c("No","Yes"))) %>%
-  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("No", "Yes"))) %>%
-  mutate(AgeDiag.group = fct_relevel(AgeDiag.group, c(LETTERS[seq(8,1,-1)]))) %>%
-  mutate(IAsize.groups.merged = fct_relevel(IAsize.groups.merged, c(LETTERS[seq(3,1,-1)])))
+adbisgc_reg <- adbisgc %>%
+  mutate(gender = fct_relevel(gender,c("male","female"))) %>%
+  # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
+  mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
+  mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
+  mutate(hpt_aware = fct_relevel(hpt_aware,c("no","yes"))) %>%
+  mutate(IAlocation_group = fct_relevel(IAlocation_group, c("low","medium","high")))%>%
+  mutate(IAruptured = fct_relevel(IAruptured,c("no","yes"))) 
+  # mutate(IAsize_diag_grouped_merged = fct_relevel(IAsize_diag_grouped_merged, c(LETTERS[seq(3,1,-1)])))
+str(adbisgc_reg, give.attr=F)
+# summarytools::dfSummary(adbisgc_reg)
 ```
+
+
+## Select bnaiaR variables
+
+
+```{r}
+bnaiar_vars <- c("ID_1", 
+           "study_source", 
+           "gender", 
+           "age_diag", "age_diag_group", 
+           "positive_famillial_history", 
+           "hpt_aware", 
+           "smoking_current_notcurrent", 
+           "multipleIAs", 
+           "IAlocation", "IAlocation_group", 
+           "IAsize_diag", "IAsize_diag_log", "IAsize_diag_grouped", "IAsize_diag_grouped_merged",
+           "IAruptured")
+
+df_bnaiar <- adbisgc_reg %>%
+  select(all_of(bnaiar_vars))
+```
+
+```{r}
+summarytools::dfSummary(df_bnaiar)
+# summarytools::view(dfSummary(df_bnaiar), method = "pander", file = "~/ZHAW/ExplorDataISGC/220623_HUG-ZHAW_Retreat/summary_adbisgc_bnaiaR.html")
+str(df_bnaiar, give.attr=F)
+```
+
+
+
+```{r}
+# df_bnaiar %>%
+#   # dataxray::report_xray(data_name = "bnaiaR", study = "multicentre")
+#   dataxray::make_xray() %>%
+#   dataxray::view_xray()
+```
+
+
+```{r}
+# plt <- df_bnaiar %>%
+#   select(-c(ID_1)) %>%
+#   
+#   ggpairs(ggplot2::aes(colour=source),
+#                upper = list(
+#                  continuous = wrap("cor", method="spearman", size=15),
+#                  discrete = wrap("facetbar", binwidth=5),
+#                  combo = wrap("facethist", binwidth=5)
+#                  # combo = "summarise_by"
+#                  ),
+#                lower = list(
+#                  continuous = wrap("smooth", binwidth=5),
+#                  discrete = wrap("colbar", size=7),
+#                  combo = wrap("box", width=5)
+#                ),
+#                proportions = "auto") +
+#   theme(text = element_text(size = 30), 
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+#         strip.text.x = element_text(angle = 30, vjust = 0.5), 
+#         strip.text.y = element_text(angle = 0, vjust = 0.5), 
+#         strip.placement = "outside") 
+# 
+# ggsave(plot = plt,
+#        filename = "bnaiar_adbisgc_scatterplot.pdf", 
+#          path = "~/ZHAW/ExplorDataISGC/", 
+#          width = 100, height = 80, limitsize = F,
+#          # width = 150, height = 150, limitsize = F,
+#          device = "pdf")
+```
+
+## bnaiaR vars with only complete entries
+
+count the number of NAs per source
+
+```{r}
+NAs_per_source <- adbisgc_reg %>%
+  select(all_of(c(bnaiar_vars, "data_source"))) %>%
+  
+  group_by(data_source) %>% 
+  do(data.frame(total=nrow(.),
+                # NAs = sum(is.na(.)),
+                complete = nrow(na.omit(.)))) %>%
+  mutate(NAs = total - complete,
+         comment = NA)
+  
+NAs_per_source$comment[which(NAs_per_source$data_source == "kuopio")] <- "4% of values are missing hypertension."
+NAs_per_source$comment[which(NAs_per_source$data_source == "ucl")] <- "17% of IA size and 2% of IA location values are missing"
+NAs_per_source$comment[which(NAs_per_source$data_source == "nantes")] <- "Many missing age (5%), IA location (3%), IA size (3%) and IA ruptured (6%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht")] <- "Many missing smoking (11%) and multiplicity (4%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht_ruptured")] <- "Many missing IA size (46%) and smoking (37%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneuquest")] <- "Many pos. fam. history (12%) and hypertension (7%) are missing."
+NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneux")] <- "Many missing pos. fam. history (7%) values."
+
+NAs_per_source
+
+# df_bnaiar %>%
+#   filter(data_source == "geneva_aneux") %>%
+#   dfSummary()
+```
+
+```{r}
+df_bnaiar_compl <- df_bnaiar %>%
+  na.omit() 
+
+summarytools::dfSummary(df_bnaiar_compl)
+```
+
+
+# Multiple Logistic Regression Model 
 
 
 
@@ -74,8 +184,31 @@ data.reg <- data %>%
 As in Figure 6 in Morel et al. 2022.
 
 ```{r}
-data.logreg <- data.reg %>%
-  select(c(location.grouped, Smoking_Current_Former_No, Multiple.IAs, Gender, Hypertension, Ruptured_IA)) 
+data.logreg <- adbisgc_reg %>%
+  select(all_of(c(bnaiar_vars, "smoking_current_former_no"))) %>%
+  na.omit() %>%
+  
+  select(c(IAlocation_group, smoking_current_former_no, multipleIAs, gender, hpt_aware, IAruptured)) %>%
+  mutate(IAlocation_group = case_when(IAlocation_group =="high" ~ "high_risk_loc",
+                                      IAlocation_group =="medium" ~ "medium_risk_loc",
+                                      IAlocation_group =="low" ~ "low_risk_loc"),
+         multipleIAs = case_when(multipleIAs == "yes" ~ "multipleIAs",
+                                 multipleIAs == "no" ~ "singularIA"),
+         smoking_current_former_no = case_when(smoking_current_former_no == "no" ~ "non_smoker",
+                                               smoking_current_former_no == "current" ~ "current_smoker",
+                                               smoking_current_former_no == "former" ~ "former_smoker"),
+         hpt_aware = case_when(hpt_aware == "no" ~ "hpt_unaware",
+                               hpt_aware == "yes" ~ "hpt_aware"),
+         IAruptured = case_when(IAruptured == "no" ~ "unruptured_IA",
+                                IAruptured == "yes" ~ "ruptured_IA")) %>%
+  
+  mutate(IAlocation_group = factor(IAlocation_group, levels = c("low_risk_loc", "medium_risk_loc", "high_risk_loc")),
+         multipleIAs = factor(multipleIAs, levels = c("singularIA", "multipleIAs")),
+         smoking_current_former_no= factor(smoking_current_former_no, levels = c("non_smoker", "former_smoker", "current_smoker")),
+         hpt_aware = factor(hpt_aware, levels = c("hpt_unaware", "hpt_aware")),
+         IAruptured = factor(IAruptured, levels = c("unruptured_IA", "ruptured_IA")))
+
+str(data.logreg, give.attr=F)
 ```
 
 
@@ -85,17 +218,17 @@ data.logreg <- data.reg %>%
 train <- sample.int(n = nrow(data.logreg), size = 0.7*nrow(data.logreg), replace = FALSE)
 TrainSet <- data.logreg[train,]
 ValidSet <- data.logreg[-train,]
-str(TrainSet)
+str(TrainSet, give.attr=F)
 summary(TrainSet)
-str(ValidSet)
+str(ValidSet, give.attr=F)
 summary(ValidSet)
 ```
 
 
 
 ```{r}
-glm_model <- glm(Ruptured_IA ~.,family=binomial(link='logit'),data=TrainSet)
-summary (glm_model)
+glm_model <- glm(IAruptured ~.,family=binomial(link='logit'),data=TrainSet)
+summary(glm_model)
 
 plt <- sjPlot::plot_model(glm_model,
            show.values = TRUE, 
@@ -137,14 +270,14 @@ ANOVA
 
 pscl::pR2(glm_model)
 pred_glm <- predict(glm_model,newdata=ValidSet,type='response')
-table(ValidSet$Ruptured_IA, pred_glm > 0.5)
+table(ValidSet$IAruptured, pred_glm > 0.5)
 
-roc <- pROC::roc(ValidSet$Ruptured_IA, pred_glm)
+roc <- pROC::roc(ValidSet$IAruptured, pred_glm)
 auc <- roc$auc
-aucCI <- round(pROC::ci.auc(ValidSet$Ruptured_IA, pred_glm), 2)
+aucCI <- round(pROC::ci.auc(ValidSet$IAruptured, pred_glm), 2)
 plotROCAUC(roc, aucCI, FILENAME = "logreg_IArupture_roc.png", PLOTPATH = PLOTPATH)
 
-pred_glm.rocr <- ROCR::prediction(pred_glm, ValidSet$Ruptured_IA)
+pred_glm.rocr <- ROCR::prediction(pred_glm, ValidSet$IAruptured)
 perf.acc <- ROCR::performance(pred_glm.rocr, measure="acc", x.measure = "cutoff")
 ROCR::plot(perf.acc, main = "Auccuracy")
 # abline(v = 0.5)
