@@ -11,9 +11,6 @@ pipe_message(.data, status)
 
 \item{status}{character string of custom message}
 }
-\value{
-
-}
 \description{
 Print pipe status messages and the current ungrouped data structure.
 }
