@@ -28,39 +28,414 @@ knitr::opts_chunk$set(
 # renv::snapshot(prompt = F)
 ```
 
+
 ```{r setup}
 # Clear working environment
 rm(list=ls())
 
-# Load libraries
 library(bnaiaR)
-library(tidyr)
 library(dplyr)
 library(ggplot2)
-library(parallel)
 library(bnlearn)
-library(forcats)
+library(doParallel)
 
-# Save plots as files? 
+set.seed(100)
+
 SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
-PLOTFORMAT <- "pdf" # "svg", "pdf" or "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
 ```
 
-# Load Preprocessed Data
-
-```{r message=FALSE, warning=FALSE}
-data <- exp11_dat$abndata
-bl <- exp11_dat$bl
-str(data)
-```
+# Structure Learning of discrete BN
 
 
 ```{r}
-arcstren <- list()
-avgnet <- list()
-avgnet.th0 <- list()
+data("exp1_dat")
+data.dbn <- exp1_dat$abndata
+dist.dbn <- exp1_dat$dist
+banned.dbn <- exp1_dat$banned
+bl.dbn <- exp1_dat$bl
+
+str(data.dbn)
+print(bl.dbn)
 ```
+
+Nothing can point to study source.
+```{r}
+bl.dbn <- bl.dbn[-which(bl.dbn$From=="study_source"),]
+bl.dbn <- bl.dbn[-which(bl.dbn$To=="study_source"),]
+
+bl.dbn <- rbind(bl.dbn, data.frame("From" = names(data.dbn), "To" = rep("study_source", length(names(data.dbn)))))
+bl.dbn <- bl.dbn[-which(bl.dbn$From=="study_source" & bl.dbn$To=="study_source"),]
+bl.dbn
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+cl = makeCluster(6)
+
+bb = boot.strength(data.dbn, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "aic", 
+                                         blacklist = bl.dbn,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+We can of course increase the threshold a bit to prune borderline arcs and paper
+over the shortcomings of AIC.
+
+```{r learn_with_aic_and_threshold, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.6)
+strength.plot(avg, bb, shape = "rectangle")
+```
+
+
+
+
+```{r learn_with_bic, warning=FALSE}
+bb = boot.strength(data.dbn, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "bic", 
+                                         blacklist = bl.dbn,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+```{r learn_with_bic_and_threshold, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.3)
+strength.plot(avg, bb, shape = "rectangle")
+```
+
+
+
+# Structure Learning of discrete BN w/o study_source
+
+
+```{r}
+data("exp1_dat")
+data.dbn.nostudy <- exp1_dat$abndata %>%
+  select(-c(study_source)) %>%
+  filter(positive_famillial_history != "probably")
+bl.dbn.nostudy <- exp1_dat$bl %>%
+  filter(From != "study_source" & To != "study_source")
+
+str(data.dbn.nostudy)
+print(bl.dbn.nostudy)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+bb = boot.strength(data.dbn.nostudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "aic", 
+                                         blacklist = bl.dbn.nostudy,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+
+```{r learn_with_bic, warning=FALSE}
+bb = boot.strength(data.dbn.nostudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "bic", 
+                                         blacklist = bl.dbn.nostudy,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+```{r learn_with_bic_and_threshold, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.2)
+strength.plot(avg, bb, shape = "rectangle")
+```
+
+# Structure Learning of discrete BN with study source as parent of everything
+
+```{r}
+data("exp1_dat")
+data.dbn.allstudy <- exp1_dat$abndata %>%
+  filter(positive_famillial_history != "probably")
+bl.dbn.allstudy <- exp1_dat$bl %>%
+  filter(From != "study_source" & To != "study_source") 
+
+wl.dbn.allstudy <- data.frame("From" = rep("study_source", length(names(data.dbn.allstudy))), "To" = names(data.dbn.allstudy)) %>%
+  filter(To != "study_source") # Study source can not influence itself
+
+str(data.dbn.allstudy)
+print(bl.dbn.allstudy)
+print(wl.dbn.allstudy)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+bb = boot.strength(data.dbn.allstudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "aic", 
+                                         blacklist = bl.dbn.allstudy,
+                                         whitelist = wl.dbn.allstudy,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+
+```{r learn_with_bic, warning=FALSE}
+bb = boot.strength(data.dbn.allstudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl, 
+                   algorithm.args = list(score = "bic", 
+                                         blacklist = bl.dbn.allstudy,
+                                         whitelist = wl.dbn.allstudy,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+# additive discrete BN
+
+```{r}
+data("exp1_dat")
+data.dbn.nostudy <- exp1_dat$abndata %>%
+  select(-c(study_source)) 
+  # filter(positive_famillial_history != "probably")
+bl.dbn.nostudy <- exp1_dat$bl %>%
+  filter(From != "study_source" & To != "study_source")
+
+dist.dbn.nostudy <- exp1_dat$dist
+
+str(data.dbn.nostudy)
+print(bl.dbn.nostudy)
+print(dist.dbn.nostudy)
+```
+
+```{r same as above}
+wtable = function(x, y, w) {
+   # normalize the weights to sum up to the sample size.
+   w = w / sum(w) * length(w)
+   # tally the weights.
+   if (missing(y))
+     tab = tapply(w, list(x), sum)
+   else
+     tab = tapply(w, list(x, y), sum)
+   # unobserved combinations of values are tabulated as zeros.
+   tab[is.na(tab)] = 0
+   return(as.table(tab))
+}#WTABLE
+
+weighted.bic = function(node, parents, data, args) {
+   n = nrow(data)
+   w = args$weights
+   if (length(parents) == 0) {
+     counts = wtable(data[, node], w = w)
+     nparams = dim(counts) - 1
+     sum(counts * log(counts / n)) - nparams * log(n) / 2
+   }#THEN
+   else {
+     counts = wtable(data[, node], configs(data[, parents, drop = FALSE]), w = w)
+     nparams = ncol(counts) * (nrow(counts) - 1)
+     sum(counts * log(prop.table(counts, 2))) - nparams * log(n) / 2
+   }#ELSE
+
+}#WEIGHTED.BIC
+
+bb = boot.strength(data.dbn.nostudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   # cluster = cl, 
+                   algorithm.args = list(score = "custom",
+                                         fun = weighted.bic,
+                                         blacklist = bl.dbn.nostudy,
+                                         args = list(weights = rep(1, nrow(data.dbn.nostudy))),
+                                         # whitelist = wl.dbn.allstudy,
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+```{r additive discrete BN w/o mixed effects}
+glm.bic = function(node, parents, data, args) {
+  dist = args$dist
+  
+  if (length(parents) == 0)
+    model = as.formula(paste(node, "~ 1"))
+  else
+    model = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+  
+  if (dist[[node]] == "gaussian")
+     - BIC(glm(model, data = data, family = "gaussian")) / 2
+   else if (dist[[node]] == "binomial")
+     - BIC(glm(model, data = data, family = "binomial")) / 2
+  else if (dist[[node]] == "multinomial") 
+    # - BIC(glm(model, data = data, family = dist[[node]])) / 2
+    -BIC(nnet::multinom(formula = model, data = data)) / 2
+ }#GLM.BIC
+
+bb = boot.strength(data.dbn.nostudy, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glm.bic,
+                                         blacklist = bl.dbn.nostudy,
+                                         # whitelist = wl.dbn.allstudy,
+                                         args = list(dist = dist.dbn.nostudy),
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+
+# additive discrete BN with study source as mixed effect
+
+
+```{r}
+data("exp1_dat")
+data.dbn.additive <- exp1_dat$abndata 
+  # select(-c(study_source))
+  # filter(positive_famillial_history != "probably")
+bl.dbn.additive <- exp1_dat$bl %>%
+  filter((From != "study_source") & (To != "study_source") ) 
+  # study_source doesn't connect with anything. Basically ignore it in SL but keep 
+  # it as mixed-effect
+  # rbind(., data.frame(From = rep("study_source", length(names(data.dbn.additive))), To = names(data.dbn.additive))) %>%
+  # rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) 
+
+dist.dbn.additive <- exp1_dat$dist
+
+str(data.dbn.additive)
+print(bl.dbn.additive)
+print(dist.dbn.additive)
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+glm.bic = function(node, parents, data, args) {
+  dist = args$dist
+  mixed_effect = args$mixed_effect
+  
+  if (length(parents) == 0)
+    # no parent no random effect
+    model = as.formula(paste(node, "~ 1"))
+    # model = as.formula(paste(node, "~ 1 + (0|", mixed_effect ,")"))
+    # model = as.formula(paste(node, "~ (1|", mixed_effect ,")"))
+  else
+    model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+print(model)
+
+if (dist[[node]] == "gaussian")
+     - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+
+   # else if (dist[[node]] == "binomial")
+   #   - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2 # Error: No random effect specified
+   else if (dist[[node]] == "binomial" & length(parents) == 0)
+     - BIC(glm(model, data = data, family = "binomial")) / 2
+   else if (dist[[node]] == "binomial" & length(parents) > 0)
+     - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2
+
+  else if (dist[[node]] == "multinomial")
+    # -BIC(mclogit::mclogit(formula = model, data = data)) / 2
+    -BIC(nnet::multinom(formula = model, data = data)) / 2
+# else if (dist[[node]] == "multinomial" & length(parents) == 0) 
+  #   # - BIC(glm(model, data = data, family = dist[[node]])) / 2
+  #   -BIC(nnet::multinom(formula = model, data = data)) / 2
+  # else if (dist[[node]] == "multinomial" & length(parents) > 0) 
+  #   -BIC(nnet::multinom(formula = model, data = data)) / 2
+ }#GLM.BIC
+
+bb = boot.strength(data.dbn.additive, 
+                   algorithm = "tabu", 
+                   R = 5,
+                   # cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glm.bic,
+                                         blacklist = bl.dbn.additive,
+                                         # whitelist = wl.dbn.allstudy,
+                                         args = list(dist = dist.dbn.additive,
+                                                     mixed_effect = "study_source"),
+                                         tabu = 50))
+avg = averaged.network(bb)
+strength.plot(avg, bb, shape = "rectangle")
+plot(bb)
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Bootstrap size optimization
 
