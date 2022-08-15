@@ -265,7 +265,6 @@ if (SAVEPLOTS){
 ```{r}
 glm_model
 ANOVA <- anova(glm_model,test="Chisq")
-ANOVA$`Pr(>Chi)`
 ANOVA
 
 
@@ -337,7 +336,7 @@ train_control <- caret::trainControl(method = "LOOCV",
                                      classProbs = TRUE,
                                      savePredictions = "all")
  
-# training the model by assigning sales column
+# training the model by assigning IAruptured column
 # as target variable and rest other column
 # as independent variable
 glm_model.logreg.all <- caret::train(IAruptured ~., data = data.logreg.all,
@@ -350,6 +349,7 @@ stopCluster(cl)
 # printing model performance metrics
 # along with other details
 print(glm_model.logreg.all)
+print(summary(glm_model.logreg.all))
 
 loocv.cm.logreg <- caret::confusionMatrix(glm_model.logreg.all$pred$pred, glm_model.logreg.all$pred$obs, positive = "yes", mode = "everything")
 df.predmetrics <- data.frame(loocv.logreg = round(c(loocv.cm.logreg$overall, loocv.cm.logreg$byClass), 3))
@@ -502,7 +502,7 @@ gam_dat <- adbisgc_reg %>%
   # remove NAs
   na.omit()
 
-str(gam_dat)
+str(gam_dat, give.attr=F)
 ```
 
 ### Data preparation
@@ -524,13 +524,18 @@ gam_model_4 <- gam(IAruptured ~ gender+s(age_diag^2)+positive_famillial_history+
 gam_model_5 <- gam(IAruptured ~ gender+s(age_diag)+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+IAlocation_group+s(IAsize_diag_log, by = study_source)+study_source, data=TrainSet, family = "binomial")
 gam_model_6 <- gam(IAruptured ~ gender*study_source+s(age_diag, by = study_source)+positive_famillial_history*study_source+hpt_aware*study_source+smoking_current_notcurrent*study_source+multipleIAs*study_source+IAlocation*study_source+s(IAsize_diag_log, by = study_source), data=TrainSet, family = "binomial")
 gam_model_7 <- gam(IAruptured ~ gender*study_source+s(age_diag)+positive_famillial_history*study_source+hpt_aware*study_source+smoking_current_notcurrent*study_source+multipleIAs*study_source+IAlocation*study_source+s(IAsize_diag_log), data=TrainSet, family = "binomial")
+
+gam_model_8 <- gam(IAruptured ~ gender:study_source+s(age_diag)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+IAlocation:study_source+s(IAsize_diag_log), data=TrainSet, family = "binomial")
+gam_model_9 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+IAlocation:study_source+s(IAsize_diag_log^2), data=TrainSet, family = "binomial")
+gam_model_10 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+ IAlocation_group:study_source+s(IAsize_diag_log^2), data=TrainSet, family = "binomial")
+gam_model_11 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+ IAlocation_group:study_source+s(IAsize_diag_log^2) +s(study_source, bs='re'), data=TrainSet, family = "binomial")
 ```
 
 ```{r}
-gam_mod_aic <- AIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7)
+gam_mod_aic <- AIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7, gam_model_8, gam_model_9, gam_model_10, gam_model_11)
 gam_mod_aic[order(gam_mod_aic$AIC),]
 
-gam_mod_bic <- BIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7)
+gam_mod_bic <- BIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7, gam_model_8, gam_model_9, gam_model_10, gam_model_11)
 gam_mod_bic[order(gam_mod_bic$BIC),]
 ```
 
@@ -706,19 +711,198 @@ print(gam_model_4)
 - more degrees of freedom (as expected due to many levels of IAlocation)!
 - rest looks similar...
 
+## Generalized Additive Mixed Effects Model
+
+
+```{r}
+gam_model_8 <- gam(IAruptured ~ gender:study_source+s(age_diag)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+IAlocation:study_source+s(IAsize_diag_log), data=TrainSet, family = "binomial")
+gam_model_9 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+IAlocation:study_source+s(IAsize_diag_log^2), data=TrainSet, family = "binomial")
+gam_model_10 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+ IAlocation_group:study_source+s(IAsize_diag_log^2), data=TrainSet, family = "binomial")
+
+gam_model_11 <- gam(IAruptured ~ gender:study_source+s(age_diag^2)+positive_famillial_history:study_source+hpt_aware:study_source+smoking_current_notcurrent:study_source+multipleIAs:study_source+ IAlocation_group:study_source+s(IAsize_diag_log^2) +s(study_source, bs='re'), data=TrainSet, family = "binomial")
+gam_model_12 <- gam(IAruptured ~ gender+s(age_diag^2)+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+s(IAsize_diag_log^2) +s(study_source, bs='re'), data=TrainSet, family = "binomial") # by = 're' fits a simple random effect model. see ?linear.functional.terms
+```
+
+```{r}
+gam_mod_aic <- AIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7, gam_model_8, gam_model_9, gam_model_10, gam_model_11, gam_model_12)
+gam_mod_aic[order(gam_mod_aic$AIC),]
+
+gam_mod_bic <- BIC(gam_model_1, gam_model_2, gam_model_3, gam_model_4, gam_model_5, gam_model_6, gam_model_7, gam_model_8, gam_model_9, gam_model_10, gam_model_11, gam_model_12)
+gam_mod_bic[order(gam_mod_bic$BIC),]
+```
+
+We can see, that considering source as fixed effect (model 12) slightly improves 
+the model compared to modeling source as additional covariate (model 3).
+
+```{r}
+hist(1/(1+exp(residuals.gam(gam_model_12))))
+title("Histogram of residuals expit")
+abline(v=0.5)
+
+
+plot(1/(1+exp(predict.gam(gam_model_12))), 1/(1+exp(residuals.gam(gam_model_12))))
+abline(v=0.5, h=0.5)
+title(main="Expit(residuals) vs. Expit(predicted)")
+
+qqplot(1/(1+exp(predict.gam(gam_model_12))), 1/(1+exp(residuals.gam(gam_model_12))))
+abline(v=0.5, h=0.5)
+title(main="QQplot of expit(residuals) vs. expit(predicted)")
+```
+
+```{r}
+arm::binnedplot(fitted(gam_model_12), 
+           residuals(gam_model_12, type = "response"), 
+           nclass = NULL, 
+           xlab = "Expected Values", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+
+arm::binnedplot(gam_model_12$model$age, 
+           residuals(gam_model_12, type = "response"), 
+           nclass = NULL, 
+           xlab = "age", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+
+arm::binnedplot(gam_model_12$model$IAsize_diag_log, 
+           residuals(gam_model_12, type = "response"), 
+           nclass = NULL, 
+           xlab = "IAsize_diag_log", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+
+# arm::binnedplot(as.numeric(gam_model_3$model$IAlocation_group),
+#            residuals(gam_model_3, type = "response"),
+#            nclass = NULL,
+#            xlab = "IAlocation_grouped",
+#            ylab = "Average residual",
+#            main = "Binned residual plot",
+#            cex.pts = 0.8,
+#            col.pts = 1,
+#            col.int = "gray")
+# 
+# arm::binnedplot(as.numeric(gam_model_3$model$study_source),
+#            residuals(gam_model_3, type = "response"),
+#            nclass = NULL,
+#            xlab = "source",
+#            ylab = "Average residual",
+#            main = "Binned residual plot",
+#            cex.pts = 0.8,
+#            col.pts = 1,
+#            col.int = "gray")
+
+gam_pred <- predict.gam(gam_model_12, newdata = ValidSet, type = "response")
+conf.mat <- table(ValidSet$IAruptured, as.numeric(gam_pred>0.5))
+colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+split.cm.gam <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
+split.cm.gam
+# df.predmetrics <- cbind(df.predmetrics, data.frame(split.gam = round(c(split.cm.gam$overall, split.cm.gam$byClass), 3)))
+# df.predmetrics
+roc.gam_model <- pROC::roc(ValidSet$IAruptured, gam_pred)
+aucCI.gam_model <- round(pROC::ci.auc(ValidSet$IAruptured, gam_pred), 2)
+# plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH) # TODO: CHeck this function!
+plot(roc.gam_model, main = "ROC Curve")
+text(0.5, 0.01, paste("AUC=", aucCI.gam_model[2], "(95% CI =", aucCI.gam_model[1], "-", aucCI.gam_model[3], ")"))
+
+gam.check(gam_model_12)
+summary.gam(gam_model_12)
+plot.gam(gam_model_12, residuals=T, se=TRUE, 
+         shade=T, shade.col='gray90', 
+         all.terms = T, pages = 1)
+abline(h=0)
+anova.gam(gam_model_12)
+print(gam_model_12)
+```
+
+# Multivariate Generalized Linear Mixed Effects Model (mixed effects logistic regression)
+
+Random intercept for 'study_source'
+
+From Lecture notes, sec. 5 `D2 Design and analysis of experiments` of the ACLS Masters program:
+In random block effect models, the levels of the blocking factor were chosen randomly
+from a (typically much bigger) set of possible levels. The main interest is not in the
+effect of blocks, only in the variation introduced by the blocking factor.
+Because the model includes both fixed and random effects, it is called a mixed effects
+model. This special model is sometimes referred to as random intercept model. It also
+makes the assumption that there is no interaction between block and treatment effects.
+...
+We do not care if the block effect is significant, we only want to correctly estimate
+the treatment effect while accounting for the plot structure induced by the blocks.
+
+
+Starting with a simple model
+covariates left untransformed and uncorrelated random effects for the study_source means
+
+```{r}
+# x <- lme4::glmer(IAruptured ~ gender+age_diag^2+(0+positive_famillial_history|study_source)+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log^2 + (1|study_source), family = "binomial", data=TrainSet) # uncorrelated random intercept and random slope within group
+
+# Starting with a simple model
+# covariates left untransformed and uncorrelated random effects for the study_source means
+glmer_model <- lme4::glmer(IAruptured ~ gender+age_diag+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), family = "binomial", data=TrainSet) # random group intercept
+
+# equatiomatic::extract_eq(glmer_model, wrap=T, use_coefs = F, terms_per_line = 3)
+
+print(glmer_model)
+print(summary(glmer_model))
+plot(glmer_model)
+```
+
+$$
+\begin{aligned}
+  \operatorname{IAruptured}_{i}  &\sim \operatorname{Binomial}(n = 1, \operatorname{prob}_{\operatorname{IAruptured} = \operatorname{yes}} = \widehat{P}) \\
+    \log\left[\frac{\hat{P}}{1 - \hat{P}} \right] &=\alpha_{j[i]} + \beta_{1}(\operatorname{gender}_{\operatorname{female}}) + \beta_{2}(\operatorname{age\_diag})\ + \\
+&\quad \beta_{3}(\operatorname{positive\_famillial\_history}_{\operatorname{probably}}) + \beta_{4}(\operatorname{positive\_famillial\_history}_{\operatorname{yes}}) + \beta_{5}(\operatorname{hpt\_aware}_{\operatorname{yes}})\ + \\
+&\quad \beta_{6}(\operatorname{smoking\_current\_notcurrent}_{\operatorname{current}}) + \beta_{7}(\operatorname{multipleIAs}_{\operatorname{yes}}) + \beta_{8}(\operatorname{IAlocation\_group}_{\operatorname{medium}})\ + \\
+&\quad \beta_{9}(\operatorname{IAlocation\_group}_{\operatorname{high}}) + \beta_{10}(\operatorname{IAsize\_diag\_\log}) \\
+    \alpha_{j}  &\sim N \left(\mu_{\alpha_{j}}, \sigma^2_{\alpha_{j}} \right)
+    \text{, for study\_source j = 1,} \dots \text{,J}
+\end{aligned}
+$$
+
+
+Now we fit the same model as `gam_model_3` (which was the best performing gam)
+with age and size squared.
+
+```{r}
+glmer_model_contsqr <- lme4::glmer(IAruptured ~ gender+age_diag^2+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log^2 + (1|study_source), family = "binomial", data=TrainSet) # random group intercept
+
+# equatiomatic::extract_eq(glmer_model_contsqr, wrap=T, use_coefs = F, terms_per_line = 3)
+
+print(glmer_model_contsqr)
+print(summary(glmer_model_contsqr))
+plot(glmer_model_contsqr)
+```
+
+$$
+\begin{aligned}
+  \operatorname{IAruptured}_{i}  &\sim \operatorname{Binomial}(n = 1, \operatorname{prob}_{\operatorname{IAruptured} = \operatorname{yes}} = \widehat{P}) \\
+    \log\left[\frac{\hat{P}}{1 - \hat{P}} \right] &=\alpha_{j[i]} + \beta_{1}(\operatorname{gender}_{\operatorname{female}}) + \beta_{2}(\operatorname{age\_diag})\ + \\
+&\quad \beta_{3}(\operatorname{positive\_famillial\_history}_{\operatorname{probably}}) + \beta_{4}(\operatorname{positive\_famillial\_history}_{\operatorname{yes}}) + \beta_{5}(\operatorname{hpt\_aware}_{\operatorname{yes}})\ + \\
+&\quad \beta_{6}(\operatorname{smoking\_current\_notcurrent}_{\operatorname{current}}) + \beta_{7}(\operatorname{multipleIAs}_{\operatorname{yes}}) + \beta_{8}(\operatorname{IAlocation\_group}_{\operatorname{medium}})\ + \\
+&\quad \beta_{9}(\operatorname{IAlocation\_group}_{\operatorname{high}}) + \beta_{10}(\operatorname{IAsize\_diag\_\log}) \\
+    \alpha_{j}  &\sim N \left(\mu_{\alpha_{j}}, \sigma^2_{\alpha_{j}} \right)
+    \text{, for study\_source j = 1,} \dots \text{,J}
+\end{aligned}
+$$
 
 
 
+Comparing the two:
+```{r}
+anova(glmer_model, glmer_model_contsqr)
+```
 
-
-
-
-
-
-
-
-
-
+Since both have equal values of AIC, BIC, LL I'd go for the less complex, first model.
+Compared to the GAMs, they have smaller BIC values.
 
 
 
@@ -737,137 +921,138 @@ print(gam_model_4)
 
 
 ----old code-----
-```{r}
-gam.check(gam_model)
-summary.gam(gam_model)
-par(mfrow = c(1,8))
-plot.gam(gam_model, residuals=T, se=TRUE, 
-         shade=T, shade.col='gray90', 
-         all.terms = T, pages = 1)
-abline(h=0)
 
-anova.gam(gam_model)
-```
+<!-- ```{r} -->
+<!-- gam.check(gam_model) -->
+<!-- summary.gam(gam_model) -->
+<!-- par(mfrow = c(1,8)) -->
+<!-- plot.gam(gam_model, residuals=T, se=TRUE,  -->
+<!--          shade=T, shade.col='gray90',  -->
+<!--          all.terms = T, pages = 1) -->
+<!-- abline(h=0) -->
 
-```{r}
-if (SAVEPLOTS){
-  graphics.off()
+<!-- anova.gam(gam_model) -->
+<!-- ``` -->
 
-  PLOTNAME <- "gam_model"
-  pdf(file = paste0(PLOTPATH, "/", PLOTNAME, ".pdf"), width = PLOTWIDTH*0.7, height = PLOTHEIGHT)
-  
-  op <- par(mfrow=c(3,3))
-            # , mai=c(0.01,0.01,0.01,0.01), mar=c(0.1,0.1,0.1,0.1))
-  for (i in 1:9) {
-    plot.gam(gam_model, select = i, residuals=T, se=TRUE,
-             shade=T, shade.col='gray90',
-             all.terms = T)
-    abline(h=0)
-    }
-  par(op)
-  
-  dev.off()
-} else {
-  op <- par(mfrow=c(3,3))
-  for (i in 1:9) {
-    plot.gam(gam_model, select = i, residuals=T, se=TRUE, 
-             shade=T, shade.col='gray90', 
-             all.terms = T)  
-    abline(h=0)
-    }
-  par(op)
-}
-```
+<!-- ```{r} -->
+<!-- if (SAVEPLOTS){ -->
+<!--   graphics.off() -->
 
-```{r}
-gam_pred <- predict.gam(gam_model, newdata = ValidSet, type = "response")
-conf.mat <- table(ValidSet$IAruptured, as.numeric(gam_pred>0.5))
-colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes")
+<!--   PLOTNAME <- "gam_model" -->
+<!--   pdf(file = paste0(PLOTPATH, "/", PLOTNAME, ".pdf"), width = PLOTWIDTH*0.7, height = PLOTHEIGHT) -->
 
-split.cm.gam <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes")
-df.predmetrics <- cbind(df.predmetrics, data.frame(split.gam = round(c(split.cm.gam$overall, split.cm.gam$byClass), 3)))
-df.predmetrics
+<!--   op <- par(mfrow=c(3,3)) -->
+<!--             # , mai=c(0.01,0.01,0.01,0.01), mar=c(0.1,0.1,0.1,0.1)) -->
+<!--   for (i in 1:9) { -->
+<!--     plot.gam(gam_model, select = i, residuals=T, se=TRUE, -->
+<!--              shade=T, shade.col='gray90', -->
+<!--              all.terms = T) -->
+<!--     abline(h=0) -->
+<!--     } -->
+<!--   par(op) -->
 
-roc.gam_model <- pROC::roc(ValidSet$IAruptured, gam_pred)
-aucCI.gam_model <- round(pROC::ci.auc(ValidSet$IAruptured, gam_pred), 2)
-plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH) # TODO: CHeck this function!
-```
+<!--   dev.off() -->
+<!-- } else { -->
+<!--   op <- par(mfrow=c(3,3)) -->
+<!--   for (i in 1:9) { -->
+<!--     plot.gam(gam_model, select = i, residuals=T, se=TRUE,  -->
+<!--              shade=T, shade.col='gray90',  -->
+<!--              all.terms = T)   -->
+<!--     abline(h=0) -->
+<!--     } -->
+<!--   par(op) -->
+<!-- } -->
+<!-- ``` -->
 
-Cross-validation gam
+<!-- ```{r} -->
+<!-- gam_pred <- predict.gam(gam_model, newdata = ValidSet, type = "response") -->
+<!-- conf.mat <- table(ValidSet$IAruptured, as.numeric(gam_pred>0.5)) -->
+<!-- colnames(conf.mat) <- rownames(conf.mat) <- c("No", "Yes") -->
 
-```{r message=FALSE, warning=FALSE}
-# NOTE!
-# CV with caret doesn't work for gam with discrete variables. It basically put each covariate in a spline function s() which is not equivalent to the above model!
-# https://stats.stackexchange.com/a/405292/152981
+<!-- split.cm.gam <- caret::confusionMatrix(conf.mat, mode = "everything", positive = "Yes") -->
+<!-- df.predmetrics <- cbind(df.predmetrics, data.frame(split.gam = round(c(split.cm.gam$overall, split.cm.gam$byClass), 3))) -->
+<!-- df.predmetrics -->
 
-# # defining training control
-# # as Leave One Out Cross Validation
-# train_control <- caret::trainControl(method = "LOOCV",
-#                                      summaryFunction = caret::prSummary, 
-#                                      # summaryFunction = twoClassSummary, 
-#                                      classProbs = TRUE,
-#                                      savePredictions = "all")
-#  
-# # training the model by assigning sales column
-# # as target variable and rest other column
-# # as independent variable
-# model <- caret::train(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+IAsize_log+Multiple.IAs+AgeDiag, data = gam_dat,
-#                method = "gam",
-#                family=binomial(link='logit'),
-#                trControl = train_control,
-#                tuneGrid = data.frame(method = "GCV.Cp", select = FALSE))
-#  
-# # printing model performance metrics
-# # along with other details
-# print(model)
-# 
-# loocv.cm.gam <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything")
-# df.predmetrics <- cbind(df.predmetrics, data.frame(loocv.gam = round(c(loocv.cm.gam$overall, loocv.cm.gam$byClass), 3)))
-# df.predmetrics
-```
+<!-- roc.gam_model <- pROC::roc(ValidSet$IAruptured, gam_pred) -->
+<!-- aucCI.gam_model <- round(pROC::ci.auc(ValidSet$IAruptured, gam_pred), 2) -->
+<!-- plotROCAUC(roc.gam_model, aucCI.gam_model, FILENAME = "gam_IArupture_allvars_roc.png", PLOTPATH = PLOTPATH) # TODO: CHeck this function! -->
+<!-- ``` -->
 
-```{r}
-gam_model_summary <- summary(gam_model)
-pltdat <- data.frame(varnames = names(gam_model_summary$p.coeff), coefs = as.numeric(gam_model_summary$p.coeff), pvalue=as.numeric(gam_model_summary$p.pv)) %>%
-  mutate(expcoefs = exp(coefs))
+<!-- Cross-validation gam -->
 
-ggplot(pltdat)+
-  aes(x=varnames, y=coefs)+
-  geom_point()+
-  ylab("Logit") +
-  geom_hline(yintercept = 0) +
-  theme_light() +
-  coord_flip()
+<!-- ```{r message=FALSE, warning=FALSE} -->
+<!-- # NOTE! -->
+<!-- # CV with caret doesn't work for gam with discrete variables. It basically put each covariate in a spline function s() which is not equivalent to the above model! -->
+<!-- # https://stats.stackexchange.com/a/405292/152981 -->
 
-ggplot(pltdat)+
-  aes(x=varnames, y=expcoefs)+
-  geom_point()+
-  ylab("Odds ratios") +
-  geom_hline(yintercept = 1) +
-  theme_light() +
-  coord_flip()
+<!-- # # defining training control -->
+<!-- # # as Leave One Out Cross Validation -->
+<!-- # train_control <- caret::trainControl(method = "LOOCV", -->
+<!-- #                                      summaryFunction = caret::prSummary,  -->
+<!-- #                                      # summaryFunction = twoClassSummary,  -->
+<!-- #                                      classProbs = TRUE, -->
+<!-- #                                      savePredictions = "all") -->
+<!-- #   -->
+<!-- # # training the model by assigning sales column -->
+<!-- # # as target variable and rest other column -->
+<!-- # # as independent variable -->
+<!-- # model <- caret::train(Ruptured_IA ~ Gender+Positive.famillial.history+Hypertension+Smoking_Current_Former_No+location.grouped+IAsize_log+Multiple.IAs+AgeDiag, data = gam_dat, -->
+<!-- #                method = "gam", -->
+<!-- #                family=binomial(link='logit'), -->
+<!-- #                trControl = train_control, -->
+<!-- #                tuneGrid = data.frame(method = "GCV.Cp", select = FALSE)) -->
+<!-- #   -->
+<!-- # # printing model performance metrics -->
+<!-- # # along with other details -->
+<!-- # print(model) -->
+<!-- #  -->
+<!-- # loocv.cm.gam <- caret::confusionMatrix(model$pred$pred, model$pred$obs, positive = "Yes", mode = "everything") -->
+<!-- # df.predmetrics <- cbind(df.predmetrics, data.frame(loocv.gam = round(c(loocv.cm.gam$overall, loocv.cm.gam$byClass), 3))) -->
+<!-- # df.predmetrics -->
+<!-- ``` -->
 
-if (SAVEPLOTS){
-  # plt.mod <- plt +
-  #   sjPlot::font_size(
-  #                     title = 15,
-  #                     axis_title.y = 15,
-  #                     axis_title.x = 15,
-  #                     labels.x = 15,
-  #                     labels.y = 15,
-  #                     base.theme = theme_light())
-  # ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH, 
-  #        dpi = 600, width = 4096, height = 4096, units = "px")
-  #        # dpi = 600, width = 4096, height = 2304, units = "px")
-} else {
-  plt
-}
-```
+<!-- ```{r} -->
+<!-- gam_model_summary <- summary(gam_model) -->
+<!-- pltdat <- data.frame(varnames = names(gam_model_summary$p.coeff), coefs = as.numeric(gam_model_summary$p.coeff), pvalue=as.numeric(gam_model_summary$p.pv)) %>% -->
+<!--   mutate(expcoefs = exp(coefs)) -->
 
-store prediction metrics
+<!-- ggplot(pltdat)+ -->
+<!--   aes(x=varnames, y=coefs)+ -->
+<!--   geom_point()+ -->
+<!--   ylab("Logit") + -->
+<!--   geom_hline(yintercept = 0) + -->
+<!--   theme_light() + -->
+<!--   coord_flip() -->
 
-```{r}
-write.csv(df.predmetrics, file = paste0(PLOTPATH, "/prediction_metrics_regression.csv"))
-```
+<!-- ggplot(pltdat)+ -->
+<!--   aes(x=varnames, y=expcoefs)+ -->
+<!--   geom_point()+ -->
+<!--   ylab("Odds ratios") + -->
+<!--   geom_hline(yintercept = 1) + -->
+<!--   theme_light() + -->
+<!--   coord_flip() -->
+
+<!-- if (SAVEPLOTS){ -->
+<!--   # plt.mod <- plt + -->
+<!--   #   sjPlot::font_size( -->
+<!--   #                     title = 15, -->
+<!--   #                     axis_title.y = 15, -->
+<!--   #                     axis_title.x = 15, -->
+<!--   #                     labels.x = 15, -->
+<!--   #                     labels.y = 15, -->
+<!--   #                     base.theme = theme_light()) -->
+<!--   # ggsave(plot = plt, filename = "gam_IArupture_allvars.png", path = PLOTPATH,  -->
+<!--   #        dpi = 600, width = 4096, height = 4096, units = "px") -->
+<!--   #        # dpi = 600, width = 4096, height = 2304, units = "px") -->
+<!-- } else { -->
+<!--   plt -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- store prediction metrics -->
+
+<!-- ```{r} -->
+<!-- write.csv(df.predmetrics, file = paste0(PLOTPATH, "/prediction_metrics_regression.csv")) -->
+<!-- ``` -->
 
 
