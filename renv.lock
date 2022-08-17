@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.2.0",
+    "Version": "4.2.1",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -281,6 +281,21 @@
         "rjags"
       ]
     },
+    "arm": {
+      "Package": "arm",
+      "Version": "1.12-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c69d85bd59581f5fdca0c520b6516b9a",
+      "Requirements": [
+        "MASS",
+        "Matrix",
+        "abind",
+        "coda",
+        "lme4",
+        "nlme"
+      ]
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.1",
@@ -479,6 +494,16 @@
         "recipes",
         "reshape2",
         "withr"
+      ]
+    },
+    "checkmate": {
+      "Package": "checkmate",
+      "Version": "2.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "147e4db6909d8814bb30f671b49d7e06",
+      "Requirements": [
+        "backports"
       ]
     },
     "class": {
@@ -1400,6 +1425,19 @@
       "Hash": "c0bfaec475ad944110cf686397c3246d",
       "Requirements": []
     },
+    "lobstr": {
+      "Package": "lobstr",
+      "Version": "1.1.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f2a94f8fc9db382a642e965339635ad6",
+      "Requirements": [
+        "cpp11",
+        "crayon",
+        "prettyunits",
+        "rlang"
+      ]
+    },
     "lubridate": {
       "Package": "lubridate",
       "Version": "1.8.0",
@@ -1409,6 +1447,18 @@
       "Requirements": [
         "cpp11",
         "generics"
+      ]
+    },
+    "magick": {
+      "Package": "magick",
+      "Version": "2.7.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "56fbad418aa50939ed8c3028126af8d7",
+      "Requirements": [
+        "Rcpp",
+        "curl",
+        "magrittr"
       ]
     },
     "magrittr": {
@@ -1441,6 +1491,14 @@
         "mime",
         "xfun"
       ]
+    },
+    "matrixStats": {
+      "Package": "matrixStats",
+      "Version": "0.62.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "36ad89a805c436c5316c22490079da67",
+      "Requirements": []
     },
     "maxstat": {
       "Package": "maxstat",
@@ -1494,6 +1552,17 @@
       "Hash": "eaee7d2a6f3ed4491df868611cb064cc",
       "Requirements": [
         "Rcpp"
+      ]
+    },
+    "mltools": {
+      "Package": "mltools",
+      "Version": "0.3.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "83c63607a4dce7666698b541841ce090",
+      "Requirements": [
+        "Matrix",
+        "data.table"
       ]
     },
     "modelr": {
@@ -1586,6 +1655,17 @@
       "Requirements": [
         "Rcpp",
         "plyr"
+      ]
+    },
+    "pander": {
+      "Package": "pander",
+      "Version": "0.6.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "737924139a1e4fc96356ff377c754c35",
+      "Requirements": [
+        "Rcpp",
+        "digest"
       ]
     },
     "parallelly": {
@@ -1751,6 +1831,14 @@
       "Hash": "a555924add98c99d2f411e37e7d25e9f",
       "Requirements": []
     },
+    "prettyunits": {
+      "Package": "prettyunits",
+      "Version": "1.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "95ef9167b75dde9d2ccc3c7528393e7e",
+      "Requirements": []
+    },
     "processx": {
       "Package": "processx",
       "Version": "3.5.3",
@@ -1807,6 +1895,19 @@
       "Hash": "50b405c6419e921b9e9360cc9ebbcf2d",
       "Requirements": []
     },
+    "pryr": {
+      "Package": "pryr",
+      "Version": "0.1.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3fb39bed6e21e21cdb79a3203c6a198e",
+      "Requirements": [
+        "Rcpp",
+        "codetools",
+        "lobstr",
+        "stringr"
+      ]
+    },
     "ps": {
       "Package": "ps",
       "Version": "1.7.0",
@@ -1858,6 +1959,19 @@
       "Hash": "5e3c5dc0b071b21fa128676560dbe94d",
       "Requirements": []
     },
+    "rapportools": {
+      "Package": "rapportools",
+      "Version": "1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "25516ea66b1ed264e8c4a32b5d210770",
+      "Requirements": [
+        "MASS",
+        "pander",
+        "plyr",
+        "reshape2"
+      ]
+    },
     "recipes": {
       "Package": "recipes",
       "Version": "0.2.0",
@@ -1898,10 +2012,10 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.15.2",
+      "Version": "0.15.5",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "206c4ef8b7ad6fb1060d69aa7b9dfe69",
+      "Hash": "6a38294e7d12f5d8e656b08c5bd8ae34",
       "Requirements": []
     },
     "reshape2": {
@@ -2171,6 +2285,27 @@
         "glue",
         "magrittr",
         "stringi"
+      ]
+    },
+    "summarytools": {
+      "Package": "summarytools",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "1946d61226cb38beca83108d6e7ed7c9",
+      "Requirements": [
+        "base64enc",
+        "checkmate",
+        "dplyr",
+        "htmltools",
+        "lubridate",
+        "magick",
+        "matrixStats",
+        "pander",
+        "pryr",
+        "rapportools",
+        "tibble",
+        "tidyr"
       ]
     },
     "survAUC": {

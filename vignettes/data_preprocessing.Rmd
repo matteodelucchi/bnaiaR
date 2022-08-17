@@ -1,5 +1,5 @@
 ---
-title: "Prepare Harmonized Raw Data for Analysis"
+title: "Data Preprocessing: Feature transformation, cleaning, engineering"
 author: "Matteo Delucchi"
 output:
   rmarkdown::html_document:
@@ -10,7 +10,7 @@ output:
     toc_depth: 3
   rmarkdown::html_vignette: default
 vignette: >
-  %\VignetteIndexEntry{Prepare Harmonized Raw Data for Analysis}
+  %\VignetteIndexEntry{Data Preprocessing: Feature transformation, cleaning, engineering}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ```{r development, eval=FALSE, include=FALSE}
 devtools::document()
 devtools::load_all()
-renv::snapshot(prompt = F)
+# renv::snapshot(prompt = F)
 ```
 
 ```{r setup}
@@ -49,18 +49,33 @@ PLOTPATH <- Sys.getenv("PLOTPATH")
 
 # Load Harmonized Raw Data
 
+Copy the data to the current package that was prepared in local, private package.
 ```{r}
-load(system.file("extdata", "adb_raw.RData", package = "bnaiaR"))
-str(adb.raw)
+system("cp ../../ExplorDataISGC/ExplorDataISGC/data/adbisgc.rda ../inst/extdata/")
+```
+
+
+```{r}
+load(system.file("extdata", "adbisgc.rda", package = "bnaiaR")) 
+str(adbisgc, give.attr=F)
+```
+
+```{r}
+summarytools::dfSummary(adbisgc)
 ```
 
 # Transform Variables: Merging levels, binarize and logarithms
 
-## Remove NAs
+```{r}
+adbisgc_tmp <- adbisgc
+```
+
+
+## Analyse NAs
 
 ```{r}
 # NA overview: Filter all, with at least one NA in any column.
-plt <- adb.raw %>%
+plt <- adbisgc_tmp %>%
   summarise(across(.cols = everything(), .fns = function(x){is.na(x)})) %>%
   filter(if_any()) %>%
   summarise(across(everything(), sum)) %>%
@@ -91,53 +106,78 @@ if (SAVEPLOTS) {
 ```
 
 
-```{r}
-length(adb.raw$Age.at.diag.grouped[which(adb.raw$Age.at.diag.grouped == "H" | is.na(adb.raw$Age.at.diag.grouped))])
-```
-
-
-```{r}
-df <- adb.raw %>% 
-  na.omit() 
-str(df)
-```
-
-
-```{r, fig.height=14, out.height= "100%"}
-plt <- overview_plt_max(df)
-
-if (SAVEPLOTS){
-  ggsave(plot = plt, filename = "ADB_noNAs_overview_raw.png", path = PLOTPATH, 
-         width = 14, height = 20, dpi = 300)
-  }
-```
-
 ## Rename Variables
 
 ```{r}
-df <- df %>% 
-  rename(Hypertension = Hypertension) %>%
-  rename(AgeDiag = age.at.time.of.diagnosis) %>%
-  rename(AgeDiag.group = Age.at.diag.grouped) %>%
-  rename(IAsize = IA_size.at.time.of.SAH) %>%
-  rename(IAsize.groups = IA_size.at.time.of.SAH.groups) %>%
-  rename(Basis.of.recruitement = Basis.of.recruitment_CaseControl)
+adbisgc_tmp <- adbisgc_tmp %>% 
+  rename(hpt_aware = hypertension) %>%
+  rename(hpt_treat = hypertension_treatment) %>%
+  rename(age_diag = age) %>%
+  rename(IAsize_diag = IAsize_at_diag) %>%
+  rename(IAsize_diag_grouped = IAsize_at_diag_grouped) %>%
+  rename(data_source = source)
+str(adbisgc_tmp, give.attr=F)
+```
 
-str(df)
+## Merge study sources by country
+
+```{r}
+adbisgc_tmp <- adbisgc_tmp %>%
+  mutate(study_source = data_source) %>%
+  mutate(study_source = stringr::str_replace(study_source, "utrecht_ruptured", "utrecht"),
+         study_source = stringr::str_replace(study_source, "geneva_aneuquest", "geneva"),
+         study_source = stringr::str_replace(study_source, "geneva_aneux", "geneva")) %>%
+  mutate(study_source = as.factor(study_source))
+```
+
+## Size groups merged to reduce number of levels
+
+The two classes of large IAs have a small number of observations.
+We merge them.
+
+```{r}
+adbisgc_tmp <- adbisgc_tmp %>%
+  # merge size groups to reduce number of levels
+  mutate(IAsize_diag_grouped = as.character(IAsize_diag_grouped)) %>%
+  mutate(IAsize_diag_grouped_merged = case_when(IAsize_diag_grouped == "D" ~ "C",
+                                                IAsize_diag_grouped == "E" & is.na(IAsize_diag) ~ NA_character_,
+                                                          TRUE ~ IAsize_diag_grouped)) %>% 
+  mutate(IAsize_diag_grouped = as.factor(IAsize_diag_grouped),
+         IAsize_diag_grouped_merged = as.factor(IAsize_diag_grouped_merged)) 
+```
+
+
+```{r}
+plt.size.comb <- adbisgc_tmp %>%
+  # Plot
+  ggplot()+
+  aes(x=IAsize_diag_grouped, fill=IAsize_diag_grouped_merged)+
+  geom_bar() +
+  theme_minimal()+
+  labs(title= "Case-distribution of IA size groups",
+       y="Number of records",
+       x=NULL)+
+  scale_fill_manual(values=c("A"=palette.colors(4)[[2]], "B"=palette.colors(4)[[3]], "C"=palette.colors(4)[[4]]),
+                    name = "IA size groups merged",
+                    labels = LETTERS[1:3])+
+  coord_flip()+
+  theme(legend.position = c(0.8,0.8),
+        legend.background = element_rect(fill = "white", color= "gray"))
+plt.size.comb
 ```
 
 ## Large Age groups reduce number of levels
 
 ```{r}
-plt.age <- df %>% 
+plt.age <- adbisgc_tmp %>% 
   # add layouting information
-  group_by(AgeDiag) %>%
+  group_by(age_diag) %>%
   summarise(n = n()) %>%
   mutate(label = case_when(n < 5 ~ n)) %>%
   
   # Plot
   ggplot()+
-  aes(x=AgeDiag, y=n)+
+  aes(x=age_diag, y=n)+
   geom_col(width = 0.5) +
   geom_text(aes(label = label, vjust = -0.2))+
   theme_minimal()+
@@ -155,15 +195,15 @@ Age at time of diagnosis is discretized following clinical conventions and
 grouped in bins of 5y between the age of 40 and 65.
 
 ```{r}
-plt.age5y <- df %>% 
+plt.age5y <- adbisgc_tmp %>% 
   # add layouting information
-  group_by(AgeDiag.group) %>%
+  group_by(age_diag) %>%
   summarise(n = n()) %>%
   mutate(label = case_when(n < 250 ~ n)) %>%
   
   # Plot
   ggplot()+
-  aes(x=AgeDiag.group, y=n)+
+  aes(x=age_diag, y=n)+
   geom_col() +
   geom_text(aes(label = label, vjust = -0.2))+
   theme_minimal()+
@@ -187,321 +227,63 @@ To reduce the number of classes of the AgeDiag.grouped variable a coarser
 grouping is included.
 
 ```{r}
-df <- df %>%
-    mutate(
-      AgeDiag.group.coarse = cut(
-        AgeDiag,
-        breaks = c(0,
-                   seq(40, 60, 10),
-                   max(AgeDiag, na.rm = TRUE)),
-        include.lowest = TRUE,
-        right = FALSE
-      )
-    ) %>%
-    mutate(AgeDiag.group.coarse = factor(AgeDiag.group.coarse, labels = LETTERS[1:length(levels(AgeDiag.group.coarse))])) 
+adbisgc_tmp <- adbisgc_tmp %>%
+    mutate(age_diag_group = wrap_age(age_diag))
 ```
 
 
 ```{r}
-plt.age10y <- df %>%
+plt.age5y <- adbisgc_tmp %>%
   # add layouting information
-  group_by(AgeDiag.group.coarse) %>%
+  group_by(age_diag_group) %>%
   summarise(n = n()) %>%
   mutate(label = case_when(n < 300 ~ n)) %>%
   
   # Plot
   ggplot()+
-  aes(x=AgeDiag.group.coarse, y=n)+
+  aes(x=age_diag_group, y=n)+
   geom_col() +
   geom_text(aes(label = label, vjust = -0.2))+
   theme_minimal()+
   labs(title= "Case-distribution of grouped Age at time of Diagnosis",
-          subtitle = "Grouped in bins of 10y for patients between 40y and 60y.",
-          caption = stringr::str_wrap("Age at time of diagnosis of IA grouped in A=[0,40), B=[40,50), C=[50,60), D=[60,max. AgeDiag)"),
+          subtitle = "Grouped in bins of 5y for patients between 40y and 65y.",
+          caption = stringr::str_wrap("Age at time of diagnosis of IA grouped in A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-max(age)"),
        y="Number of records",
        x="Age Group")+
   theme(plot.caption = element_text(hjust = 0.5),
         plot.caption.position = "plot")
 
 if (SAVEPLOTS){
-  ggsave(plot = plt.age10y, filename = "age_grouped_10y.png", path = PLOTPATH, dpi = 600)
+  ggsave(plot = plt.age10y, filename = "age_grouped_5y.png", path = PLOTPATH, dpi = 600)
 } else {
-  plt.age10y
+  plt.age5y
 }
 ```
-
-Multiplot of age
-
-```{r, out.height="100%", out.width="100%"}
-plt.age.mult <- plt.age+
-  labs(title= "",
-          subtitle = "",
-          caption = "",
-       y="Number of records",
-       x="Age")+
-  theme(plot.caption = element_text(hjust = 0.5),
-        plot.caption.position = "plot",
-    panel.background = element_rect(fill = "transparent", color = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA))
-
-plt.age5y.mult <- plt.age5y +
-  labs(title= "",
-          subtitle = "",
-          caption = "",
-       y="Number of records",
-       x="Age Group")+
-  theme(plot.caption = element_text(hjust = 0.5),
-        plot.caption.position = "plot",
-    panel.background = element_rect(fill = "transparent", color = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA))
-
-plt.age10y.mult <- plt.age10y+
-  labs(title= "",
-          subtitle = "",
-          caption = "",
-       y="Number of records",
-       x="Age Group")+
-  theme(plot.caption = element_text(hjust = 0.5),
-        plot.caption.position = "plot",
-    panel.background = element_rect(fill = "transparent", color = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA))
-
-plt.comb.age <- cowplot::plot_grid(plt.age.mult, plt.age5y.mult, plt.age10y.mult, labels = "AUTO", ncol = 1)+
-  theme(plot.caption = element_text(hjust = 0.5),
-        plot.caption.position = "plot",
-    panel.background = element_rect(fill = "transparent", color = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA))
-
-if (SAVEPLOTS){
-  ggsave(plot = plt.comb.age, filename = "age_multiplot.png", path = PLOTPATH, 
-         dpi = 600, height = 13, bg = "transparent")
-} else {
-  plt.comb.age
-}
-```
-Overlay plot age
-
-```{r}
-df.age <- df %>% 
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag)
-
-df.age.cont <- df %>% 
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag) %>%
-  count(AgeDiag, name="AgeDiag.n")
-
-df.age.group <- df %>% 
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag) %>%
-  count(AgeDiag.group,  name="AgeDiag.group.n")
-
-df.age.group.coarse <- df %>% 
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag) %>%
-  count(AgeDiag.group.coarse, name="AgeDiag.group.coarse.n")
-```
-
-
-```{r}
-plt.overlay.age <- df.age.cont %>%
-  ggplot() +
-  # Age group coarse
-  annotate(
-    "rect",
-    xmin = c(
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "A")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "B")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "C")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "D")])
-    ),
-    xmax = c(
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "A")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "B")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "C")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group.coarse == "D")])
-    ),
-    ymin = rep(0, 4),
-    ymax = df.age.group.coarse$AgeDiag.group.coarse.n,
-    alpha = 0.2,
-    color = "orange",
-    fill = "yellow"
-  ) +
-  # Age group fine
-  annotate(
-    "rect",
-    xmin = c(
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
-    ),
-    xmax = c(
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
-    ),
-    ymin = rep(0, 7),
-    ymax = df.age.group$AgeDiag.group.n,
-    alpha = 0.2,
-    color = "blue",
-    fill = "blue"
-  ) +
-  # Age group cont
-  geom_col(aes(x = AgeDiag, y = AgeDiag.n), width = 0.5) +
-  # Layouting
-  theme_minimal() +
-  scale_x_continuous(breaks = c(0, 40, seq(40, 65, 10), max(df.age.cont$AgeDiag)),
-                     minor_breaks = seq(40, 65, 5)) +
-  labs(
-    title = "Case-distribution of age at time of IA diagnosis",
-    subtitle = "Grouped in bins of 5y (blue) and 10y (yellow) for patients between 40y and 65y.",
-    y = "Number of records",
-    x = "Age at diagnosis"
-  ) +
-  theme(
-    plot.caption = element_text(hjust = 0.5),
-    plot.caption.position = "plot",
-    panel.background = element_rect(fill = "transparent", color = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA)
-  )
-
-if (SAVEPLOTS) {
-  ggsave(
-    plot = plt.overlay.age,
-    filename = "age_overlay.png",
-    path = PLOTPATH,
-    dpi = 600
-  )
-} else {
-  plt.overlay.age
-}
-```
-
-
-## Binarize Age groups
-
-```{r}
-AgeDiag.group_bin <- df %>% 
-  select(AgeDiag.group) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)
-
-df <- df %>%
-  cbind(AgeDiag.group_bin) %>%
-  mutate(across(contains("AgeDiag.group__"), as.factor))
-  
-str(df)
-```
-
-
-
-## Merge and Binarize Smoking
-
-```{r}
-Smoking_Current_Former_No_bin <- df %>% 
-  select(Smoking_Current_Former_No) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)
-
-df <- df %>%
-  cbind(Smoking_Current_Former_No_bin) %>%
-  mutate(across(contains("Smoking_Current_Former_No__"), as.factor))
-  
-str(df)
-```
-
-Merging former and non-smokers in "NotCurrent" smokers:
-
-```{r}
-df <- df %>%
-  # Make smoking binary:
-  mutate(Smoking_Current_Former_No = as.character(Smoking_Current_Former_No)) %>%
-  mutate(Smoking_CurrentNotCurrent = case_when(Smoking_Current_Former_No == "Current" ~ "Current",
-                                               Smoking_Current_Former_No == "Former" ~ "NotCurrent",
-                                               Smoking_Current_Former_No == "No" ~ "NotCurrent",
-                                               TRUE ~ Smoking_Current_Former_No)) %>% 
-    mutate(Smoking_Current_Former_No = factor(Smoking_Current_Former_No),
-           Smoking_CurrentNotCurrent = factor(Smoking_CurrentNotCurrent)) 
-
-str(df)
-```
-
 
 ## Creation of the cohort of patients with lesions in different risk locations
 
 We group IA location by vessel into three classes according their risk of rupture:
 
 ```{r}
-df <- df %>%
-  mutate(location.grouped = if_else(IA_Location == "Acom" |
-                          IA_Location == "Pcom" |
-                          IA_Location == "V-B" |
-                          IA_Location == "A2" |
-                          IA_Location == "PC", 
-                                       "High", 
-                                       if_else(IA_Location == "MCA" |
-                                                 IA_Location == "ICA" |
-                                                 IA_Location == "Basilar" |
-                                                 IA_Location == "Other" |
-                                                 IA_Location == "A1 segment ant",
-                                               "Medium",
-                                               if_else(IA_Location == "CavICA" |
-                                                         IA_Location == "OphtICA",
-                                                       "Low",
-                                                       NA_character_))))%>%
-  mutate_at(vars(location.grouped), list(~as.factor(.)))
-str(df)
-```
+adbisgc_tmp <- adbisgc_tmp %>%
+  mutate(IAlocation_group = harmonize_locbyrisk(IAlocation))
 
-And additionally we binarize all locations
-
-```{r}
-IA_Location_bin <- df %>% 
-  select(IA_Location) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)%>%
-  mutate(IA_Location__VB = `IA_Location__V-B`) %>%
-  select(-c(`IA_Location__V-B`)) 
-IA_Location_bin <- IA_Location_bin %>%
-  select(sort(names(IA_Location_bin)))
-
-location.grouped <- df %>% 
-  select(location.grouped) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)
-
-df <- df %>%
-  cbind(IA_Location_bin) %>%
-  cbind(location.grouped) %>%
-  mutate(across(contains("IA_Location__"), as.factor),
-         across(contains("location.grouped__"), as.factor))
-str(df)
+str(adbisgc_tmp, give.attr=F)
 ```
 
 ### Plots
 
-```{r}
-df.loc <- df %>%
-  select(c(IA_Location, location.grouped))
-df.loc
-```
-
-
 
 ```{r}
-plt.locv <- df %>%
+plt.locv <- adbisgc_tmp %>%
   # add layouting information
-  group_by(IA_Location) %>%
+  group_by(IAlocation) %>%
   summarise(n = n()) %>%
   mutate(label = case_when(n < 300 ~ n)) %>%
   
   # Plot
   ggplot()+
-  aes(x=IA_Location, y=n)+
+  aes(x=IAlocation, y=n)+
   geom_col() +
   geom_text(aes(label = label, hjust = -0.2))+
   theme_minimal()+
@@ -516,10 +298,10 @@ plt.locv
 ```
 
 ```{r}
-plt.locr <- df %>%
+plt.locr <- adbisgc_tmp %>%
   # Plot
   ggplot()+
-  aes(x=location.grouped)+
+  aes(x=IAlocation_group)+
   geom_bar() +
   theme_minimal()+
   labs(title= "Case-distribution of IA location by risk of rupture",
@@ -533,16 +315,18 @@ plt.locr
 ```
 
 ```{r}
-plt.loc.comb <- df.loc %>%
+plt.loc.comb <- adbisgc_tmp %>%
+  select(c(IAlocation, IAlocation_group)) %>%
+  
   # Plot
   ggplot()+
-  aes(x=IA_Location, fill=location.grouped)+
+  aes(x=IAlocation, fill=IAlocation_group)+
   geom_bar() +
   theme_minimal()+
   labs(title= "Case-distribution of IA location",
        y="Number of records",
        x=NULL)+
-  scale_fill_manual(values=c("High" = "darkred", "Medium"= "darkorange", "Low"="darkgreen"), name = "Risk of IA rupture")+
+  scale_fill_manual(values=c("high" = "darkred", "medium"= "darkorange", "low"="darkgreen"), name = "Risk of IA rupture")+
   theme(plot.caption = element_text(hjust = 0.5),
         plot.caption.position = "plot")+
   coord_flip()
@@ -559,78 +343,24 @@ if (SAVEPLOTS) {
 }
 ```
 
-## Size groups merged to reduce number of levels
 
-The two classes of large IAs have a small number of observations.
-We merge them.
-
-```{r}
-df <- df %>%
-  # merge size groups to reduce number of levels
-  mutate(IAsize.groups = as.character(IAsize.groups)) %>%
-  mutate(IAsize.groups.merged = case_when(IAsize.groups == "D" ~ "C",
-                                                          TRUE ~ IAsize.groups)) %>%
-  filter(IAsize.groups != "E")%>%
-  mutate(IAsize.groups = as.factor(IAsize.groups),
-         IAsize.groups.merged = as.factor(IAsize.groups.merged))
-```
-
-And additionally we binarize all size groups
-
-```{r}
-IA_size_groups_bin <- df %>% 
-  select(IAsize.groups) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)
-
-IA_size_groups_merged_bin <- df %>% 
-  select(IAsize.groups.merged) %>% 
-  correlationfunnel::binarize(thresh_infreq = 0.0001)
-
-df <- df %>%
-  cbind(IA_size_groups_bin) %>%
-  cbind(IA_size_groups_merged_bin) %>%
-  mutate(across(contains("IAsize.groups__"), as.factor)) %>%
-  mutate(across(contains("IAsize.groups.merged__"), as.factor))
-
-str(df)
-```
-
-```{r}
-plt.size.comb <- df %>%
-  # Plot
-  ggplot()+
-  aes(x=IAsize.groups, fill=IAsize.groups.merged)+
-  geom_bar() +
-  theme_minimal()+
-  labs(title= "Case-distribution of IA size groups",
-       y="Number of records",
-       x=NULL)+
-  scale_fill_manual(values=c("A"=palette.colors(4)[[2]], "B"=palette.colors(4)[[3]], "C"=palette.colors(4)[[4]]),
-                    name = "IA size groups merged",
-                    labels = LETTERS[1:3])+
-  coord_flip()+
-  theme(legend.position = c(0.8,0.8),
-        legend.background = element_rect(fill = "white", color= "gray"))
-plt.size.comb
-```
 
 ## Size logarithmic fits gaussian distribution
 
 
 ```{r}
-df <- df %>%
+adbisgc_tmp <- adbisgc_tmp %>%
   # add logarithm of size
-  mutate(IAsize_log = log(round(IAsize, 2))) %>%
-  filter(IAsize_log > 0)
+  mutate(IAsize_diag_log = log(round(IAsize_diag, 2)))
 
-str(df)
+str(adbisgc_tmp, give.attr=F)
 ```
 
 
 IAsize outliers
 
 ```{r}
-plt.size.log <- ggplot(df, aes(x= IAsize_log)) +
+plt.size.log <- ggplot(adbisgc_tmp, aes(x= IAsize_diag_log)) +
       geom_bar(stat = "count", show.legend = TRUE, col="black", fill="gray") +
       geom_text(aes(label=ifelse((stat(count)<10) & (x>4), stat(count),"")), stat='count', nudge_y=20)+
       theme_minimal()+
@@ -653,12 +383,15 @@ Multiplot IA size
 
 ```{r}
 # IA size cont.
-plt.size <- ggplot(df, aes(x= IAsize)) +
+plt.size <- adbisgc_tmp %>%
+  filter(IAsize_diag >= 0) %>%
+  
+  ggplot(aes(x= IAsize_diag)) +
       geom_bar(stat = "count", show.legend = TRUE, col="black", fill="gray") +
       # geom_text(aes(label=ifelse((stat(count)<10) & (x>4), stat(count),"")), stat='count', nudge_y=20)+
       theme_minimal()+
-  scale_x_continuous(breaks = c(seq(0, 80, 20), seq(80, max(df$IAsize), 50)),
-                     minor_breaks = seq(80, max(df$IAsize), 50))+
+  scale_x_continuous(breaks = c(seq(0, max(adbisgc_tmp$IAsize_diag, na.rm = T), 20)),
+                     minor_breaks = seq(0, max(adbisgc_tmp$IAsize_diag, na.rm = T), 50))+
   labs(title= "Case-distribution of IA size",
           # caption = stringr::str_wrap("Histogram of IA size with large values (IAsize>50) labeled with their number of records."),
        y="Number of records",
@@ -695,36 +428,78 @@ if (SAVEPLOTS){
 
 ```
 
+# Filter
 
-## Order levels in "normal" order
 ```{r}
-df <- df %>%
-  mutate(Positive.famillial.history = fct_relevel(Positive.famillial.history, c("Yes","No")))%>%
-  mutate(Smoking_Current_Former_No = fct_relevel(Smoking_Current_Former_No, c("Current","Former","No")))%>%
-  mutate(Ruptured_IA = fct_relevel(Ruptured_IA, c("Yes","No")))%>%
-  mutate(Multiple.IAs = fct_relevel(Multiple.IAs, c("Yes", "No")))%>%
-  mutate(IAsize.groups = fct_relevel(IAsize.groups, LETTERS[1:length(levels(IAsize.groups))]))%>%
-  mutate(AgeDiag.group = fct_relevel(AgeDiag.group, LETTERS[1:length(levels(AgeDiag.group))])) %>%
-  mutate(Hypertension = fct_relevel(Hypertension, c("AnyType", "Never")))%>%
-  mutate(IA_Location = fct_relevel(IA_Location, c("Acom", "Pcom","V-B", "A2","PC","MCA","ICA","Basilar","Other","A1 segment ant","CavICA","OphtICA")))%>%
-  mutate(Gender = fct_relevel(Gender, c("Female", "Male")))%>%
-  mutate(location.grouped = fct_relevel(location.grouped, c("High", "Medium", "Low")))
-str(df)
+summarytools::label(adbisgc_tmp$age_diag_group) <- "age_diag grouped in A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-93 years."
+summarytools::label(adbisgc_tmp$IAlocation_group) <- "IA location grouped into their respective rupture risk levels. For details see '?harmonize_locbyrisk'"
+summarytools::label(adbisgc_tmp$IAsize_diag_grouped) <- "IA size group A ≤ 7mm, B = 8 − 12mm, C 13 - 25mm, D ≥ 25mm, E == NA."
+summarytools::label(adbisgc_tmp$IAsize_diag_grouped_merged) <- "IA size groups C and D merged and E encoded as NA."
+summarytools::label(adbisgc_tmp$IAsize_diag_grouped_merged) <- "IA size groups C and D merged and E encoded as NA."
+
+adbisgc_tmp %>%
+  # sort variables alphabetically
+  select(sort(tidyselect::peek_vars())) %T>%
+  
+  str(give.attr = F) %>%
+  summarytools::dfSummary(max.distinct.values = 20)
+```
+
+
+```{r}
+adbisgc_tmp <- adbisgc_tmp %>%
+  pipe_message("filter age outliers.") %>%
+  filter((age_diag >= 10)&(age_diag <=100)) %>%
+  pipe_message("filter IA size outliers.") %>%
+  filter((IAsize_diag_log>0)&(IAsize_diag_log<4)) 
+
+adbisgc_tmp %>%
+  # sort variables alphabetically
+  select(sort(tidyselect::peek_vars())) %T>%
+  
+  str(give.attr = F) %>%
+  summarytools::dfSummary(max.distinct.values = 20)
+```
+
+
+# one-hot-encoding
+
+```{r}
+adbisgc_tmp_ohe <- adbisgc_tmp %>%
+  select(-c(ID_1, ID_2)) %>%
+  data.table::as.data.table() %>%
+ 
+  mltools::one_hot(dropCols = T,
+                   sparsifyNAs = T)
+str(adbisgc_tmp_ohe)
 ```
 
 ## Save ADB as .rds 
 
 ```{r save adb}
-adb <- df
-str(as.data.frame(adb))
+adbisgc <-adbisgc_tmp
+adbisgc_ohe <- adbisgc_tmp_ohe
 
-# saveRDS(adb, 
-#         file = "/home/delt/ZHAW/BNstructureLearning/2108_adb-v0.2.rds")
+summary_adbisgc <- summarytools::dfSummary(adbisgc, max.distinct.values = 20)
+summary_adbisgc_ohe <- summarytools::dfSummary(adbisgc_ohe, max.distinct.values = 20)
+
+summarytools::view(summary_adbisgc, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc.html")
+summarytools::view(summary_adbisgc_ohe, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc_ohe.html")
+
+saveRDS(adbisgc,
+        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.rds")
+write.csv(adbisgc, 
+          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.csv")
+saveRDS(adbisgc_ohe,
+        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.rds")
+write.csv(adbisgc_ohe, 
+          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.csv")
 ```
 
 # Include Preprocessed Data in bnaiaR package
 
 ```{r}
-# usethis::use_data(adb, overwrite = TRUE)
+# usethis::use_data(adbisgc, overwrite = TRUE)
+# usethis::use_data(adbisgc_ohe, overwrite = TRUE)
 # devtools::document()
 ```

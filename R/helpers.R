@@ -48,45 +48,40 @@ prep_exp_data <- function(dat = adb,
   # Variables of interest
   #####
   cat(paste0("\nSelect variables of interest for experiment: ", EXPNO))
-  abndata <- dat %>%
-    select(-c(### Always remove:
-      ID_2, # not informative
-      db, # not informative
-      Source, # Always the same for Geneva
-      Basis.of.recruitement, # Always the same for Geneva
-      # IA_Location, # too many levels. Let multinomial framework crash.
-      IAsize # No suitable distribution available.
-    ))
+
+  ### remove attributes
+  abndata <- data.frame(dat) # remove attributes
+  abndata[] <- lapply(dat, c) # remove attributes
 
   ### non-modifiable risk factors:
   if (age == "cont") {
-    nonmod <- names(abndata)[names(abndata) == "AgeDiag"]
+    nonmod <- names(abndata)[names(abndata) == "age_diag"]
   } else if (age == "disc.grouped-multinomial") {
-    nonmod <- names(abndata)[names(abndata) == "AgeDiag.group"]
+    nonmod <- names(abndata)[names(abndata) == "age_diag_group"]
   } else if (age == "disc.grouped-binomial") {
-    nonmod <- stringr::str_subset(names(abndata), pattern = "AgeDiag.group__")
+    nonmod <- stringr::str_subset(names(abndata), pattern = "age_diag_group__")
   } else {
     warning(paste("age is ", age, "but must be one of: ",
                   "cont",
                   "disc.grouped-multinomial",
                   "disc.grouped-binomial"))
   }
-  nonmod <- c(stringr::str_subset(names(abndata), pattern = "Gender|famillial"),
+  nonmod <- c(stringr::str_subset(names(abndata), pattern = "gender|famillial"),
               nonmod)
 
   ### modifiable risk factors:
   modfact <-
-    stringr::str_subset(names(abndata), pattern = "Hypertension")
+    stringr::str_subset(names(abndata), pattern = "hpt_aware")
 
   if (smoking == "mult") {
     modfact <- c(modfact,
-                 names(abndata)[names(abndata) == "Smoking_Current_Former_No"])
+                 names(abndata)[names(abndata) == "smoking_current_former_no"])
   } else if (smoking == "binCFN") {
     modfact <- c(modfact,
-                 stringr::str_subset(names(abndata), pattern = "Smoking_Current_Former_No__"))
+                 stringr::str_subset(names(abndata), pattern = "smoking_current_former_no__"))
   } else if (smoking == "binCnC") {
     modfact <- c(modfact,
-                 stringr::str_subset(names(abndata), pattern = "Smoking_CurrentNotCurrent"))
+                 stringr::str_subset(names(abndata), pattern = "smoking_current_notcurrent"))
   } else {
     warning(paste(
       "smoking is ", smoking, "but must be one of: ",
@@ -98,14 +93,14 @@ prep_exp_data <- function(dat = adb,
 
   ### Aneurysm Properties
   if (location == "byVessel-multinomial") {
-    IAprops.loc <- names(abndata)[names(abndata) == "IA_Location"]
+    IAprops.loc <- names(abndata)[names(abndata) == "IAlocation"]
   } else if (location == "byVessel-binomial") {
-    IAprops.loc <- stringr::str_subset(names(abndata), pattern = "IA_Location__")
+    IAprops.loc <- stringr::str_subset(names(abndata), pattern = "IAlocation__")
   } else if (location == "byRisk-multinomial") {
-    IAprops.loc <- names(abndata)[names(abndata) == "location.grouped"]
+    IAprops.loc <- names(abndata)[names(abndata) == "IAlocation_group"]
   } else if (location == "byRisk-binomial") {
     IAprops.loc <-
-      stringr::str_subset(names(abndata), pattern = "location.grouped__")
+      stringr::str_subset(names(abndata), pattern = "IAlocation_group__")
   } else {
     warning(paste(
       "location is ", location, "but must be one of: ",
@@ -118,18 +113,18 @@ prep_exp_data <- function(dat = adb,
   }
 
   if (size == "grouped-multinomial") {
-    IAprops.size <- names(abndata)[names(abndata) == "IAsize.groups"]
+    IAprops.size <- names(abndata)[names(abndata) == "IAsize_diag_grouped"]
   } else if (size == "grouped.merged-multinomial") {
     IAprops.size <-
-      names(abndata)[names(abndata) == "IAsize.groups.merged"]
+      names(abndata)[names(abndata) == "IAsize_diag_grouped_merged"]
   } else if (size == "log") {
-    IAprops.size <- names(abndata)[names(abndata) == "IAsize_log"]
+    IAprops.size <- names(abndata)[names(abndata) == "IAsize_diag_log"]
   } else if (size == "grouped-binomial") {
     IAprops.size <-
-      stringr::str_subset(names(abndata), pattern = "IAsize.groups__")
+      stringr::str_subset(names(abndata), pattern = "IAsize_diag_grouped__")
   } else if (size == "grouped.merged-binomial") {
     IAprops.size <-
-      stringr::str_subset(names(abndata), pattern = "IAsize.groups.merged__")
+      stringr::str_subset(names(abndata), pattern = "IAsize_diag_grouped_merged__")
   } else {
     warning(paste(
       "size is ", size, "but must be one of: ",
@@ -143,13 +138,16 @@ prep_exp_data <- function(dat = adb,
   }
 
   IAprops <-
-    c(IAprops.loc, IAprops.size, "Multiple.IAs") # Put them all together in the correct order
+    c(IAprops.loc, IAprops.size, "multipleIAs") # Put them all together in the correct order
 
   ### Target
-  modeltarget <- "Ruptured_IA"
+  modeltarget <- "IAruptured"
+
+  ### Study source
+  study_source <- "study_source"
 
   ### Put them all together in the correct order
-  varsofinterest <- c(nonmod, modfact, IAprops, modeltarget)
+  varsofinterest <- c(nonmod, modfact, IAprops, modeltarget, study_source)
 
   #####
   # select variables from data set
@@ -163,70 +161,73 @@ prep_exp_data <- function(dat = adb,
   # all possible distributions
   dists <- list(
     ### non-modifiable risk factors:
-    Gender = "binomial",
-    Positive.famillial.history = "binomial",
+    gender = "binomial",
+    positive_famillial_history = "binomial",
     # Age continuous
-    AgeDiag = "gaussian",
+    age_diag = "gaussian",
     # Age discrete binomial
-    AgeDiag.group__A = "binomial",
-    AgeDiag.group__B = "binomial",
-    AgeDiag.group__C = "binomial",
-    AgeDiag.group__D = "binomial",
-    AgeDiag.group__E = "binomial",
-    AgeDiag.group__F = "binomial",
-    AgeDiag.group__G = "binomial",
+    age_diag_group__A = "binomial",
+    age_diag_group__B = "binomial",
+    age_diag_group__C = "binomial",
+    age_diag_group__D = "binomial",
+    age_diag_group__E = "binomial",
+    age_diag_group__F = "binomial",
+    age_diag_group__G = "binomial",
     # Age discrete multinomial
-    AgeDiag.group = "multinomial",
+    age_diag_group = "multinomial",
 
     ### modifiable risk factors
-    Smoking_Current_Former_No = "multinomial",
-    Smoking_Current_Former_No__Current = "binomial",
-    Smoking_Current_Former_No__Former = "binomial",
-    Smoking_Current_Former_No__No = "binomial",
-    Smoking_CurrentNotCurrent = "binomial",
-    Hypertension = "binomial",
+    smoking_current_former_no = "multinomial",
+    smoking_current_former_no__Current = "binomial",
+    smoking_current_former_no__Former = "binomial",
+    smoking_current_former_no__No = "binomial",
+    smoking_current_notcurrent = "binomial",
+    hpt_aware = "binomial",
 
     ### Aneurysm Properties
     # Location grouped multinomial
-    location.grouped = "multinomial",
+    IAlocation_group = "multinomial",
     # Location (exp01-03, 07-08)
-    IA_Location__A1_segment_ant = "binomial",
-    IA_Location__A2 = "binomial",
-    IA_Location__Acom = "binomial",
-    IA_Location__Basilar = "binomial",
-    IA_Location__CavICA = "binomial",
-    IA_Location__ICA = "binomial",
-    IA_Location__MCA = "binomial",
-    IA_Location__OphtICA = "binomial",
-    IA_Location__Other = "binomial",
-    IA_Location__PC = "binomial",
-    IA_Location__Pcom = "binomial",
-    IA_Location__VB = "binomial",
+    IAlocation__A1_segment_ant = "binomial",
+    IAlocation__A2 = "binomial",
+    IAlocation__Acom = "binomial",
+    IAlocation__Basilar = "binomial",
+    IAlocation__CavICA = "binomial",
+    IAlocation__ICA = "binomial",
+    IAlocation__MCA = "binomial",
+    IAlocation__OphtICA = "binomial",
+    IAlocation__Other = "binomial",
+    IAlocation__PC = "binomial",
+    IAlocation__Pcom = "binomial",
+    IAlocation__VB = "binomial",
     # Location by vessel (multinomial)
-    IA_Location = "multinomial",
+    IAlocation = "multinomial",
     #Location grouped binomial (exp04-63, 10-12)
-    location.grouped__High = "binomial",
-    location.grouped__Low = "binomial",
-    location.grouped__Medium = "binomial",
+    IAlocation_group__High = "binomial",
+    IAlocation_group__Low = "binomial",
+    IAlocation_group__Medium = "binomial",
     # Size grouped binomial
-    IAsize.groups__A = "binomial",
-    IAsize.groups__B = "binomial",
-    IAsize.groups__C = "binomial",
-    IAsize.groups__D = "binomial",
+    IAsize_diag_grouped__A = "binomial",
+    IAsize_diag_grouped__B = "binomial",
+    IAsize_diag_grouped__C = "binomial",
+    IAsize_diag_grouped__D = "binomial",
     # Size grouped multinomial
-    IAsize.groups = "multinomial",
+    IAsize_diag_grouped = "multinomial",
     # Size grouped merged binomial
-    IAsize.groups.merged__A = "binomial",
-    IAsize.groups.merged__B = "binomial",
-    IAsize.groups.merged__C = "binomial",
+    IAsize_diag_grouped_merged__A = "binomial",
+    IAsize_diag_grouped_merged__B = "binomial",
+    IAsize_diag_grouped_merged__C = "binomial",
     # Size grouped merged multinomial
-    IAsize.groups.merged = "multinomial",
+    IAsize_diag_grouped_merged = "multinomial",
     # log(size)
-    IAsize_log = "gaussian",
-    Multiple.IAs = "binomial",
+    IAsize_diag_log = "gaussian",
+    multipleIAs = "binomial",
 
     ### Target
-    Ruptured_IA = "binomial"
+    IAruptured = "binomial",
+
+    ### Study source
+    study_source = "multinomial"
   )
 
   # select vars of interest from all possible distributions
@@ -272,27 +273,28 @@ prep_exp_data <- function(dat = adb,
   colnames(banned) <- rownames(banned) <- names(abndata)
 
   ### Ban some arcs
-  gend_idx <- stringr::str_which(names(abndata), "Gender")
+  gend_idx <- stringr::str_which(names(abndata), "gender")
   fam_idx <-
-    stringr::str_which(names(abndata), "Positive.famillial.history")
-  age_idx <- stringr::str_which(names(abndata), "AgeDiag")
-  smok_idx <- stringr::str_which(names(abndata), "Smoking")
-  hyp_idx <- stringr::str_which(names(abndata), "Hypertension")
-  loc_idx <- stringr::str_which(names(abndata), "location|IA_Location")
-  size_idx <- stringr::str_which(names(abndata), "IAsize")
-  multi_idx <- stringr::str_which(names(abndata), "Multiple.IAs")
-  rupt_idx <- stringr::str_which(names(abndata), "Ruptured_IA")
+    stringr::str_which(names(abndata), "positive_famillial_history")
+  age_idx <- stringr::str_which(names(abndata), "age_diag")
+  smok_idx <- stringr::str_which(names(abndata), "smoking")
+  hyp_idx <- stringr::str_which(names(abndata), "hpt_aware")
+  loc_idx <- stringr::str_which(names(abndata), "location|IAlocation")
+  size_idx <- stringr::str_which(names(abndata), "IAsize_diag")
+  multi_idx <- stringr::str_which(names(abndata), "multipleIAs")
+  rupt_idx <- stringr::str_which(names(abndata), "IAruptured")
+  # study_idx <- stringr::str_which(names(abndata), "study_source")
 
-  banned[gend_idx, -gend_idx] <- 1 # Nothing pointing to Gender
+  banned[gend_idx, -gend_idx] <- 1 # Nothing pointing to gender
   banned[fam_idx, -c(gend_idx, fam_idx, age_idx)] <- 1 # Nothing pointing to fam. history, except age
   banned[age_idx, -c(gend_idx, fam_idx, age_idx)] <- 1 # Nothing pointing to age, except pos.fam and sex
   ##### Nothing from behavioral to hereditary
-  banned[c(gend_idx, fam_idx, age_idx), smok_idx] <- 1 # Smoking -> c(Gender, Pos.fam, age)
-  banned[c(gend_idx, fam_idx, age_idx), hyp_idx] <- 1 # Hypertension -> c(Gender, pos.fam, age)
+  banned[c(gend_idx, fam_idx, age_idx), smok_idx] <- 1 # Smoking -> c(gender, Pos.fam, age)
+  banned[c(gend_idx, fam_idx, age_idx), hyp_idx] <- 1 # hpt_aware -> c(gender, pos.fam, age)
   ##### Nothing from aneurysm properties to behavioral or hereditary
-  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), loc_idx] <- 1 # Location -> c(smoking, hypertension, gender, pos.fam, age)
-  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), size_idx] <- 1 # IA size -> c(smoking, hypertension, gender, pos.fam, age)
-  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), multi_idx] <- 1 # IA Mult. -> c(smoking, hypertension, gender, pos.fam, age)
+  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), loc_idx] <- 1 # Location -> c(smoking, hpt_aware, gender, pos.fam, age)
+  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), size_idx] <- 1 # IA size -> c(smoking, hpt_aware, gender, pos.fam, age)
+  banned[c(gend_idx, fam_idx, age_idx, smok_idx, hyp_idx), multi_idx] <- 1 # IA Mult. -> c(smoking, hpt_aware, gender, pos.fam, age)
   banned[multi_idx, loc_idx] <- 1 # Location -> Multiplicity
   banned[multi_idx, size_idx] <- 1 # Size -> Multiplicity
   # ##### Block all inter-Smoking
@@ -632,3 +634,44 @@ plotROCAUC <- function(roc, aucCI, FILENAME, PLOTPATH=NULL, SAVE=SAVEPLOTS){
     text(0.5, 0.01, paste("AUC=", aucCI[2], "(95% CI =", aucCI[1], "-", aucCI[3], ")"))
   }
 }
+
+
+#' Pipe Message and Intermediate Structure Output
+#'
+#' Print pipe status messages and the current ungrouped data structure.
+#'
+#' @param .data intermediate data in a pipe-line
+#' @param status character string of custom message
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'   aneuquest.raw %>%
+#'     # Construct number of NAs per row
+#'     pipe_message("Construct number of NAs per row") %>%
+#'     mutate(n_NAs = rowSums(is.na(.)))  %T>% { . ->> tmp_IAs_aneuquest_raw } %>%
+#'
+#'     # filter for largest size
+#'     group_by(patientID) %>%
+#'     pipe_message("filter for largest size") %>%
+#'     filter(maxDiam == max(maxDiam, na.rm = T)|is.na(maxDiam))  %>%
+#'
+#'     # if two IAs of equal size, filter for high risk location
+#'     pipe_message("filter for high risk location") %>%
+#'     filter(locrisk_isgc_aneuLoca == max(locrisk_isgc_aneuLoca, na.rm = T)|is.na(locrisk_isgc_aneuLoca))  %>%
+#'
+#'     # filter for the IA with more information (less NA)
+#'     pipe_message("filter for least missing values") %>%
+#'     filter(n_NAs == min(n_NAs, na.rm = T)|is.na(n_NAs)) %>%
+#'     ungroup() %T>% { . ->> tmp_IAs_aneuquest } %>%
+#'
+#'     # Remove entries with IAs <= 0
+#'     filter(maxDiam > 0) %>%
+#'     # Remove entries with IAs > 70
+#'     filter(maxDiam <= 70) %>%
+#'     # Remove unrealistic high patient age values
+#'     filter(aneuReportPatAge <= 130)
+#'     }
+pipe_message <- function(.data, status) {
+  cat(status, "\n--------------\n", str(ungroup(.data))); .data}

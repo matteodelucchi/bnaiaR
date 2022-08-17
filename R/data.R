@@ -114,7 +114,7 @@
 
 #' Discrete BN Analysis Input Data
 #'
-#' Aneurysm data from Geneva harmonized, preprocessed and transformed.
+#' Aneurysm data from multiple centres harmonized, preprocessed and transformed.
 #' A selection of variables from \code{data("adb", package = "bnaiaR")},
 #' prior knowledge and additional required data-set depended information for
 #' BN analysis with `bnlearn` and `abn`.
@@ -129,7 +129,7 @@
 #'   \item{bl}{data frame. Prior knowledge implementation as blacklist for package `bnlearn`.}
 #' }
 #'
-"exp11_dat"
+"exp1_dat"
 
 #' Discrete Bayesian Network Models
 #'
