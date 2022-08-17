@@ -337,47 +337,101 @@ print(bl.dbn.additive)
 print(dist.dbn.additive)
 ```
 
+```{r first draft additive discrete BN w/ mixed effects}
+# glm.bic = function(node, parents, data, args) {
+#   dist = args$dist
+#   mixed_effect = args$mixed_effect
+#   
+#   if (length(parents) == 0)
+#     # no parent no random effect
+#     model = as.formula(paste(node, "~ 1"))
+#     # model = as.formula(paste(node, "~ 1 + (0|", mixed_effect ,")"))
+#     # model = as.formula(paste(node, "~ (1|", mixed_effect ,")"))
+#   else
+#     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+#   
+#   print(model)
+#   # browser()
+#   
+#   if (dist[[node]] == "gaussian")
+#     - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+#   
+#   # else if (dist[[node]] == "binomial")
+#   #   - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2 # Error: No random effect specified
+#   else if (dist[[node]] == "binomial" & length(parents) == 0)
+#     - BIC(glm(model, data = data, family = "binomial")) / 2
+#   else if (dist[[node]] == "binomial" & length(parents) > 0)
+#     - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2
+#   
+#   # else if (dist[[node]] == "multinomial")
+#     # -BIC(mclogit::mblogit(formula = model, data = data)) / 2
+#     # -BIC(nnet::multinom(formula = model, data = data)) / 2
+#   else if ((dist[[node]] == "multinomial") && (length(parents) == 0))
+#     -BIC(mclogit::mblogit(formula = model, data = data)) / 2
+#     # - BIC(glm(model, data = data, family = dist[[node]])) / 2
+#     # -BIC(nnet::multinom(formula = model, data = data)) / 2
+#   else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
+#     model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
+#     model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
+#     mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
+#     -BIC(mod_mblogit) / 2}
+#   # -BIC(nnet::multinom(formula = model, data = data)) / 2
+#  }#GLM.BIC
+# 
+# bb = boot.strength(data.dbn.additive, 
+#                    algorithm = "tabu", 
+#                    R = 5,
+#                    # cluster = cl,
+#                    algorithm.args = list(score = "custom",
+#                                          fun = glm.bic,
+#                                          blacklist = bl.dbn.additive,
+#                                          # whitelist = wl.dbn.allstudy,
+#                                          args = list(dist = dist.dbn.additive,
+#                                                      mixed_effect = "study_source"),
+#                                          tabu = 50))
+# avg = averaged.network(bb)
+# strength.plot(avg, bb, shape = "rectangle")
+# plot(bb)
+```
 
 ```{r additive discrete BN w/ mixed effects}
-glm.bic = function(node, parents, data, args) {
+glmm.bic = function(node, parents, data, args) {
   dist = args$dist
   mixed_effect = args$mixed_effect
   
   if (length(parents) == 0)
     # no parent no random effect
     model = as.formula(paste(node, "~ 1"))
-    # model = as.formula(paste(node, "~ 1 + (0|", mixed_effect ,")"))
-    # model = as.formula(paste(node, "~ (1|", mixed_effect ,")"))
   else
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
-print(model)
+  
+  message(deparse1(model))
 
-if (dist[[node]] == "gaussian")
-     - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
-
-   # else if (dist[[node]] == "binomial")
-   #   - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2 # Error: No random effect specified
-   else if (dist[[node]] == "binomial" & length(parents) == 0)
-     - BIC(glm(model, data = data, family = "binomial")) / 2
-   else if (dist[[node]] == "binomial" & length(parents) > 0)
-     - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2
-
-  else if (dist[[node]] == "multinomial")
-    # -BIC(mclogit::mclogit(formula = model, data = data)) / 2
-    -BIC(nnet::multinom(formula = model, data = data)) / 2
-# else if (dist[[node]] == "multinomial" & length(parents) == 0) 
-  #   # - BIC(glm(model, data = data, family = dist[[node]])) / 2
-  #   -BIC(nnet::multinom(formula = model, data = data)) / 2
-  # else if (dist[[node]] == "multinomial" & length(parents) > 0) 
-  #   -BIC(nnet::multinom(formula = model, data = data)) / 2
- }#GLM.BIC
+  if (dist[[node]] == "gaussian")
+    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+  
+  else if (dist[[node]] == "binomial" & length(parents) == 0)
+    - BIC(glm(model, data = data, family = "binomial")) / 2
+  else if (dist[[node]] == "binomial" & length(parents) > 0)
+    - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2
+  
+  else if ((dist[[node]] == "multinomial") && (length(parents) == 0))
+    -BIC(mclogit::mblogit(formula = model, data = data)) / 2
+  else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
+    model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
+    model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
+    message(paste("using mblogit with fixed term:", deparse1(model_basic), "and random term:", deparse1(model_random)))
+    
+    mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
+    -BIC(mod_mblogit) / 2}
+ }#GLMM.BIC
 
 bb = boot.strength(data.dbn.additive, 
                    algorithm = "tabu", 
                    R = 5,
                    # cluster = cl,
                    algorithm.args = list(score = "custom",
-                                         fun = glm.bic,
+                                         fun = glmm.bic,
                                          blacklist = bl.dbn.additive,
                                          # whitelist = wl.dbn.allstudy,
                                          args = list(dist = dist.dbn.additive,
@@ -399,7 +453,9 @@ plot(bb)
 
 
 ```{r}
-
+mclogit::mblogit(formula = as.formula("study_source ~ IAlocation_group"), 
+                 data = data.dbn.additive,
+                 random = as.formula("~ 1| study_source"))
 ```
 
 
