@@ -1511,6 +1511,17 @@
         "mvtnorm"
       ]
     },
+    "mclogit": {
+      "Package": "mclogit",
+      "Version": "0.9.4.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "fe6a4ea706ec8e89ca9fadad3aa626fe",
+      "Requirements": [
+        "Matrix",
+        "memisc"
+      ]
+    },
     "mcmcabn": {
       "Package": "mcmcabn",
       "Version": "0.4",
@@ -1523,6 +1534,19 @@
         "gRbase",
         "ggplot2",
         "ggpubr"
+      ]
+    },
+    "memisc": {
+      "Package": "memisc",
+      "Version": "0.99.30.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "a2ea6202050de2950a5a88a823d8937a",
+      "Requirements": [
+        "MASS",
+        "data.table",
+        "lattice",
+        "repr"
       ]
     },
     "mgcv": {
@@ -1602,10 +1626,10 @@
     },
     "nlme": {
       "Package": "nlme",
-      "Version": "3.1-157",
+      "Version": "3.1-159",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "dbca60742be0c9eddc5205e5c7ca1f44",
+      "Hash": "4a0b3a68f846cb999ff0e8e519524fbb",
       "Requirements": [
         "lattice"
       ]
@@ -1745,17 +1769,18 @@
     },
     "pkgload": {
       "Package": "pkgload",
-      "Version": "1.2.4",
+      "Version": "1.3.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "7533cd805940821bf23eaf3c8d4c1735",
+      "Hash": "4b20f937a363c78a5730265c1925f54a",
       "Requirements": [
         "cli",
         "crayon",
         "desc",
+        "fs",
+        "glue",
         "rlang",
         "rprojroot",
-        "rstudioapi",
         "withr"
       ]
     },
@@ -2018,6 +2043,19 @@
       "Hash": "6a38294e7d12f5d8e656b08c5bd8ae34",
       "Requirements": []
     },
+    "repr": {
+      "Package": "repr",
+      "Version": "1.1.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "83f4b188b20fc3aa5e487db942b62e0b",
+      "Requirements": [
+        "base64enc",
+        "htmltools",
+        "jsonlite",
+        "pillar"
+      ]
+    },
     "reshape2": {
       "Package": "reshape2",
       "Version": "1.4.4",
@@ -2042,10 +2080,10 @@
     },
     "rlang": {
       "Package": "rlang",
-      "Version": "1.0.2",
+      "Version": "1.0.4",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "04884d9a75d778aca22c7154b8333ec9",
+      "Hash": "6539dd8c651e67e3b55b5ffea106362b",
       "Requirements": []
     },
     "rmarkdown": {
@@ -2338,10 +2376,10 @@
     },
     "survival": {
       "Package": "survival",
-      "Version": "3.3-1",
+      "Version": "3.4-0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "f6189c70451d3d68e0d571235576e833",
+      "Hash": "04411ae66ab4659230c067c32966fc20",
       "Requirements": [
         "Matrix"
       ]
