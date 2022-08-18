@@ -337,6 +337,11 @@ print(bl.dbn.additive)
 print(dist.dbn.additive)
 ```
 
+```{r}
+# cl = makeCluster(6)
+cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
+```
+
 ```{r first draft additive discrete BN w/ mixed effects}
 # glm.bic = function(node, parents, data, args) {
 #   dist = args$dist
@@ -425,11 +430,16 @@ glmm.bic = function(node, parents, data, args) {
     mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
     -BIC(mod_mblogit) / 2}
  }#GLMM.BIC
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
                    algorithm = "tabu", 
                    R = 5,
-                   # cluster = cl,
+                   cluster = cl,
                    algorithm.args = list(score = "custom",
                                          fun = glmm.bic,
                                          blacklist = bl.dbn.additive,
@@ -437,6 +447,10 @@ bb = boot.strength(data.dbn.additive,
                                          args = list(dist = dist.dbn.additive,
                                                      mixed_effect = "study_source"),
                                          tabu = 50))
+etime <- Sys.time()
+running_time <- etime-stime
+print(paste("Running time: ", running_time))
+
 avg = averaged.network(bb)
 strength.plot(avg, bb, shape = "rectangle")
 plot(bb)
