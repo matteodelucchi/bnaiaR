@@ -41,8 +41,9 @@ library(doParallel)
 
 set.seed(100)
 
-SAVEPLOTS <- F
+SAVEPLOTS <- T
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 ```
@@ -167,6 +168,158 @@ plot(bb)
 avg = averaged.network(bb, threshold = 0.2)
 strength.plot(avg, bb, shape = "rectangle")
 ```
+
+# Structure Learning of discrete BN w/o study_source for each source individually
+
+
+```{r}
+data("exp1_dat")
+data.dbn <- exp1_dat$abndata  %>%
+  filter(positive_famillial_history != "probably")
+bl.dbn.nostudy <- exp1_dat$bl %>%
+  filter(From != "study_source" & To != "study_source")
+
+str(data.dbn)
+print(bl.dbn.nostudy)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+cl = parallel::makeCluster(4)
+bb_studies_aic <- list()
+bb_studies_bic <- list()
+
+for (study in unique(data.dbn$study_source)){
+  message(paste("Working on study centre: ", study))
+
+  
+  # Filter data set for current study only
+  data.dbn.partial <- data.dbn %>%
+    filter(study_source == study) %>%
+    select(-c(study_source))
+  
+  # learn BN
+  message("\twith tabu and AIC...")
+  bb_studies_aic[[study]] = boot.strength(data.dbn.partial, 
+                                      algorithm = "tabu", 
+                                      R = 500,
+                                      cluster = cl,
+                                      algorithm.args = list(score = "aic", 
+                                                            blacklist = bl.dbn.nostudy,
+                                                            tabu = 50))
+  
+  message("\twith tabu and BIC...")
+  bb_studies_bic[[study]] = boot.strength(data.dbn.partial, 
+                                      algorithm = "tabu", 
+                                      R = 500,
+                                      cluster = cl,
+                                      algorithm.args = list(score = "bic", 
+                                                            blacklist = bl.dbn.nostudy,
+                                                            tabu = 50))
+}
+parallel::stopCluster(cl)
+
+# Collect all BNs in one list of scores : studies : BNs
+bb_studies <- list("aic" = bb_studies_aic, "bic" = bb_studies_bic)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+avg_studies = list()
+# print all AIC BNs
+for (score in names(bb_studies)){
+  for(study in names(bb_studies[[score]])){
+    bb <- bb_studies[[score]][[study]]
+    avg = averaged.network(bb, threshold = 0.2)
+    avg_studies[[score]][[study]] <- avg
+    
+    strength.plot(avg, bb, shape = "rectangle", main = paste(score, study))
+    plot(bb, main = paste(score, study))
+  }
+}
+```
+
+```{r compare_plot_aic, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "tabu_bic_per_studysource", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
+  }
+  par(mfrow=c(3,2))
+  graphviz.compare(avg_studies[[1]][[1]], 
+                 avg_studies[[1]][[2]], 
+                 avg_studies[[1]][[3]], 
+                 avg_studies[[1]][[4]], 
+                 avg_studies[[1]][[5]], 
+                 main = c(paste(names(avg_studies)[1], names(avg_studies[[1]])[1]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[2]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[3]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[4]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+dev.off()
+} else {
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+}
+```
+
+
+```{r compare_plot_bic, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "tabu_bic_per_studysource", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT))
+  }
+  par(mfrow=c(3,2))
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+  dev.off()
+} else {
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+}
+```
+
 
 # Structure Learning of discrete BN with study source as parent of everything
 
