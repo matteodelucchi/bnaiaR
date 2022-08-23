@@ -324,11 +324,10 @@ data.dbn.additive <- exp1_dat$abndata
   # select(-c(study_source))
   # filter(positive_famillial_history != "probably")
 bl.dbn.additive <- exp1_dat$bl %>%
-  filter((From != "study_source") & (To != "study_source") ) 
-  # study_source doesn't connect with anything. Basically ignore it in SL but keep 
-  # it as mixed-effect
-  # rbind(., data.frame(From = rep("study_source", length(names(data.dbn.additive))), To = names(data.dbn.additive))) %>%
-  # rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) 
+  filter((From != "study_source") & (To != "study_source")) %>%
+  # Nothing can point to study source.
+  rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) %>%
+  filter(!(From == "study_source" & To == "study_source"))
 
 dist.dbn.additive <- exp1_dat$dist
 
@@ -339,7 +338,7 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
+cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 ```
 
 ```{r first draft additive discrete BN w/ mixed effects}
