@@ -398,6 +398,13 @@ cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 # plot(bb)
 ```
 
+try complex model
+if isSingular compl.mod
+  fit simpler model
+  return simple model
+else
+  return complex model
+
 ```{r additive discrete BN w/ mixed effects}
 glmm.bic = function(node, parents, data, args) {
   dist = args$dist
@@ -409,26 +416,101 @@ glmm.bic = function(node, parents, data, args) {
   else
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
   
-  message(deparse1(model))
-
-  if (dist[[node]] == "gaussian")
-    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+  message(paste("\n",deparse1(model), "\n"))
+# browser()
+  if (dist[[node]] == "gaussian"){
+    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2}
   
-  else if (dist[[node]] == "binomial" & length(parents) == 0)
-    - BIC(glm(model, data = data, family = "binomial")) / 2
-  else if (dist[[node]] == "binomial" & length(parents) > 0)
-    - BIC(lme4::glmer(model, data = data, family = "binomial")) / 2
-  
-  else if ((dist[[node]] == "multinomial") && (length(parents) == 0))
-    -BIC(mclogit::mblogit(formula = model, data = data)) / 2
-  else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
+  else if (dist[[node]] == "binomial" & length(parents) == 0){
+    tryCatch({
+      mod_glm = glm(model, data = data, family = "binomial")
+    }, error=function(e) NULL)
+    
+      return(-BIC(mod_glm)/2)
+    # }
+  } else if (dist[[node]] == "binomial" & length(parents) > 0){
+    tryCatch({
+      mod_glmer = lme4::glmer(model, data = data, family = "binomial")
+      }, error=function(e) NULL)
+    
+    # check if model isSingular
+    if(lme4::isSingular(mod_glmer)){
+      message(paste("Removing random effects due to singularity."))
+      model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+      
+      tryCatch({
+        mod_glm_nore = glm(model_nore, data = data, family = "binomial")
+      }, error=function(e) NULL)
+      
+      if(!is.null(mod_glm_nore)){
+        return(- BIC(mod_glm_nore) / 2)
+        } else {
+          return(-100000)
+        }
+      } else if (!is.null(mod_glmer)){
+        return(-BIC(mod_glmer)/2)
+        } else {
+          return(-100000)
+        }
+  } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model, data = data)
+    }, error=function(e) NULL)
+    
+    if (!is.null(mod_mblogit)){
+      return(-BIC(mod_mblogit) / 2)
+    } else {
+      return(-100000) # return a very low score
+    }
+  } else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
     model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
     model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
     message(paste("using mblogit with fixed term:", deparse1(model_basic), "and random term:", deparse1(model_random)))
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
+    }, error=function(e) NULL)
     
-    mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
-    -BIC(mod_mblogit) / 2}
- }#GLMM.BIC
+    # if mod_mblogit is not null
+    if(!is.null(mod_mblogit)){
+      # check if mod_mblogit is singular and remove rand. effects if so
+      if(mod_mblogit$converged == FALSE){
+        message(paste("Removing random effects due to singularity."))
+        tryCatch({
+          model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
+        }, error=function(e) NULL)
+        
+        # if fixed effect model is not null
+        if (!is.null(model_nnet_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(model_nnet_nore)/2)
+          } else {
+            # return a very low score
+            return(-100000) 
+          }
+      } else if(mod_mblogit$converged == TRUE){
+        # if not null and did converged, return BIC of mixed effects model
+          return(-BIC(mod_mblogit)/2)
+          } 
+    } else if(is.null(mod_mblogit)){
+        return(-100000) # return a very low score
+      }
+  }
+}#GLMM.BIC
+```
+
+
+```{r}
+# glmm.bic(node = "age_diag_group", parents = c("positive_famillial_history"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "age_diag_group", parents = c("gender"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# glmm.bic(node = "gender", parents = c("study_source"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "IAruptured", parents = c("age_diag_group", "hpt_aware", "IAlocation_group"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "IAruptured", parents = c(), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "positive_famillial_history", parents = c("gender"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "IAlocation_group", parents = c("gender", "hpt_aware", "IAsize_diag_grouped_merged","multipleIAs"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "IAsize_diag_grouped_merged", parents = c("gender", "positive_famillial_history", "age_diag_group", "smoking_current_notcurrent", "IAlocation_group", "hpt_aware", "multipleIAs", "IAruptured", "study_source"), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod <- glmm.bic(node = "IAsize_diag_grouped_merged", parents=c(), data = data.dbn.additive, args = list(dist = dist.dbn.additive, mixed_effect = "study_source"))
+# mod
+# -BIC(NULL) / 2
 ```
 
 
@@ -437,7 +519,7 @@ stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
                    algorithm = "tabu", 
-                   R = 5,
+                   R = 2,
                    cluster = cl,
                    algorithm.args = list(score = "custom",
                                          fun = glmm.bic,
@@ -445,11 +527,16 @@ bb = boot.strength(data.dbn.additive,
                                          # whitelist = wl.dbn.allstudy,
                                          args = list(dist = dist.dbn.additive,
                                                      mixed_effect = "study_source"),
-                                         tabu = 50))
+                                         tabu = 50),
+                   debug = TRUE)
+stopCluster(cl)
 etime <- Sys.time()
 running_time <- etime-stime
 print(paste("Running time: ", running_time))
+```
 
+
+```{r additive discrete BN w/ mixed effects}
 avg = averaged.network(bb)
 strength.plot(avg, bb, shape = "rectangle")
 plot(bb)
