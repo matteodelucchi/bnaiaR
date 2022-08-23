@@ -41,8 +41,9 @@ library(doParallel)
 
 set.seed(100)
 
-SAVEPLOTS <- F
+SAVEPLOTS <- T
 PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 ```
@@ -83,8 +84,27 @@ bb = boot.strength(data.dbn,
                                          blacklist = bl.dbn,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
+```
+
+
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_aic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
 ```
 
 We can of course increase the threshold a bit to prune borderline arcs and paper
@@ -92,7 +112,20 @@ over the shortcomings of AIC.
 
 ```{r learn_with_aic_and_threshold, warning=FALSE}
 avg = averaged.network(bb, threshold = 0.6)
-strength.plot(avg, bb, shape = "rectangle")
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_aic_redTH", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  strength.plot(avg, bb, shape = "rectangle")
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+}
 ```
 
 
@@ -107,17 +140,49 @@ bb = boot.strength(data.dbn,
                                          blacklist = bl.dbn,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
 ```
 
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
 
-```{r learn_with_bic_and_threshold, warning=FALSE}
+```{r, warning=FALSE}
 avg = averaged.network(bb, threshold = 0.3)
-strength.plot(avg, bb, shape = "rectangle")
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_bic_redTH", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  strength.plot(avg, bb, shape = "rectangle")
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+}
 ```
 
-
+```{r}
+parallel::stopCluster(cl)
+```
 
 # Structure Learning of discrete BN w/o study_source
 
@@ -134,8 +199,9 @@ str(data.dbn.nostudy)
 print(bl.dbn.nostudy)
 ```
 
-
 ```{r learn_with_aic, warning=FALSE}
+cl = makeCluster(6)
+
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -144,8 +210,44 @@ bb = boot.strength(data.dbn.nostudy,
                                          blacklist = bl.dbn.nostudy,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
+```
+
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_aic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+```{r, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.3)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_aic_redTH", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  strength.plot(avg, bb, shape = "rectangle")
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+}
 ```
 
 
@@ -159,14 +261,217 @@ bb = boot.strength(data.dbn.nostudy,
                                          blacklist = bl.dbn.nostudy,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
 ```
 
-```{r learn_with_bic_and_threshold, warning=FALSE}
-avg = averaged.network(bb, threshold = 0.2)
-strength.plot(avg, bb, shape = "rectangle")
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
 ```
+
+```{r, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.2)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_bic_redTH", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  strength.plot(avg, bb, shape = "rectangle")
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+}
+```
+
+```{r}
+parallel::stopCluster(cl)
+```
+
+
+# Structure Learning of discrete BN w/o study_source for each source individually
+
+
+```{r}
+data("exp1_dat")
+data.dbn <- exp1_dat$abndata  %>%
+  filter(positive_famillial_history != "probably")
+bl.dbn.nostudy <- exp1_dat$bl %>%
+  filter(From != "study_source" & To != "study_source")
+
+str(data.dbn)
+print(bl.dbn.nostudy)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+cl = parallel::makeCluster(4)
+bb_studies_aic <- list()
+bb_studies_bic <- list()
+
+for (study in unique(data.dbn$study_source)){
+  message(paste("Working on study centre: ", study))
+
+  
+  # Filter data set for current study only
+  data.dbn.partial <- data.dbn %>%
+    filter(study_source == study) %>%
+    select(-c(study_source))
+  
+  # learn BN
+  message("\twith tabu and AIC...")
+  bb_studies_aic[[study]] = boot.strength(data.dbn.partial, 
+                                      algorithm = "tabu", 
+                                      R = 500,
+                                      cluster = cl,
+                                      algorithm.args = list(score = "aic", 
+                                                            blacklist = bl.dbn.nostudy,
+                                                            tabu = 50))
+  
+  message("\twith tabu and BIC...")
+  bb_studies_bic[[study]] = boot.strength(data.dbn.partial, 
+                                      algorithm = "tabu", 
+                                      R = 500,
+                                      cluster = cl,
+                                      algorithm.args = list(score = "bic", 
+                                                            blacklist = bl.dbn.nostudy,
+                                                            tabu = 50))
+}
+parallel::stopCluster(cl)
+
+# Collect all BNs in one list of scores : studies : BNs
+bb_studies <- list("aic" = bb_studies_aic, "bic" = bb_studies_bic)
+```
+
+
+```{r learn_with_aic, warning=FALSE}
+avg_studies = list()
+# print all AIC BNs
+for (score in names(bb_studies)){
+  for(study in names(bb_studies[[score]])){
+    bb <- bb_studies[[score]][[study]]
+    avg = averaged.network(bb, threshold = 0.2)
+    avg_studies[[score]][[study]] <- avg
+    
+    if (SAVEPLOTS) {
+    FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_", score, "_", study, ".")
+    if (PLOTFORMAT == "svg") {
+      svg(paste0(FILE, PLOTFORMAT))
+    } else if (PLOTFORMAT == "png") {
+      png(paste0(FILE, PLOTFORMAT))
+    } else if (PLOTFORMAT == "pdf") {
+      pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    }
+    par(mfrow=c(1,2))
+    strength.plot(avg, bb, shape = "rectangle", main = paste(score, study))
+    plot(bb, main = paste(score, study))
+    dev.off()
+  } else {
+    strength.plot(avg, bb, shape = "rectangle", main = paste(score, study))
+    plot(bb, main = paste(score, study))
+  }
+  }
+}
+```
+
+```{r compare_plot_aic, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_aic_compareplt", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(3,2))
+  graphviz.compare(avg_studies[[1]][[1]], 
+                 avg_studies[[1]][[2]], 
+                 avg_studies[[1]][[3]], 
+                 avg_studies[[1]][[4]], 
+                 avg_studies[[1]][[5]], 
+                 main = c(paste(names(avg_studies)[1], names(avg_studies[[1]])[1]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[2]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[3]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[4]),
+                          paste(names(avg_studies)[1], names(avg_studies[[1]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+dev.off()
+} else {
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+}
+```
+
+
+```{r compare_plot_bic, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_bic_compareplt", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(3,2))
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+  dev.off()
+} else {
+  graphviz.compare(avg_studies[[2]][[1]], 
+                 avg_studies[[2]][[2]], 
+                 avg_studies[[2]][[3]], 
+                 avg_studies[[2]][[4]], 
+                 avg_studies[[2]][[5]], 
+                 main = c(paste(names(avg_studies)[2], names(avg_studies[[2]])[1]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[2]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[3]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[4]),
+                          paste(names(avg_studies)[2], names(avg_studies[[2]])[5])), 
+                 diff = "none", 
+                 shape = "rectangle")
+}
+```
+
 
 # Structure Learning of discrete BN with study source as parent of everything
 
@@ -187,6 +492,8 @@ print(wl.dbn.allstudy)
 
 
 ```{r learn_with_aic, warning=FALSE}
+cl = makeCluster(6)
+
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -196,9 +503,46 @@ bb = boot.strength(data.dbn.allstudy,
                                          whitelist = wl.dbn.allstudy,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
 ```
+
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_studysourceASparent_aic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+```{r, warning=FALSE}
+avg = averaged.network(bb, threshold = 0.3)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_studysourceASparent_aic_redTH", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  strength.plot(avg, bb, shape = "rectangle")
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+}
+```
+
 
 
 
@@ -212,10 +556,31 @@ bb = boot.strength(data.dbn.allstudy,
                                          whitelist = wl.dbn.allstudy,
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
 ```
 
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_studysourceASparent_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+```{r}
+parallel::stopCluster(cl)
+```
 
 # additive discrete BN
 
@@ -234,7 +599,7 @@ print(bl.dbn.nostudy)
 print(dist.dbn.nostudy)
 ```
 
-```{r same as above}
+```{r just to test should be same as above}
 wtable = function(x, y, w) {
    # normalize the weights to sum up to the sample size.
    w = w / sum(w) * length(w)
@@ -281,6 +646,8 @@ plot(bb)
 
 
 ```{r additive discrete BN w/o mixed effects}
+cl = makeCluster(6)
+
 glm.bic = function(node, parents, data, args) {
   dist = args$dist
   
@@ -309,11 +676,31 @@ bb = boot.strength(data.dbn.nostudy,
                                          args = list(dist = dist.dbn.nostudy),
                                          tabu = 50))
 avg = averaged.network(bb)
-strength.plot(avg, bb, shape = "rectangle")
-plot(bb)
 ```
 
+```{r, warning=FALSE}
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
 
+```{r}
+parallel::stopCluster(cl)
+```
 
 # additive discrete BN with study source as mixed effect
 
@@ -542,6 +929,13 @@ strength.plot(avg, bb, shape = "rectangle")
 plot(bb)
 ```
 
+Thoughts:
+Ideally, study_source is not present as node. But it can't be removed as it must
+be present as random effect. It can not either be completely blacklisted as this
+would cause it being removed from the data set in the backend.
+
+IDEA: restrict all arcs to source and (since we can't restrict all arcs from source)
+multiply score to make it very "bad" if study_source among covariates. 
 
 
 
@@ -553,14 +947,8 @@ plot(bb)
 
 
 ```{r}
-mclogit::mblogit(formula = as.formula("study_source ~ IAlocation_group"), 
-                 data = data.dbn.additive,
-                 random = as.formula("~ 1| study_source"))
+parallel::stopCluster(cl)
 ```
-
-
-
-
 
 
 
