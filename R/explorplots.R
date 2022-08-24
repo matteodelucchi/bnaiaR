@@ -95,3 +95,28 @@ overview_plt_max <- function(df){
     coord_flip()
   print(plt)
 }
+
+#' Save or print summarytools::dfSummary()
+#'
+#' Prints summary of `df` or saves a html document named "dfsummary_<FILENAME>" at
+#' PLOTPATH.
+#'
+#' @param df data.frame.
+#' @param FILENAME str. with file name suffix: "dfsummary_<FILENAME>"
+#' @param SAVE TRUE if output should be stored as html file or printed to the console.
+#' @param PLOTPATH str. with path to save. i.e. `/home/user/Documents`
+#'
+#' @return Data Frame Summary or NULL
+#' @export
+#'
+#' @examples
+#' \donotrun{
+#' printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = FALSE, PLOTPATH = PLOTPATH)
+#' }
+printorsave_dfsummary <- function(df, FILENAME, SAVE=SAVE, PLOTPATH=PLOTPATH){
+  if(SAVE){
+    summarytools::view(summarytools::dfSummary(df), method = "browser", file = paste0(PLOTPATH, "/dfsummary_", FILENAME, ".html"))
+  } else {
+    summarytools::dfSummary(df)
+  }
+}
