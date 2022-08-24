@@ -39,10 +39,15 @@ library(doParallel)
 
 set.seed(100)
 
-SAVEPLOTS <- F
+SAVEPLOTS <- T
 PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
+PLOTFORMAT <- "pdf" # "svg", "png"
+
+
+SAVESUMMARYPLT <- TRUE
+# printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = SAVESUMMARYPLT, PLOTPATH = PLOTPATH)
 ```
 
 # Load and Prepare Data for Regression Modelling
@@ -172,7 +177,7 @@ NAs_per_source
 df_bnaiar_compl <- df_bnaiar %>%
   na.omit() 
 
-summarytools::dfSummary(df_bnaiar_compl)
+printorsave_dfsummary(df=df_bnaiar_compl, FILENAME = "df_bnaiar_compl", SAVE = SAVESUMMARYPLT, PLOTPATH = PLOTPATH)
 ```
 
 
