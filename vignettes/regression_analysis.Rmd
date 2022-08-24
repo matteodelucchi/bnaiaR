@@ -258,9 +258,14 @@ if (SAVEPLOTS){
                       labels.x = 15,
                       labels.y = 15,
                       base.theme = theme_light())
-  ggsave(plot = plt.mod, filename = "logreg_IArupture.png", path = PLOTPATH, 
+  
+  FILE <- "logreg_IArupture"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+  
+  ggsave(plot = plt.mod, filename = FILENAME, path = PLOTPATH, 
          # dpi = 600, width = 4096, height = 3072, units = "px")
-         dpi = 600, width = 4096, height = 2304, units = "px")
+         # dpi = 600, width = 4096, height = 2304, units = "px")
+         device = PLOTFORMAT)
 } else {
   plt
 }
@@ -362,6 +367,30 @@ df.predmetrics
 ```
 
 70:30 split
+
+
+```{r}
+# renv::install("gtsummary")
+gtplt <- glm_model.logreg.all$finalModel %>%
+  gtsummary::tbl_regression(intercept = T) %>% 
+  gtsummary::add_global_p() %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "glm_model.logreg.all"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
+
 
 ```{r}
 # TODO: sjPlot doesn't run with caret glm model... see old version of this vignette.
@@ -485,9 +514,14 @@ if (SAVEPLOTS){
                       labels.x = 15,
                       labels.y = 15,
                       base.theme = theme_light())
-  ggsave(plot = plt, filename = "logreg_IArupture_allvars.png", path = PLOTPATH, 
-         dpi = 600, width = 4096, height = 4096, units = "px")
+  
+  FILE <- "logreg_IArupture_allvars"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+  
+  ggsave(plot = plt.mod, filename = FILENAME, path = PLOTPATH, 
+         # dpi = 600, width = 4096, height = 3072, units = "px")
          # dpi = 600, width = 4096, height = 2304, units = "px")
+         device = PLOTFORMAT)
 } else {
   plt
 }
@@ -649,6 +683,29 @@ anova.gam(gam_model_3)
 print(gam_model_3)
 ```
 
+```{r}
+# renv::install("gtsummary")
+gtplt <- gam_model_3 %>%
+  gtsummary::tbl_regression(intercept = T,
+                            tidy_fun = gtsummary::tidy_gam) %>% 
+  # gtsummary::add_global_p(anova_fun = function(x){mgcv::anova.gam(x)%>%broom::tidy(.)}) %>%
+  gtsummary::add_global_p(anova_fun = broom::tidy) %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "gam_model_3"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
 - why is UCL (the only) significantly different source?
 - two outliers in the residual plots
 - overall nice model...
@@ -715,6 +772,30 @@ print(gam_model_4)
 - intercept not significant!
 - more degrees of freedom (as expected due to many levels of IAlocation)!
 - rest looks similar...
+
+```{r}
+# renv::install("gtsummary")
+gtplt <- gam_model_4 %>%
+  gtsummary::tbl_regression(intercept = T,
+                            tidy_fun = gtsummary::tidy_gam) %>% 
+  # gtsummary::add_global_p(anova_fun = function(x){mgcv::anova.gam(x)%>%broom::tidy(.)}) %>%
+  gtsummary::add_global_p(anova_fun = broom::tidy) %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "gam_model_4"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
 
 ## Generalized Additive Mixed Effects Model
 
@@ -828,6 +909,30 @@ anova.gam(gam_model_12)
 print(gam_model_12)
 ```
 
+```{r}
+# renv::install("gtsummary")
+gtplt <- gam_model_12 %>%
+  gtsummary::tbl_regression(intercept = T,
+                            tidy_fun = gtsummary::tidy_gam) %>% 
+  # gtsummary::add_global_p(anova_fun = function(x){mgcv::anova.gam(x)%>%broom::tidy(.)}) %>%
+  gtsummary::add_global_p(anova_fun = broom::tidy) %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "gam_model_12"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
+
 # Multivariate Generalized Linear Mixed Effects Model (mixed effects logistic regression)
 
 Random intercept for 'study_source'
@@ -873,6 +978,27 @@ $$
 \end{aligned}
 $$
 
+```{r}
+# renv::install("gtsummary")
+gtplt <- glmer_model %>%
+  gtsummary::tbl_regression(intercept = T) %>%
+  gtsummary::add_global_p() %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "glmer_model"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
 
 Now we fit the same model as `gam_model_3` (which was the best performing gam)
 with age and size squared.
