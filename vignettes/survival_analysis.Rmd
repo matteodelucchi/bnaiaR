@@ -1,0 +1,284 @@
+---
+title: "Survival Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Survival Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+library(bnaiaR)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(survival)
+library(coxme)
+library(survminer)
+
+set.seed(100)
+
+SAVEPLOTS <- T
+PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+PLOTFORMAT <- "pdf" # "svg", "png"
+```
+
+# Load and Prepare Data for Regression Modelling
+
+```{r load_data}
+data("adbisgc")
+str(adbisgc, give.attr=F)
+# summarytools::dfSummary(adbisgc)
+```
+
+
+```{r}
+adbisgc_reg <- adbisgc %>%
+  mutate(gender = fct_relevel(gender,c("male","female"))) %>%
+  # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
+  mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
+  mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
+  mutate(hpt_aware = fct_relevel(hpt_aware,c("no","yes"))) %>%
+  mutate(IAlocation_group = fct_relevel(IAlocation_group, c("low","medium","high")))%>%
+  mutate(IAruptured = fct_relevel(IAruptured,c("no","yes"))) 
+  # mutate(IAsize_diag_grouped_merged = fct_relevel(IAsize_diag_grouped_merged, c(LETTERS[seq(3,1,-1)])))
+str(adbisgc_reg, give.attr=F)
+# summarytools::dfSummary(adbisgc_reg)
+```
+
+
+## Select bnaiaR variables
+
+
+```{r}
+bnaiar_vars <- c("ID_1", 
+           "study_source", 
+           "gender", 
+           "age_diag", "age_diag_group", 
+           "positive_famillial_history", 
+           "hpt_aware", 
+           "smoking_current_notcurrent", 
+           "multipleIAs", 
+           "IAlocation", "IAlocation_group", 
+           "IAsize_diag", "IAsize_diag_log", "IAsize_diag_grouped", "IAsize_diag_grouped_merged",
+           "IAruptured")
+
+df_bnaiar <- adbisgc_reg %>%
+  select(all_of(bnaiar_vars))
+```
+
+Replacing categorical `AgeDiag.group` with continuous `AgeDiag`.
+
+```{r}
+surv_dat <- adbisgc_reg %>%
+  select(all_of(c(bnaiar_vars))) %>%
+  # remove duplicate variable-versions. Keep contiunuous vars and IA locations by risk.
+  select(-c(age_diag_group, IAsize_diag, IAsize_diag_grouped, IAsize_diag_grouped_merged, ID_1)) %>%
+  # remove NAs
+  na.omit() %>%
+  
+  mutate(IAruptured = as.integer(IAruptured),
+         multipleIAs = as.integer(multipleIAs),
+         study_source = as.integer(study_source),) %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+
+str(surv_dat, give.attr=F)
+```
+
+
+# Cox regression
+
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(surv_dat), size = 0.7*nrow(surv_dat), replace = FALSE)
+TrainSet <- surv_dat[train,]
+ValidSet <- surv_dat[-train,]
+```
+
+
+We fit a survival model with:  
+Event: Rupture_IA == "Yes"  
+Time: AgeDiag  
+
+
+```{r}
+# coxreg <- coxph(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + cluster(study_source), data = TrainSet)
+# coxreg <- coxph(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + frailty.gamma(study_source), data = TrainSet) # doesn't work due to lack of contrasts in frailty
+# summary(coxreg)
+coxreg <- coxph(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), data = TrainSet)
+summary(coxreg)
+
+# coxreg <- coxme(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), data = TrainSet) # same as coxph with frailty()
+# coxreg <- coxme(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+(1|multipleIAs)+ IAlocation_group+IAsize_diag_log + (1|study_source), data = TrainSet)
+# summary(coxreg)
+```
+
+```{r}
+cox.pred <- predict(coxreg, newdata=ValidSet)
+surv.pred <- basehaz(coxreg)
+Surv.rsp <- Surv(time = TrainSet$age_diag, event = TrainSet$IAruptured, type = "right")
+Surv.rsp.new <- Surv(time = ValidSet$age_diag, event = ValidSet$IAruptured, type = "right")
+AUC_Uno <- survAUC::AUC.uno(Surv.rsp, Surv.rsp.new, cox.pred, surv.pred$time)
+plot(AUC_Uno)
+AUC_Uno$iauc
+survAUC::IntAUC(AUC_Uno$auc, surv.pred$time, surv.pred$hazard, max(surv.pred$time))
+```
+
+```{r}
+# Plot the baseline survival function
+surffit <- surv_fit(coxreg, data = surv_dat)
+survplt.all <- ggsurvplot(surffit, palette = "#2E9FDF",
+           ggtheme = theme_minimal(), 
+           # cumcensor = T, risk.table = T, 
+           surv.median.line = "hv")
+if (SAVEPLOTS){
+  ggsave(plot = survplt.all$plot, filename = "survival_all.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.all
+}
+```
+
+
+```{r}
+cox.sex <- surv_dat %>%
+  group_by(gender) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.sex
+# Plot the baseline survival function
+surffit.gender <- survfit(coxreg, data = surv_dat, newdata = cox.sex)
+survplt.gender <- ggsurvplot(surffit.gender, conf.int = TRUE, 
+                             legend.labs=c("Sex = Male", "Sex = Female"), xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.gender$plot, filename = "survival_gender.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.gender
+}
+
+cox.multiple <- surv_dat %>%
+  group_by(multipleIAs) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.multiple
+# Plot the baseline survival function
+surffit.multiple <- survfit(coxreg, data = surv_dat, newdata = cox.multiple)
+survplt.multiple <- ggsurvplot(surffit.multiple, conf.int = TRUE, 
+           legend.labs=c("Multiple IAs = No", "Multiple IAs = Yes"), xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.multiple$plot, filename = "survival_multiple.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.multiple
+}
+
+
+cox.location <- surv_dat %>%
+  group_by(IAlocation_group) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.location
+# Plot the baseline survival function
+surffit.location <- survfit(coxreg, data = surv_dat, newdata = cox.location)
+survplt.location <- ggsurvplot(surffit.location, conf.int = TRUE, 
+           legend.labs=c("Low risk location", "Medium risk location", "High risk location"), xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.location$plot, filename = "survival_location.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.location
+}
+
+
+cox.smoking <- surv_dat %>%
+  group_by(smoking_current_notcurrent) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.smoking
+# Plot the baseline survival function
+surffit.smoking <- survfit(coxreg, data = surv_dat, newdata = cox.smoking)
+survplt.smoking <- ggsurvplot(surffit.smoking, conf.int = TRUE, 
+           legend.labs=c("Non Smoker", "Current Smoker"),xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.smoking$plot, filename = "survival_smoking.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.smoking
+}
+
+
+
+cox.hbp <- surv_dat %>%
+  group_by(hpt_aware) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.hbp
+# Plot the baseline survival function
+surffit.hbp <- survfit(coxreg, data = surv_dat, newdata = cox.hbp)
+survplt.hbp <- ggsurvplot(surffit.hbp, conf.int = TRUE, 
+           legend.labs=c("Hypertension awareness = No", "Hypertension awareness = Yes"), xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.hbp$plot, filename = "survival_HBP.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.hbp
+}
+
+
+cox.pfh <- surv_dat %>%
+  group_by(positive_famillial_history) %>%
+  summarise(across(where(is.integer), min),
+            across(where(is.numeric), mean),
+            across(where(is.factor), function(x){levels(x)[1]}))
+cox.pfh
+# Plot the baseline survival function
+surffit.pfh <- survfit(coxreg, data = surv_dat, newdata = cox.pfh)
+survplt.pfh <- ggsurvplot(surffit.pfh, conf.int = TRUE, 
+           legend.labs=c("Pos. Fam. History = No", "Pos. Fam. History = Yes"),
+           xlab = "Age [years]",
+           ggtheme = theme_minimal())
+if (SAVEPLOTS){
+  ggsave(plot = survplt.pfh$plot, filename = "survival_posfamhist.png", path = PLOTPATH, dpi = 600)
+} else {
+  survplt.pfh
+}
+```
+
+
+```{r}
+# renv::install("RobinDenz1/contsurvplot")
+
+# contsurvplot::plot_surv_contour(time="age_diag", 
+#                status="IAruptured",
+#                variable="IAsize_diag_log",
+#                data=surv_dat,
+#                # horizon=seq(40, 70, 0.5),
+#                model=coxreg)
+# if (SAVEPLOTS){
+#   ggsave(plot = survplt.size$plot, filename = "survival_size.png", path = PLOTPATH, dpi = 600)
+# } else {
+#   survplt.size
+# }
+```
