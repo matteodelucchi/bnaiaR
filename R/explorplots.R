@@ -204,7 +204,7 @@ overview_plt_max_grouped <- function(df, colorby="study_source", ignore.idx=T, c
 #' @export
 #'
 #' @examples
-#' \donotrun{
+#' \dontrun{
 #' printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = FALSE, PLOTPATH = PLOTPATH)
 #' }
 printorsave_dfsummary <- function(df, FILENAME, SAVE=SAVE, PLOTPATH=PLOTPATH){

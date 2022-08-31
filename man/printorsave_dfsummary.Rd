@@ -23,7 +23,7 @@ Prints summary of `df` or saves a html document named "dfsummary_<FILENAME>" at
 PLOTPATH.
 }
 \examples{
-\donotrun{
+\dontrun{
 printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = FALSE, PLOTPATH = PLOTPATH)
 }
 }
