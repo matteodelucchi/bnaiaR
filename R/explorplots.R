@@ -96,6 +96,100 @@ overview_plt_max <- function(df){
   print(plt)
 }
 
+#' Multivariable Overview Plot colored by source
+#'
+#' @param df data frame
+#' @param colorby char. str. of variable name to which the color should be applied
+#' @param ignore.idx if TRUE the index variable will be ignored
+#' @param cont.vars str. of continuous variable's names.
+#' @param disc.cont.ratio relative number of rows of discrete and continuous plots.
+#'
+#' @return ggplot2
+#' @export
+overview_plt_max_grouped <- function(df, colorby="study_source", ignore.idx=T, cont.vars=c("age_diag", "IAsize_diag", "IAsize_diag_log"), disc.cont.ratio=c(4,1)){
+  paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+
+  if (ignore.idx){
+    df_temp <- df %>%
+      select(-contains("ID"))
+  } else {
+    df_temp <- df
+  }
+
+  # separate continuous and discrete variables
+  df_temp_disc <- df_temp %>%
+    select(-cont.vars)
+
+  df_temp_cont <- df_temp %>%
+    select(c(cont.vars, "study_source"))
+
+  # Plot discrete values
+  if (!is.null(colorby)){
+    df_temp_disc <- df_temp_disc  %>%
+      pivot_longer(!study_source, names_to = "key", values_to = "value")
+  } else {
+    df_temp_disc <- df_temp_disc  %>%
+      pivot_longer(names_to = "key", values_to = "value")
+  }
+
+  plt_disc <- df_temp_disc %>%
+    ggplot(., aes(x = value, fill=study_source)) +
+    geom_histogram(stat = "count", position = "dodge") +
+    facet_wrap(.~key,
+               nrow = 5,
+               scales = "free",
+               drop = FALSE)+
+    aes(stringr::str_wrap(value, 2))+
+    scale_x_discrete(labels = function(x) stringr::str_trunc(x, 8))+
+    # scale_x_discrete(labels = function(x) abbreviate(x, minlength=5))+
+    theme_minimal()+
+    scale_fill_manual(values = paint) +
+    ggtitle(deparse(substitute(df)))+
+    theme(
+      legend.spacing = unit(1, "cm"),
+      # axis.text.x = element_blank(),
+      axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1,margin = margin(10,10,10,10)),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+    )
+  # coord_flip()
+
+  # Plot continuous variables
+  if (!is.null(colorby)){
+    df_temp_cont <- df_temp_cont  %>%
+      pivot_longer(!study_source, names_to = "key", values_to = "value")
+  } else {
+    df_temp_cont <- df_temp_cont  %>%
+      pivot_longer(names_to = "key", values_to = "value")
+  }
+
+  plt_cont <- df_temp_cont %>%
+    ggplot(., aes(x = value, fill=study_source)) +
+    geom_boxplot(position = "dodge") +
+    facet_wrap(.~key,
+               scales = "free",
+               drop = FALSE)+
+    theme_minimal()+
+    scale_fill_manual(values = paint) +
+    ggtitle(NULL)+
+    ylab(NULL)+
+    theme(
+      legend.spacing = unit(1, "cm"),
+      legend.position = "none",
+      # axis.text.x = element_blank(),
+      axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1,margin = margin(10,10,10,10)),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+    ) +
+    coord_flip()
+
+  # combine disc. and cont. plots
+  plt <- patchwork::wrap_plots(plt_disc, plt_cont, ncol=1, heights = disc.cont.ratio)
+  # plt <- gridExtra::grid.arrange(plt_disc, plt_cont, ncol=1)
+  return(plt)
+  # return(list(plt_disc, plt_cont))
+}
+
 #' Save or print summarytools::dfSummary()
 #'
 #' Prints summary of `df` or saves a html document named "dfsummary_<FILENAME>" at
