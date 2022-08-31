@@ -92,8 +92,8 @@ surv_dat <- adbisgc_reg %>%
   na.omit() %>%
   
   mutate(IAruptured = as.integer(IAruptured),
-         multipleIAs = as.integer(multipleIAs),
-         study_source = as.integer(study_source),) %>%
+         # multipleIAs = as.integer(multipleIAs),
+         study_source = as.integer(study_source)) %>%
   filter(positive_famillial_history != "probably") %>%
   mutate(positive_famillial_history = factor(positive_famillial_history))
 
@@ -142,11 +142,18 @@ survAUC::IntAUC(AUC_Uno$auc, surv.pred$time, surv.pred$hazard, max(surv.pred$tim
 ```
 
 ```{r}
+sf <- surv_fit(Surv(time = age_diag, event = IAruptured, type = "right") ~ gender+positive_famillial_history+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), data = surv_dat)
+survminer::ggsurvplot(sf, pval = T, combine = T)
+```
+
+
+```{r}
 # Plot the baseline survival function
 surffit <- surv_fit(coxreg, data = surv_dat)
 survplt.all <- ggsurvplot(surffit, palette = "#2E9FDF",
            ggtheme = theme_minimal(), 
            # cumcensor = T, risk.table = T, 
+           pval = T,
            surv.median.line = "hv")
 if (SAVEPLOTS){
   ggsave(plot = survplt.all$plot, filename = "survival_all.png", path = PLOTPATH, dpi = 600)
