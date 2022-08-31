@@ -28,46 +28,141 @@ rm(list = ls())
 library(dplyr)
 library(ggplot2)
 library(ggthemes)
-library(cowplot)
+library(forcats)
 library(tidyr)
 library(reshape2)
 library(bnlearn)
 library(bnaiaR)
 library(kableExtra)
-```
 
-# Load Data and take a first glimpse
-
-```{r}
-FILENAMEbase <- "/inst/extdata/mcmcabn/results/"
-load(paste0("..", FILENAMEbase, "expABNmultinomial_100k_analysis_results.RData"))
-to_remove <- ls()[-1]
-rm(list = to_remove)
-```
-
-```{r}
-dfabn <- abndata
-str(dfabn)
-```
-
-```{r}
-dfdbn <- exp11_dat$abndata
-str(dfdbn)
-```
-
-# Document Settings
-
-```{r}
-SAVEPLOTS <- F
-PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
+SAVEPLOTS <- FALSE
+PLOTPATH <- Sys.getenv("PLOTPATH")
 ```
+
+# Load Preprocessed Data
+
+```{r load_data}
+data("adbisgc")
+str(adbisgc, give.attr=F)
+# summarytools::dfSummary(adbisgc)
+```
+
+```{r}
+adbisgc_reg <- adbisgc %>%
+  mutate(gender = fct_relevel(gender,c("male","female"))) %>%
+  # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
+  mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
+  mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
+  mutate(hpt_aware = fct_relevel(hpt_aware,c("no","yes"))) %>%
+  mutate(IAlocation_group = fct_relevel(IAlocation_group, c("low","medium","high")))%>%
+  mutate(IAruptured = fct_relevel(IAruptured,c("no","yes"))) 
+  # mutate(IAsize_diag_grouped_merged = fct_relevel(IAsize_diag_grouped_merged, c(LETTERS[seq(3,1,-1)])))
+str(adbisgc_reg, give.attr=F)
+# summarytools::dfSummary(adbisgc_reg)
+```
+
+
+```{r}
+plt_overv_adbisgc <- overview_plt_max_grouped(adbisgc_reg, cont.vars=c("age_diag", "IAsize_diag", "IAsize_diag_log", "number_of_IAs", "maxFUtime"), disc.cont.ratio=c(5,2))
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt_overv_adbisgc,
+    filename = "overviewplt_df_adbisgc.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH, height = PLOTHEIGHT*2
+  )
+} else {
+  plt_overv_adbisgc
+}
+```
+
+
+## Select bnaiaR variables
+
+
+```{r}
+bnaiar_vars <- c("ID_1", 
+           "study_source", 
+           "gender", 
+           "age_diag", "age_diag_group", 
+           "positive_famillial_history", 
+           "hpt_aware", 
+           "smoking_current_notcurrent", 
+           "multipleIAs", 
+           "IAlocation", "IAlocation_group", 
+           "IAsize_diag", "IAsize_diag_log", "IAsize_diag_grouped", "IAsize_diag_grouped_merged",
+           "IAruptured")
+
+df_bnaiar <- adbisgc_reg %>%
+  select(all_of(bnaiar_vars))
+```
+
+```{r}
+# summarytools::dfSummary(df_bnaiar)
+# summarytools::view(dfSummary(df_bnaiar), method = "pander", file = "~/ZHAW/ExplorDataISGC/220623_HUG-ZHAW_Retreat/summary_adbisgc_bnaiaR.html")
+str(df_bnaiar, give.attr=F)
+```
+
+```{r}
+plt_overv_bnaiar <- overview_plt_max_grouped(df_bnaiar)
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt_overv_bnaiar,
+    filename = "overviewplt_df_bnaiar.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH, height = PLOTHEIGHT*1.5
+  )
+} else {
+  plt_overv_bnaiar_compl
+}
+```
+
+
+## bnaiaR vars with only complete entries
+
+```{r}
+df_bnaiar_compl <- df_bnaiar %>%
+  na.omit() 
+
+summarytools::dfSummary(df_bnaiar_compl)
+```
+
+```{r}
+plt_overv_bnaiar_compl <- overview_plt_max_grouped(df_bnaiar_compl)
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt_overv_bnaiar_compl,
+    filename = "overviewplt_df_bnaiar_compl.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH, height = PLOTHEIGHT*1.5
+  )
+} else {
+  plt_overv_bnaiar_compl
+}
+```
+
+
+
+
+
+
+
+
+
+
+
 
 # Overview Plots
 
 ```{r}
-overview_plt_max(dfabn)
+overview_plt_max(df_bnaiar_compl)
 overview_plt_max(dfdbn)
 ```
 
