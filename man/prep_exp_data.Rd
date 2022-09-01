@@ -11,6 +11,7 @@ prep_exp_data(
   location,
   size,
   smoking = "binCFN",
+  studysource.restriction = "blockalltowards",
   SAVE = T,
   FILENAMEbase = NULL
 )
@@ -27,6 +28,8 @@ prep_exp_data(
 \item{size}{Type of variable: "grouped-multinomial", "grouped.merged-multinomial", "log", "grouped-binomial","grouped.merged-binomial"}
 
 \item{smoking}{Type of variable: "mult", "binCFN", "binCnC"}
+
+\item{studysource.restriction}{'blockalltowards' to block all arcs pointing to study_source (standart). 'forceasparent' to force study_source as parent of everything and to block all arcs pointing to study_source. 'unrestricted' does not set any restrictions on study_source}
 
 \item{SAVE}{if TRUE, it the data sets were saved in FILENAMEbase}
 
