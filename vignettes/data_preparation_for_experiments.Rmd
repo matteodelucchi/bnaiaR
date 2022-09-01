@@ -144,22 +144,23 @@ str(bl)
 # usethis::use_data(exp1_dat, overwrite = TRUE)
 ```
 
+# Experiment 4: Continuous data
 
-# Experiment 06: continuous and discrete data
+With additive Bns we can combine continuous and discrete variables.
 
-With additive BNs we can combine, continuous and discrete variables.
-
-Age: continuous  
-Location: grouped by risk of rupture  
-Size: continuous, log-transformed  
+Age: continuous
+Location: grouped by risk of rupture
+Size: continuous, log-transformed
 
 ```{r}
-exp06_dat <- prep_exp_data(
-  dat = adb,
-  EXPNO = 06,
+exp4_dat <- prep_exp_data(
+  dat = df_bnaiar_compl,
+  EXPNO = 4,
   age = "cont",
-  location = "byRisk-binomial",
+  location = "byRisk-multinomial",
   size = "log",
+  smoking = "mult",
+  studysource.restriction = "blockalltowards",
   SAVE = F)
 ```
 
@@ -167,21 +168,49 @@ The prepared data is returned as list of inputs for the following
 BN modeling:
 
 ```{r}
-abndata <- exp06_dat$abndata
-dist <- exp06_dat$dist
-banned <- exp06_dat$banned
-bl <- exp06_dat$bl
+abndata <- exp4_dat$abndata
+dist <- exp4_dat$dist
+banned <- exp4_dat$banned
+bl <- exp4_dat$bl
+retain <- exp4_dat$retain
+wl <- exp4_dat$wl
 
 str(abndata)
 str(dist)
 str(banned)
 str(bl)
+str(retain)
+str(wl)
 ```
 
 ```{r}
-# usethis::use_data(exp06_dat, overwrite = TRUE)
+# usethis::use_data(exp4_dat, overwrite = TRUE)
 ```
 
+```{r}
+exp44_dat <- prep_exp_data(
+  dat = df_bnaiar_compl,
+  EXPNO = 44, 
+  age = "cont",
+  location = "byRisk-multinomial",
+  size = "log",
+  smoking = "mult",
+  studysource.restriction = "forceasparent",
+  SAVE = F)
+```
+
+```{r}
+str(exp44_dat$abndata)
+str(exp44_dat$dist)
+str(exp44_dat$banned)
+str(exp44_dat$bl)
+str(exp44_dat$retain)
+str(exp44_dat$wl)
+```
+
+```{r}
+# usethis::use_data(exp44_dat, overwrite = TRUE)
+```
 
 
 # Some internal checks
