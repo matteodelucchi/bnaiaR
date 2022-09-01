@@ -7,10 +7,12 @@
 \format{
 A list of 4 items:
 \describe{
-  \item{abndata}{data frame of	790 obs. of  9 variables, discrete and continuous.}
-  \item{dist}{List of 9. Type of distribution for each variable in abndata.}
-  \item{banned}{matrix of 9x9. Prior knowledge implementation as matrix of banned arcs for package `abn`.}
+  \item{abndata}{data frame of	7481 obs. of  10 discrete variables.}
+  \item{dist}{List of 10. Type of distribution for each variable in abndata.}
+  \item{banned}{matrix of 10x10. Prior knowledge implementation as matrix of banned arcs for package `abn`.}
   \item{bl}{data frame. Prior knowledge implementation as blacklist for package `bnlearn`.}
+  \item{retain}{matrix of 10x10. Prior knowledge implementation as matrix of retained arcs for package `abn`.}
+  \item{wl}{data frame. Prior knowledge implementation as whitelist for package `bnlearn`.}
 }
 }
 \usage{
@@ -18,7 +20,7 @@ exp1_dat
 }
 \description{
 Aneurysm data from multiple centres harmonized, preprocessed and transformed.
-A selection of variables from \code{data("adb", package = "bnaiaR")},
+A selection of variables from \code{data("adbisgc", package = "bnaiaR")},
 prior knowledge and additional required data-set depended information for
 BN analysis with `bnlearn` and `abn`.
 For details consider the vignette
