@@ -6,6 +6,7 @@
 #' @param location Type of variable: "byVessel-multinomial", "byVessel-binomial", "byRisk-multinomial", "byRisk-binomial"
 #' @param size Type of variable: "grouped-multinomial", "grouped.merged-multinomial", "log", "grouped-binomial","grouped.merged-binomial"
 #' @param smoking Type of variable: "mult", "binCFN", "binCnC"
+#' @param studysource.restriction 'blockalltowards' to block all arcs pointing to study_source (standart). 'forceasparent' to force study_source as parent of everything and to block all arcs pointing to study_source. 'unrestricted' does not set any restrictions on study_source
 #' @param SAVE if TRUE, it the data sets were saved in FILENAMEbase
 #' @param FILENAMEbase Place to store the files.
 #'
@@ -32,6 +33,7 @@ prep_exp_data <- function(dat = adb,
                           location,
                           size,
                           smoking = "binCFN",
+                          studysource.restriction = "blockalltowards",
                           SAVE = T,
                           FILENAMEbase = NULL) {
 
@@ -47,7 +49,7 @@ prep_exp_data <- function(dat = adb,
   #####
   # Variables of interest
   #####
-  cat(paste0("\nSelect variables of interest for experiment: ", EXPNO))
+  message(paste0("Select variables of interest for experiment: ", EXPNO, " ..."))
 
   ### remove attributes
   abndata <- data.frame(dat) # remove attributes
@@ -239,15 +241,15 @@ prep_exp_data <- function(dat = adb,
   colnames(dag) <- rownames(dag) <- names(abndata)
 
   ## Check names
-  cat("\nCheck if all variables have a distribution assigned... ")
+  message("Check if all variables have a distribution assigned ... ")
   testnames_dist <-
     names(dist)[which(!(names(dist) %in% names(abndata)))]
   testnames_abndata <-
     names(abndata)[which(!(names(abndata) %in% names(dist)))]
   if (purrr::is_empty(testnames_dist) & purrr::is_empty(testnames_abndata)) {
-    cat("ok")
+    message("ok")
   } else {
-    print(paste("Not ok. "))
+    message("Not ok. ")
     if (!purrr::is_empty(testnames_dist)) {
       warning(paste(
         "Present in dist list but missing in abndata list:",
@@ -265,7 +267,7 @@ prep_exp_data <- function(dat = adb,
   # make banned and blacklist
   #####
   ## Create retain and banned matrixes (empty)
-  cat("\nCreate retain and bann matrices.")
+  message("Create retain and bann matrices ...")
   retain <- matrix(0, ncol(abndata), ncol(abndata))
   colnames(retain) <- rownames(retain) <- names(abndata)
 
@@ -283,7 +285,7 @@ prep_exp_data <- function(dat = adb,
   size_idx <- stringr::str_which(names(abndata), "IAsize_diag")
   multi_idx <- stringr::str_which(names(abndata), "multipleIAs")
   rupt_idx <- stringr::str_which(names(abndata), "IAruptured")
-  # study_idx <- stringr::str_which(names(abndata), "study_source")
+  study_idx <- stringr::str_which(names(abndata), "study_source")
 
   banned[gend_idx, -gend_idx] <- 1 # Nothing pointing to gender
   banned[fam_idx, -c(gend_idx, fam_idx, age_idx)] <- 1 # Nothing pointing to fam. history, except age
@@ -307,6 +309,31 @@ prep_exp_data <- function(dat = adb,
   banned[age_idx, age_idx] <- 1
   banned[-rupt_idx, rupt_idx] <- 1 # Rupture doesn't point to anything
 
+  #### handle study source separately
+  if ("study_source" %in% varsofinterest){
+    if(studysource.restriction == "blockalltowards"){
+      message("Block all arcs pointing to study_source ...")
+      banned[study_idx, study_idx] <- 1 # Block all inter-study_source
+      banned[study_idx, -study_idx] <- 1 # Nothing pointing to study_source
+      banned[-study_idx, study_idx] <- 0 # allow study_source on all variables
+    } else if(studysource.restriction == "unrestricted"){
+      message("Unrestrict all arcs pointing to study_source ...")
+      banned[study_idx, study_idx] <- 1 # Block all inter-study_source
+      banned[study_idx, -study_idx] <- 0 # allow all pointing to study_source
+      banned[-study_idx, study_idx] <- 0 # allow study_source on all variables
+    } else if(studysource.restriction == "forceasparent"){
+      message("Block all arcs pointing to study_source ...")
+      banned[study_idx, study_idx] <- 1 # Block all inter-study_source
+      banned[study_idx, -study_idx] <- 1 # Nothing pointing to study_source
+      banned[-study_idx, study_idx] <- 0 # allow study_source on all variables
+
+      message("Force study_source as parent of everything ...")
+      retain[-study_idx, study_idx] <- 1 # allow study_source on all variables but itself
+    } else {
+      warning(paste("Wrong argument for studysource.restriction. Must be one of 'blockalltowards', 'unrestricted', 'forceasparent'."))
+    }
+  }
+
   diag(banned) <- 0 # allow all variables on them self
   # print(
   #   "Bann-Matrix: if value = 1 then do not allow the arc from column to row. I.e. Gender -> Age is banned."
@@ -326,23 +353,31 @@ prep_exp_data <- function(dat = adb,
   )
 
   ## banned -> blacklist
-  cat("\ntransform banned matrix to blacklist")
+  message("transform banned matrix to blacklist ...")
   bl <-
     subset(as.data.frame(as.table(t(banned))), Freq > 0)[, -3]
   colnames(bl) <- c("From", "To")
   rownames(bl) <- NULL
   bl
 
+  ## retain -> whitelist
+  message("transform retain matrix to whitelist ...")
+  wl <-
+    subset(as.data.frame(as.table(t(retain))), Freq > 0)[, -3]
+  colnames(wl) <- c("From", "To")
+  rownames(wl) <- NULL
+  wl
+
   #####
   # save them all
   #####
-  cat("\nFinished data preparation.")
+  message("Finished data preparation ...")
   if (SAVE) {
-    save(abndata, dist, banned, bl,
+    save(abndata, dist, banned, bl, retain, wl,
          file = FILENAME)
-    cat(paste0("\nSaved data sets at ", FILENAME))
+    message(paste0("Saved data sets at ", FILENAME))
   } else{
-    return(list(abndata=abndata, dist=dist, banned=banned, bl=bl))
+    return(list(abndata=abndata, dist=dist, banned=banned, bl=bl, retain=retain, wl=wl))
   }
 }
 

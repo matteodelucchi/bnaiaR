@@ -483,8 +483,8 @@ adbisgc_ohe <- adbisgc_tmp_ohe
 summary_adbisgc <- summarytools::dfSummary(adbisgc, max.distinct.values = 20)
 summary_adbisgc_ohe <- summarytools::dfSummary(adbisgc_ohe, max.distinct.values = 20)
 
-summarytools::view(summary_adbisgc, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc.html")
-summarytools::view(summary_adbisgc_ohe, method = "browser", file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/summary_adbisgc_ohe.html")
+summarytools::view(summary_adbisgc, method = "browser", file = paste0(PLOTPATH, "/dfsummary_adbisgc.html"))
+summarytools::view(summary_adbisgc_ohe, method = "browser", file = paste0(PLOTPATH, "/dfsummary_adbisgc_ohe.html"))
 
 saveRDS(adbisgc,
         file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.rds")
