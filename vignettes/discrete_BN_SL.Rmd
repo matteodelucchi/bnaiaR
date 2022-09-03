@@ -915,7 +915,7 @@ stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
                    algorithm = "tabu", 
-                   R = 2,
+                   R = 500,
                    cluster = cl,
                    algorithm.args = list(score = "custom",
                                          fun = glmm.bic,
@@ -952,6 +952,12 @@ if (SAVEPLOTS) {
   strength.plot(avg, bb, shape = "rectangle")
   plot(bb)
 }
+```
+
+
+```{r}
+tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg)
+save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
 ```
 
 
