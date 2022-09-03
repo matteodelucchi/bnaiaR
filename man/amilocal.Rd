@@ -4,10 +4,12 @@
 \alias{amilocal}
 \title{Am I running local or on some Server?}
 \usage{
-amilocal(myuser = "delt")
+amilocal(mylocaluser = "matt", mynonlocaluser = "delt")
 }
 \arguments{
-\item{myuser}{character string of system user name.}
+\item{mylocaluser}{character string of local system user name.}
+
+\item{mynonlocaluser}{character string of remote user name.}
 }
 \value{
 TRUE if only 'myuser' is logged in the current system. FALSE otherwise.

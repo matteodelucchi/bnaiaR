@@ -533,23 +533,27 @@ postTHINN <- function(mcmc.out.list, thinningsteps){
 #' are logged in, this function returns FALSE.
 #' If running on a system with only the specified user, it returns TRUE.
 #'
-#' @param myuser character string of system user name.
+#' @param mylocaluser character string of local system user name.
+#' @param mynonlocaluser character string of remote user name.
 #'
 #' @return TRUE if only 'myuser' is logged in the current system. FALSE otherwise.
 #' @export
-amilocal <- function(myuser="delt"){
+amilocal <- function(mylocaluser="matt", mynonlocaluser="delt"){
   who <- system("who", intern = T)
   users <- c()
   for (i in 1:length(who)){
     users <- c(users, stringr::str_extract(who[i], "^.{4}"))
   }
-  if (dim(table(users))==1){
+  if (mylocaluser %in% users){
     cat("running script locally.\n")
     return(TRUE)
-  } else{
+  } else if (mynonlocaluser %in% users){
+    cat("non-local username.\n")
     cat("Other registered users:\n")
     print((as.data.frame(table(users))))
     return(FALSE)
+  } else {
+    stop(paste("I don't know where I am. Unknown user(s) found: ", users))
   }
 }
 
