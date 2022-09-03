@@ -707,9 +707,9 @@ parallel::stopCluster(cl)
 
 ```{r}
 data("exp1_dat")
-data.dbn.additive <- exp1_dat$abndata 
+data.dbn.additive <- exp1_dat$abndata  %>%
   # select(-c(study_source))
-  # filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably")
 bl.dbn.additive <- exp1_dat$bl %>%
   filter((From != "study_source") & (To != "study_source")) %>%
   # Nothing can point to study source.
