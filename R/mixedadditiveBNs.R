@@ -339,3 +339,91 @@ mcmcabn_bnaiar <-
     )
     return(finalresults)
   }
+
+#' Maximum Number of Parents for ABN
+#'
+#' Evaluate the number of parent nodes that does not increase the score anymore.
+#'
+#' @param net.scores output from \code{bnaiaR::findOptNoParentNodes()$net.scores}
+#' @param SAVEPLOTS If TRUE the plot will be saved.
+#' @param filenamesuffix character specifying the current run (e.g. experiment number).
+#' @param filenamebase character of path to location where results should be stored.
+#' @param filename character specifying the current set of runs.
+#' @param filetype "pdf" or "png" or any that is supported by \code{?ggplot2::ggsave()}.
+#'
+#' @return ggplot2 and data.frame.
+#' @export
+maxparentsplot <- function(net.scores,
+                           SAVEPLOTS,
+                           filenamesuffix,
+                           filenamebase = FILENAMEbase,
+                           filename = FILENAME,
+                           filetype = "pdf",
+                           plotwidth = PLOTWIDTH,
+                           plotheight = PLOTHEIGHT) {
+  df <- net.scores %>%
+    mutate(
+      scoretype = as.factor(scoretype),
+      npar = as.factor(npar),
+      scorevalue = as.numeric(scorevalue)
+    ) %>%
+
+    group_by(scoretype) %>%
+    summarise(
+      scorevalue.norm = (1 - abs(1 - scorevalue / max(scorevalue))) * 100,
+      .groups = "keep",
+      npar = npar,
+      scorevalue = scorevalue
+    ) %>%
+    ungroup()
+  # df
+
+  # Plot Network score by increasing max parents
+  plt.rel <-
+    ggplot(df, aes(x = npar, color = scoretype, y = scorevalue.norm)) +
+    geom_point(aes(
+      shape = scoretype,
+      alpha = 0.5,
+      size = 1
+    )) +
+    # facet_wrap(.~dist_type)+
+    labs(title = "Relative network score per no. parent nodes",
+         x = "number of parent nodes",
+         y = "network score [%]") +
+    scale_x_discrete(limits = unique(df$npar)) +
+    theme_bw()
+
+  plt.abs <-
+    ggplot(df, aes(color = scoretype, y = scorevalue, group = scoretype)) +
+    geom_point(aes(
+      x = npar,
+      shape = scoretype,
+      alpha = 0.5,
+      size = 1
+    )) +
+    # facet_wrap(.~dist_type)+
+
+    labs(title = "Absolute network score per no. parent nodes",
+         x = "number of parent nodes",
+         y = "network score") +
+    scale_x_discrete(limits = unique(df$npar)) +
+    theme_bw()
+
+  plt.comb <-
+    cowplot::plot_grid(plt.rel, plt.abs, labels = "AUTO", ncol = 1)
+
+  if (SAVEPLOTS) {
+    plotname <-
+      paste0(filenamebase, filename, filenamesuffix,
+             "_netscore_per_no.parent_nodes")
+
+    ggsave(
+      paste0(plotname, ".", filetype),
+      plot = plt.comb,
+      width = plotwidth,
+      height = plotheight
+    )
+  } else {
+    return(list(df, plt.comb))
+  }
+}

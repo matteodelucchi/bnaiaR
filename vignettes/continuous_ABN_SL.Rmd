@@ -28,7 +28,7 @@ library(ggplot2)
 ```
 
 ```{r settings}
-DEBUG <- FALSE
+DEBUG <- TRUE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
 FILENAMEbase <- Sys.getenv("PLOTPATH")
