@@ -804,8 +804,9 @@ glmm.bic = function(node, parents, data, args) {
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
   
   message(paste("\n",deparse1(model), "\n"))
-# browser()
+
   if (dist[[node]] == "gaussian"){
+    # TODO: Proper Error-handling
     - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2}
   
   else if (dist[[node]] == "binomial" & length(parents) == 0){
@@ -820,25 +821,33 @@ glmm.bic = function(node, parents, data, args) {
       mod_glmer = lme4::glmer(model, data = data, family = "binomial")
       }, error=function(e) NULL)
     
-    # check if model isSingular
-    if(lme4::isSingular(mod_glmer)){
-      message(paste("Removing random effects due to singularity."))
-      model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+    # if mod_glmer is not null
+    if(!is.null(mod_glmer)){
+      # check if mod_glmer is singular and remove rand. effects if so
+      if(lme4::isSingular(mod_glmer)){
+        message(paste("Removing random effects due to singularity."))
+        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        tryCatch({
+          mod_glm_nore = glm(model_nore, data = data, family = "binomial")
+        }, error=function(e) NULL)
       
-      tryCatch({
-        mod_glm_nore = glm(model_nore, data = data, family = "binomial")
-      }, error=function(e) NULL)
-      
-      if(!is.null(mod_glm_nore)){
-        return(- BIC(mod_glm_nore) / 2)
+        # if fixed effect model is not null
+        if (!is.null(mod_glm_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(mod_glm_nore)/2)
         } else {
+          # return very low score
           return(-100000)
         }
-      } else if (!is.null(mod_glmer)){
+      # if mod_glmer is not singular and not null, return BIC of mod_glmer
+      } else if (!lme4::isSingular(mod_glmer)){
         return(-BIC(mod_glmer)/2)
-        } else {
-          return(-100000)
-        }
+      }
+    } else if (is.null(mod_glmer)){
+      # return very low score
+      return(-100000) 
+    }
+
   } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
     tryCatch({
       mod_mblogit = mclogit::mblogit(formula = model, data = data)
@@ -861,7 +870,7 @@ glmm.bic = function(node, parents, data, args) {
     if(!is.null(mod_mblogit)){
       # check if mod_mblogit is singular and remove rand. effects if so
       if(mod_mblogit$converged == FALSE){
-        message(paste("Removing random effects due to singularity."))
+        message(paste("Removing random effects due to singularity/non-convergence."))
         tryCatch({
           model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
         }, error=function(e) NULL)
