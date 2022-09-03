@@ -1,0 +1,359 @@
+---
+title: "Continuous Additive Bayesian Network Structure Learning"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Continuous Additive Bayesian Network Structure Learning}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+rm(list = ls())
+
+library(dplyr)
+library(tidyr)
+library(foreach)
+library(doParallel)
+library(abn)
+library(mcmcabn)
+library(bnaiaR)
+library(ggplot2)
+```
+
+```{r settings}
+DEBUG <- FALSE
+EXPNO <- "ABNmultinomial"
+FILENAME <- paste0("/exp", EXPNO)
+FILENAMEbase <- Sys.getenv("PLOTPATH")
+#create and register cluster
+if (amilocal()) {
+  n.cores <- parallel::detectCores() - 1 # local
+} else{
+  n.cores <- 25 # on HPC
+}
+```
+
+
+```{r parameters}
+METHOD <- "mle"
+SCORE <- "bic"
+if (DEBUG) {
+  RETURN.DAGS <- 1
+} else {
+  RETURN.DAGS <- 100000
+}
+THINNING <- 0
+BURNIN.LEN <- 0
+# MCMC.SCHEME <- c(RETURN.DAGS, THINNING, BURNIN.LEN)
+MCMC.SCHEME <-
+  c(RETURN.DAGS + BURNIN.LEN, 0, 0) # speed up computation if post-processed. Meaning: c(RETURN.DAGS, THINNING, BURNIN.LEN)
+MCMC.SEEDS <- c(560505, 921213, 352629, 23146)
+PROB.REV = 0.03 # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
+PROB.MBR = 0.03
+MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
+
+THRESHOLD <- 0.5 # arcstrength
+```
+
+# Data Preparation
+
+```{r}
+data("exp4_dat")
+df4 <- exp4_dat$abndata
+str(df4)
+```
+
+```{r}
+# check for outliers in continuous vars
+d <- df4 %>%
+  mutate(ID = seq(1,nrow(df4)))%>%
+  reshape2::melt(id.vars=c("ID"),
+                 measure.vars=c("age_diag", "IAsize_diag_log"))
+
+p.outliers <- ggplot(d, aes(x=value))+
+  facet_wrap(~variable, scales = "free")+
+  geom_boxplot(notch = TRUE) +
+  coord_flip() +
+  theme_bw() +
+  ggtitle("Raw multinomial mixed data",
+          subtitle = "Outliers in continuous variables")
+p.outliers
+ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_raw.png"),
+       p.outliers)
+```
+
+## Fix outliers (if necessary)
+
+Removing pos. fam. history == "probably" due to only very few cases.
+```{r}
+df4 <- df4 %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+  
+str(df4)
+```
+
+
+# Exp. 4.1: maBN with study_source
+
+Nothing can point to study_source
+
+```{r}
+df41 <- df4
+str(df41)
+(banned41 <- exp4_dat$banned)
+(retain41 <- exp4_dat$retain)
+(dist41 <- exp4_dat$dist)
+
+```
+
+## Find optimal no. of parent nodes
+```{r}
+optnoparents41 <-
+  findOptNoParentNodes(
+    df = df41,
+    dist = dist41,
+    banned = banned41,
+    retain = retain41,
+    filenamesuffix = "4.1"
+  )
+```
+
+## ABN with max. parents
+```{r}
+abnwithmaxpar41 <-
+  abnwithmaxparents(
+    net.scores = optnoparents41$net.scores,
+    df = df41,
+    dist = dist41,
+    banned = banned41,
+    retain = retain41,
+    filenamesuffix = "4.1"
+  )
+```
+
+## MCMC ABN
+```{r}
+mcmcabn41 <-
+  mcmcabn_bnaiar(
+    mycache.maxpar = abnwithmaxpar41$mycache.maxpar,
+    max.par = abnwithmaxpar41$max.par,
+    dag.maxpar = abnwithmaxpar41$dag.maxpar,
+    fabn.maxpar = abnwithmaxpar41$fabn.maxpar,
+    df = df41,
+    dist = dist41,
+    banned = banned41,
+    retain = retain41,
+    filenamesuffix = "4.1"
+  )
+```
+
+# Exp. 4.2: maBN without study_source
+
+removed variable study_source
+
+```{r}
+df42 <- df4 %>%
+  # remove study_source
+  select(-study_source)
+
+# remove study_source from bl and wl and dist
+banned42 <- exp4_dat$banned[-9,-9]
+banned42
+
+retain42 <- exp4_dat$retain[-9,-9]
+retain42
+
+dist42 <- exp4_dat$dist[-9]
+dist42
+```
+## Find optimal no. of parent nodes
+```{r}
+optnoparents42 <-
+  findOptNoParentNodes(
+    df = df42,
+    dist = dist42,
+    banned = banned42,
+    retain = retain42,
+    filenamesuffix = "4.2"
+  )
+```
+
+## ABN with max. parents
+```{r}
+abnwithmaxpar42 <-
+  abnwithmaxparents(
+    net.scores = optnoparents42$net.scores,
+    df = df42,
+    dist = dist42,
+    banned = banned42,
+    retain = retain42,
+    filenamesuffix = "4.2"
+  )
+```
+
+## MCMC ABN
+```{r}
+mcmcabn42 <-
+  mcmcabn_bnaiar(
+    mycache.maxpar = abnwithmaxpar42$mycache.maxpar,
+    max.par = abnwithmaxpar42$max.par,
+    dag.maxpar = abnwithmaxpar42$dag.maxpar,
+    fabn.maxpar = abnwithmaxpar42$fabn.maxpar,
+    df = df42,
+    dist = dist42,
+    banned = banned42,
+    retain = retain42,
+    filenamesuffix = "4.2"
+  )
+```
+
+# Exp. 4.3: maBN for each study_source individually
+
+group by study source and remove study_source afterwards (also from bl, wl and dist).
+
+```{r}
+df43 <- exp4_dat$abndata
+
+# remove study_source from bl and wl and dist
+# Remains the same for each study_source
+banned43 <- exp4_dat$banned[-9,-9]
+banned43
+
+retain43 <- exp4_dat$retain[-9,-9]
+retain43
+
+dist43 <- exp4_dat$dist[-9]
+dist43
+```
+
+```{r}
+for (study in unique(df43$study_source)) {
+  message(paste("Processing ", study))
+  
+  filesuf <- paste0("4.3.", study)
+  
+  # Prepare data
+  df43_group <- df43 %>%
+    # filter for cases of current study
+    filter(study_source == study) %>%
+    # remove study_source variable
+    select(-study_source)
+  
+  str(df43_group)
+  
+  # Structure Learning
+  optnoparents <-
+    findOptNoParentNodes(
+      df = df43_group,
+      dist = dist43,
+      banned = banned43,
+      retain = retain43,
+      filenamesuffix = filesuf
+    )
+  
+  abnwithmaxpar <-
+    abnwithmaxparents(
+      net.scores = optnoparents$net.scores,
+      df = df43_group,
+      dist = dist43,
+      banned = banned43,
+      retain = retain43,
+      filenamesuffix = filesuf
+    )
+  
+  mcmcabn <-
+    mcmcabn_bnaiar(
+      mycache.maxpar = abnwithmaxpar$mycache.maxpar,
+      max.par = abnwithmaxpar$max.par,
+      dag.maxpar = abnwithmaxpar$dag.maxpar,
+      fabn.maxpar = abnwithmaxpar$fabn.maxpar,
+      df = df43_group,
+      dist = dist43,
+      banned = banned43,
+      retain = retain43,
+      filenamesuffix = filesuf
+    )
+}
+```
+
+
+# Exp. 4.4: maBN with study_source as parent of everything
+
+study_source whitelisted as parent of everything
+nothing can point to study_source
+
+```{r}
+data("exp44_dat")
+
+df44 <- exp44_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+  
+str(df44)
+(banned44 <- exp44_dat$banned)
+(retain44 <- exp44_dat$retain)
+(dist44 <- exp44_dat$dist)
+```
+
+## Find optimal no. of parent nodes
+```{r}
+optnoparents44 <-
+  findOptNoParentNodes(
+    df = df44,
+    dist = dist44,
+    banned = banned44,
+    retain = retain44,
+    filenamesuffix = "4.4"
+  )
+```
+
+## ABN with max. parents
+```{r}
+abnwithmaxpar44 <-
+  abnwithmaxparents(
+    net.scores = optnoparents44$net.scores,
+    df = df44,
+    dist = dist44,
+    banned = banned44,
+    retain = retain44,
+    filenamesuffix = "4.4"
+  )
+```
+
+## MCMC ABN
+```{r}
+mcmcabn44 <-
+  mcmcabn_bnaiar(
+    mycache.maxpar = abnwithmaxpar44$mycache.maxpar,
+    max.par = abnwithmaxpar44$max.par,
+    dag.maxpar = abnwithmaxpar44$dag.maxpar,
+    fabn.maxpar = abnwithmaxpar44$fabn.maxpar,
+    df = df44,
+    dist = dist44,
+    banned = banned44,
+    retain = retain44,
+    filenamesuffix = "4.4"
+  )
+```
+
+
+# Exp. 4.5: maBN mixed-effect with study_source as random-effect
+
+Implement study_source as random-effect
+
+PENDING
+
+```{r}
+# df <- exp4_dat$abndata
+```
+
+
+
