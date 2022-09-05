@@ -220,7 +220,7 @@ mcmcabn42 <-
 group by study source and remove study_source afterwards (also from bl, wl and dist).
 
 ```{r}
-df43 <- exp4_dat$abndata
+df43 <- df4
 
 # remove study_source from bl and wl and dist
 # Remains the same for each study_source
@@ -233,6 +233,36 @@ retain43
 dist43 <- exp4_dat$dist[-9]
 dist43
 ```
+```{r}
+fixfactorlevels <- function(df, dist) {
+  for (col in colnames(df)) {
+    if (is.factor(df[[col]])) {
+      # if(length(unique(df43_group[[col]])) != length(levels(df43_group[[col]]))){
+      if (!(all(levels(df[[col]]) %in% unique(df[[col]])))) {
+        # print(unique(df[[col]]))
+        # print(levels(df[[col]]))
+        
+        for (lev in levels(df[[col]])) {
+          if (!(lev %in% unique(df[[col]]))) {
+            # print(lev)
+            df[[col]] <- factor(df[[col]])
+            
+            if (length(levels(df[[col]])) == 2) {
+              dist[[col]] <- "binomial"
+              return(list(df, dist))
+            } else if (length(levels(df[[col]])) > 2) {
+              dist[[col]] <- "multinomial"
+              return(list(df, dist))
+            }
+          }
+        }
+      }
+    }
+  }
+  # return(NULL)
+}
+# str(fixfactorlevels(df43_group, dist43))
+```
 
 ```{r}
 for (study in unique(df43$study_source)) {
@@ -241,19 +271,32 @@ for (study in unique(df43$study_source)) {
   filesuf <- paste0("4.3.", study)
   
   # Prepare data
-  df43_group <- df43 %>%
+  df43_group <- df43  %>%
+  # filter(IAlocation_group != "low") %>%
+  # mutate(IAlocation_group = factor(IAlocation_group)) %>%
     # filter for cases of current study
     filter(study_source == study) %>%
     # remove study_source variable
     select(-study_source)
   
-  str(df43_group)
+  temp <- fixfactorlevels(df43_group, dist43)
   
+  if(!is.null(temp)){
+      df43_group <- temp[[1]]
+      dist43_group <- temp[[2]]
+  } else {
+      df43_group <- df43_group
+      dist43_group <- dist43    
+  }
+  
+  # str(df43_group)
+  # str(dist43_group)
+
   # Structure Learning
   optnoparents <-
     findOptNoParentNodes(
       df = df43_group,
-      dist = dist43,
+      dist = dist43_group,
       banned = banned43,
       retain = retain43,
       filenamesuffix = filesuf
@@ -263,7 +306,7 @@ for (study in unique(df43$study_source)) {
     abnwithmaxparents(
       net.scores = optnoparents$net.scores,
       df = df43_group,
-      dist = dist43,
+      dist = dist43_group,
       banned = banned43,
       retain = retain43,
       filenamesuffix = filesuf
@@ -276,7 +319,7 @@ for (study in unique(df43$study_source)) {
       dag.maxpar = abnwithmaxpar$dag.maxpar,
       fabn.maxpar = abnwithmaxpar$fabn.maxpar,
       df = df43_group,
-      dist = dist43,
+      dist = dist43_group,
       banned = banned43,
       retain = retain43,
       filenamesuffix = filesuf
