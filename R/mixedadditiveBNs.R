@@ -43,20 +43,27 @@ findOptNoParentNodes <- function(df, dist, banned, retain, filenamesuffix, filen
     .packages = c("abn", "mcmcabn"),
     .inorder = TRUE
   ) %dopar% {
-    max.par <- i
-    mycache <- buildScoreCache(
-      data.df = as.data.frame(df),
-      data.dists = dist,
-      dag.banned = banned,
-      dag.retained = retain,
-      max.parents = max.par,
-      method = method
-    )
+      max.par <- i
+      mycache <- buildScoreCache(
+        data.df = as.data.frame(df),
+        data.dists = dist,
+        dag.banned = banned,
+        dag.retained = retain,
+        max.parents = max.par,
+        method = method
+      )
 
     dag.mP <- mostProbable(score.cache = mycache,
                            score = score)
-    fabn.mP <- fitAbn(object = dag.mP,
-                      method = method)
+
+    tryCatch({fabn.mP <- fitAbn(object = dag.mP,
+                      method = method)},
+             error = function(e){NULL})
+
+    if(!exists("fabn.mP")){
+      warning(paste("Could not fit abn with maxpar: ", max.par, ". Returning score with value NA."))
+      fabn.mP <- list("bic"=NA)
+    }
 
 
     return(list(i=list(dag.mP, c(i, score, fabn.mP[[score]]))))

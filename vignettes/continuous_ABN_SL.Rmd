@@ -285,6 +285,136 @@ for (study in unique(df43$study_source)) {
 ```
 
 
+
+
+```{r MRE UCL Error}
+# Prepare data
+df43_group <- df43 %>%
+  # filter(IAlocation_group != "low") %>%
+  # mutate(IAlocation_group = factor(IAlocation_group)) %>%
+  # filter for cases of current study
+  filter(study_source == "ucl") %>%
+  # remove study_source variable
+  select(-study_source) 
+  
+  # mutate(across(is.factor, as.integer)) %>%
+  # mutate(across(is.integer, as.factor))
+str(df43_group)
+summarytools::dfSummary(df43_group)
+
+dist43[["IAlocation_group"]] <- "binomial"
+
+novars <- ncol(df43_group)
+tmpscores <- vector(length = novars)
+net.scores <-
+  data.frame(npar = NULL,
+             scoretype = NULL,
+             scorevalue = NULL)
+
+clust <-
+  parallel::makeCluster(
+    n.cores,
+    outfile = paste0(
+      FILENAMEbase,
+      FILENAME,
+      "4.3_UCL",
+      "_multicoreABNmaxpar.log"
+    )
+  )
+doParallel::registerDoParallel(cl = clust)
+net.scores <- foreach(
+  i = 1:novars,
+  # i = novars,
+  .combine = 'rbind',
+  .packages = c("abn", "mcmcabn"),
+  .inorder = TRUE
+  # ) %dopar% {
+) %do% {
+  max.par <- i
+  mycache <- buildScoreCache(
+    data.df = as.data.frame(df43_group),
+    data.dists = dist43,
+    dag.banned = banned43,
+    dag.retained = retain43,
+    max.parents = max.par,
+    method = METHOD
+  )
+  
+  dag.mP <- mostProbable(score.cache = mycache,
+                         score = SCORE)
+  
+  tryCatch({
+    fabn.mP <- fitAbn(object = dag.mP,
+                      method = METHOD)
+  },
+  error = function(e) {
+    NULL
+  })
+  
+  if (!exists("fabn.mP")) {
+    fabn.mP <- list("bic" = NA)
+  }
+  # browser()
+  
+  return(list(i = list(dag.mP, c(i, SCORE, fabn.mP[[SCORE]]))))
+  
+  cat(paste("\nnetwork score for", i, "parents =", fabn.mP[[SCORE]], "\n\n"))
+}
+stopCluster(clust)
+
+
+
+
+net.scores.dags.prelim <- unlist(net.scores, recursive = F)
+net.scores.dags <-
+  net.scores.dags.prelim[seq(1, length(net.scores.dags.prelim), 2)]
+net.scores <-
+  net.scores.dags.prelim[seq(2, length(net.scores.dags.prelim), 2)]
+
+# format net.scores
+net.scores <-
+  data.frame(
+    npar = unlist(net.scores)[seq(1, length(unlist(net.scores)), 3)],
+    scoretype = unlist(net.scores)[seq(2, length(unlist(net.scores)), 3)],
+    scorevalue = unlist(net.scores)[seq(3, length(unlist(net.scores)), 3)]
+  )
+rownames(net.scores) <- NULL
+net.scores[, 1] <- as.integer(net.scores[, 1])
+net.scores[, 3] <- as.numeric(net.scores[, 3])
+
+for (i in 1:nrow(net.scores)) {
+  if (net.scores$scoretype[i] == "bic") {
+    net.scores$scorevalue[i] <- -net.scores$scorevalue[i]
+  }
+}
+net.scores
+
+net.scores[,3] <- seq(1,8)
+
+abnwithmaxpar <-
+    abnwithmaxparents(
+      net.scores = net.scores,
+      df = df43_group,
+      dist = dist43,
+      banned = banned43,
+      retain = retain43,
+      filenamesuffix = filesuf
+    )
+  
+mcmcabn <-
+    mcmcabn_bnaiar(
+      mycache.maxpar = abnwithmaxpar$mycache.maxpar,
+      max.par = abnwithmaxpar$max.par,
+      dag.maxpar = abnwithmaxpar$dag.maxpar,
+      fabn.maxpar = abnwithmaxpar$fabn.maxpar,
+      df = df43_group,
+      dist = dist43,
+      banned = banned43,
+      retain = retain43,
+      filenamesuffix = filesuf
+    )
+```
+
 # Exp. 4.4: maBN with study_source as parent of everything
 
 study_source whitelisted as parent of everything
