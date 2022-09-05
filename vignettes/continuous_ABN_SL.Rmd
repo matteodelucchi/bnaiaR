@@ -165,13 +165,13 @@ df42 <- df4 %>%
   select(-study_source)
 
 # remove study_source from bl and wl and dist
-banned42 <- exp4_dat$banned[-9,-9]
+banned42 <- exp4_dat$banned[-10,-10]
 banned42
 
-retain42 <- exp4_dat$retain[-9,-9]
+retain42 <- exp4_dat$retain[-10,-10]
 retain42
 
-dist42 <- exp4_dat$dist[-9]
+dist42 <- exp4_dat$dist[-10]
 dist42
 ```
 ## Find optimal no. of parent nodes
@@ -224,14 +224,11 @@ df43 <- df4
 
 # remove study_source from bl and wl and dist
 # Remains the same for each study_source
-banned43 <- exp4_dat$banned[-9,-9]
-banned43
+(banned43 <- exp4_dat$banned[-10,-10])
 
-retain43 <- exp4_dat$retain[-9,-9]
-retain43
+(retain43 <- exp4_dat$retain[-10,-10])
 
-dist43 <- exp4_dat$dist[-9]
-dist43
+(dist43 <- exp4_dat$dist[-10])
 ```
 ```{r}
 fixfactorlevels <- function(df, dist) {
@@ -264,9 +261,9 @@ fixfactorlevels <- function(df, dist) {
 # str(fixfactorlevels(df43_group, dist43))
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 for (study in unique(df43$study_source)) {
-  message(paste("Processing ", study))
+  message(paste("\nProcessing ", study))
   
   filesuf <- paste0("4.3.", study)
   
