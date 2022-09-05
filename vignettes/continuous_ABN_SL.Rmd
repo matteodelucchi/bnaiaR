@@ -230,6 +230,7 @@ df43 <- df4
 
 (dist43 <- exp4_dat$dist[-10])
 ```
+
 ```{r}
 fixfactorlevels <- function(df, dist) {
   for (col in colnames(df)) {
@@ -327,7 +328,7 @@ for (study in unique(df43$study_source)) {
 
 
 
-```{r MRE UCL Error}
+```{r MRE UCL Error, eval=FALSE, include=FALSE}
 # Prepare data
 df43_group <- df43 %>%
   # filter(IAlocation_group != "low") %>%
