@@ -230,6 +230,7 @@ df43 <- df4
 
 (dist43 <- exp4_dat$dist[-10])
 ```
+
 ```{r}
 fixfactorlevels <- function(df, dist) {
   for (col in colnames(df)) {
