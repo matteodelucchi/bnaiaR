@@ -468,7 +468,7 @@ cv.metrics <- function(xval, returnConfMat=FALSE){
 
   if(returnConfMat==TRUE){
     # carret_confmat <- caret::confusionMatrix(PRED, OBS, positive = "Yes", mode = "everything")
-    carret_confmat <- caret::confusionMatrix(conf.mat, positive = "Yes", mode = "everything")
+    carret_confmat <- caret::confusionMatrix(conf.mat, positive = "yes", mode = "everything")
     return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1, carret_confmat = carret_confmat))
   } else{
     return(list(conf.mat = conf.mat, tpr = tpr, fpr = fpr, acc = acc, ba = ba, f1 = f1))

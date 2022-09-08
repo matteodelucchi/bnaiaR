@@ -37,38 +37,36 @@ library(bnaiaR)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
-library(parallel)
 library(bnlearn)
-library(forcats)
 
 # Save plots as files? 
 SAVEPLOTS <- F
-PLOTPATH <- Sys.getenv("PLOTPATH")
-PLOTFORMAT <- "png" # "svg" or "png"
+PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
 ```
 
-# Load discrete BNs
+# Load discrete additive mixed-effects BN
 
-The object `discrete_bns` was generated in vignette `discrete_BN_SL`.
 
 ```{r message=FALSE, warning=FALSE}
-data <- exp11_dat$abndata
-bl <- exp11_dat$bl
-avgnet <- discrete_bns$avgnet
-arcstren <- discrete_bns$arcstren
-# str(avgnet)
+load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
+```
+
+
+```{r}
+data <- tobesaved$madbn_data
+bl <- tobesaved$madbn_bl
+avg <- tobesaved$madbn_avg
+bb <- tobesaved$madbn_boot
 ```
 
 ```{r}
-strength.plot(avgnet[["tabu.th03"]],
-              arcstren[["tabu"]],
-              main = "DAG",
-              sub = "SL: tabu\nth.=0.3\nScore=BIC",
-              shape = "rectangle")
-strength.plot(avgnet[["tabu.bic.custom"]],
-              arcstren[["tabu.bic.custom"]],
-              main = "DAG",
-              sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom",
+strength.plot(avg,
+              bb,
+              main = "discrete additive mixed-effects BN",
+              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
               shape = "rectangle")
 ```
 
@@ -77,52 +75,50 @@ strength.plot(avgnet[["tabu.bic.custom"]],
 ## Classification Error of rupture status.
 
 ```{r}
-xval.rupture.bic.part <- bn.cv(data = data, 
-              bn = avgnet$tabu,
+xval.rupture <- bn.cv(data = data, 
+              bn = avg,
               method = "hold-out",
               runs = 50,
               fit = "mle",
               loss = "pred",
-              loss.args = list(target="Ruptured_IA"))
-xval.rupture.bic <- bn.cv(
-    data = data,
-    bn = avgnet$tabu.th03,
-    method = "hold-out",
-    runs = 50,
-    fit = "mle",
-    loss = "pred",
-    loss.args = list(target = "Ruptured_IA")
-  )
-xval.rupture.bic.custom <- bn.cv(
-    data = data,
-    bn = avgnet$tabu.bic.custom,
-    method = "hold-out",
-    runs = 50,
-    fit = "mle",
-    loss = "pred",
-    loss.args = list(target =  "Ruptured_IA")
-  )
-df.cvmetrics <- data.frame(loocv.dbn.clerr.bic.part = c(avgClassError = mean(loss(xval.rupture.bic.part)), sdClassError = sd(loss(xval.rupture.bic.part)), cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.part, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.clerr.bic = c(avgClassError = mean(loss(xval.rupture.bic)), sdClassError = sd(loss(xval.rupture.bic)),cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.clerr.custom = c(avgClassError = mean(loss(xval.rupture.bic.custom)), sdClassError = sd(loss(xval.rupture.bic.custom)),cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.rupture.bic.custom, returnConfMat = T)$carret_confmat$byClass))
+              loss.args = list(target="IAruptured"))
+
+df.cvmetrics <-
+  data.frame(
+    loocv.dbn.clerr = c(
+      avgClassError = mean(loss(xval.rupture)),
+      sdClassError = sd(loss(xval.rupture)),
+      cv.metrics(xval.rupture, returnConfMat = T)$carret_confmat$overall,
+      cv.metrics(xval.rupture, returnConfMat = T)$carret_confmat$byClass
+    ))
 df.cvmetrics
+df.cvmetrics %>%
+  mutate(loocv.dbn.clerr = round(loocv.dbn.clerr, digits = 2)) %>%
+  tibble::rownames_to_column() %>%
+  gt::gt() 
+# %>%
+  # gt::gtsave(path = PLOTPATH, filename = "classification_error_ruptureStatus_madbn_tbl.html")
 ```
+
+higher sensitivity as in single centric study
+pos. and neg predictive values higher as in single centre study
+higher precision, recall and F1 score, prevalence, detection rate, detection prevalence and balanced accuracy
 
 ```{r}
 if (SAVEPLOTS) {
-  FILE <- paste0(PLOTPATH, "/", "classification_error_ruptureStatus_all", ".")
+  FILE <- paste0(PLOTPATH, "/", "classification_error_ruptureStatus_madbn", ".")
   if (PLOTFORMAT == "svg") {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
     png(paste0(FILE, PLOTFORMAT))
   }
-  plot(xval.rupture.bic.part, xval.rupture.bic, xval.rupture.bic.custom,
-     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+  plot(xval.rupture,
+     xlab = c("BIC.signTH"),
      main = "Classification Error of Rupture Status")
   dev.off()
 } else {
-  plot(xval.rupture.bic.part, xval.rupture.bic, xval.rupture.bic.custom,
-     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+  plot(xval.rupture.bic.part,
+     xlab = c("BIC.signTH"),
      main = "Classification Error of Rupture Status")
 }
 ```
@@ -134,10 +130,10 @@ Average predictive accuracy over all nodes.
 
 ```{r}
 xval.list.bic <- list()
-for (node in nodes(avgnet$tabu.th03)) {
+for (node in nodes(avg)) {
   xval <- bn.cv(
     data = data,
-    bn = avgnet$tabu.th03,
+    bn = avg,
     method = "hold-out",
     runs = 50,
     fit = "mle",
@@ -149,29 +145,10 @@ for (node in nodes(avgnet$tabu.th03)) {
 }
 
 
-xval.list.bic.custom <- list()
-for (node in nodes(avgnet$tabu.th03)) {
-  xval <- bn.cv(
-    data = data,
-    bn = avgnet$tabu.bic.custom,
-    method = "hold-out",
-    runs = 50,
-    fit = "mle",
-    loss = "pred",
-    loss.args = list(target = node)
-  )
-  xval.list.bic.custom[[node]] <- list(xval = xval, 
-                            cv.metrics = cv.metrics(xval))
-}
 accs.bic <- unlist(lapply(unlist(xval.list.bic, recursive = F), `[[`, "acc"))
 summary(accs.bic, na.rm = T)
-accs.bic.custom <- unlist(lapply(unlist(xval.list.bic.custom, recursive = F), `[[`, "acc"))
-summary(accs.bic.custom, na.rm = T)
 ```
 
-
-BIC.th03 used three parents (pos.fam.hist, size, location) to predict rupture
-whereas BIC.custom uses only the later two parent nodes to predict rupture.
 
 From `?bnlearn::bn.cv()`:  
 "...  
@@ -185,49 +162,41 @@ Posterior Classification Error (pred-lw and pred-lw-cg): similar to the above, b
 So, we can use a Bayesian predictions that use a random set of available nodes for the prediction.
 
 ```{r}
-xval.bic.bayes.part <- bn.cv(data = data, 
-              bn = avgnet$tabu,
-              method = "hold-out",
-              runs = 50,
-              fit = "mle",
-              loss = "pred-lw",
-              loss.args = list(target="Ruptured_IA"))
 xval.bic.bayes <- bn.cv(data = data, 
-              bn = avgnet$tabu.th03,
+              bn = avg,
               method = "hold-out",
               runs = 50,
               fit = "mle",
               loss = "pred-lw",
-              loss.args = list(target="Ruptured_IA"))
-xval.bic.custom.bayes <- bn.cv(data = data, 
-              bn = avgnet$tabu.bic.custom,
-              method = "hold-out",
-              runs = 50,
-              fit = "mle",
-              loss = "pred-lw",
-              loss.args = list(target="Ruptured_IA"))
-cv.metrics(xval.bic.bayes.part)
+              loss.args = list(target="IAruptured"))
 cv.metrics(xval.bic.bayes)
-cv.metrics(xval.bic.custom.bayes)
 
-df.cvmetrics.postclerr <- data.frame(loocv.dbn.postclerr.bic.part = c(avgPostClassError = mean(loss(xval.bic.bayes.part)), sdClassError = sd(loss(xval.bic.bayes.part)), cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes.part, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.postclerr.bic = c(avgPostClassError = mean(loss(xval.bic.bayes)), sdClassError = sd(loss(xval.bic.bayes)), cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$byClass),
-                           loocv.dbn.postclerr.custom = c(avgPostClassError = mean(loss(xval.bic.custom.bayes)), sdClassError = sd(loss(xval.bic.custom.bayes)), cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$overall, cv.metrics(xval.bic.custom.bayes, returnConfMat = T)$carret_confmat$byClass))
-df.cvmetrics <- cbind(df.cvmetrics, df.cvmetrics.postclerr)
-df.cvmetrics <- round(df.cvmetrics, 2)
-df.cvmetrics
+df.cvmetrics.postclerr <-
+  data.frame(
+    loocv.dbn.postclerr = c(
+      avgPostClassError = mean(loss(xval.bic.bayes)),
+      sdClassError = sd(loss(xval.bic.bayes)),
+      cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$overall,
+      cv.metrics(xval.bic.bayes, returnConfMat = T)$carret_confmat$byClass
+    )
+  )
+df.cvmetrics.postclerr
+df.cvmetrics.postclerr  %>%
+  mutate(loocv.dbn.postclerr = round(loocv.dbn.postclerr, digits = 2)) %>%
+  tibble::rownames_to_column() %>%
+  gt::gt() 
 ```
 
 Save classification metrics
 
 ```{r}
-write.csv(df.cvmetrics, file = paste0(PLOTPATH, "/prediction_metrics_dbn.csv"))
+write.csv(df.cvmetrics, file = paste0(PLOTPATH, "/prediction_metrics_madbn.csv"))
 ```
 
 
 ```{r}
 if (SAVEPLOTS) {
-  FILE <- paste0(PLOTPATH, "/", "post_classification_error_ruptureStatus_all", ".")
+  FILE <- paste0(PLOTPATH, "/", "post_classification_error_ruptureStatus_madbn", ".")
   if (PLOTFORMAT == "svg") {
     svg(paste0(FILE, PLOTFORMAT))
   } else if (PLOTFORMAT == "png") {
@@ -235,225 +204,13 @@ if (SAVEPLOTS) {
   } else if (PLOTFORMAT == "pdf") {
     pdf(paste0(FILE, PLOTFORMAT))
   }
-  plot(xval.bic.bayes.part, xval.bic.bayes, xval.bic.custom.bayes, 
-     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+  plot(xval.bic.bayes, 
+     xlab = c("BIC"),
      main = "Posterior Classification Error of Rupture Status")
   dev.off()
 } else {
-  plot(xval.bic.bayes.part, xval.bic.bayes, xval.bic.custom.bayes, 
-     xlab = c("BIC.signTH", "BIC.th03", "BIC.custom"),
+  plot(xval.bic.bayes, 
+     xlab = c("BIC"),
      main = "Posterior Classification Error of Rupture Status")
 }
 ```
-
-# Inference by querying
-
-```{r}
-tabu_th03_fit <- bn.fit(data = data, x = avgnet$tabu.th03)
-```
-
-
-```{r}
-plot(tabu_th03_fit$location.grouped$prob)
-```
-
-Males tend to have an IA more often at a high risk location but
-Females tend to develop an IA in high risk location more often if they suffer HBP than males who suffer HBP.
-
-
-```{r}
-plot(tabu_th03_fit$IAsize.groups.merged$prob)
-```
-
-Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
-
-```{r}
-(tabu_th03_fit$Ruptured_IA$prob)
-```
-
-Larger IAs tend to rupture more frequently.
-
-```{r cpdist_age_hypertension_rupture}
-par(mfrow = c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = "Ruptured_IA == Yes")
-
-sim = cpdist(tabu_th03_fit, nodes = c("Hypertension", "AgeDiag.group"), n = 10^4, evidence = (Ruptured_IA == "No"))
-plot(sim, col = "grey",
-     main = "Ruptured_IA == No")
-
-par(mfrow = c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Hypertension"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(sim, col = "grey",
-     main = "Ruptured_IA == Yes")
-
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Hypertension"), n = 10^4, evidence = (Ruptured_IA == "No"))
-plot(sim, col = "grey",
-     main = "Ruptured_IA == No")
-
-par(mfrow = c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Hypertension == "AnyType"))
-plot(sim, col = "grey",
-     main = "Hypertension == AnyType")
-
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^4, evidence = (Hypertension == "Never"))
-plot(sim, col = "grey",
-     main = "Hypertension == Never")
-
-par(mfrow = c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)), col = "grey",
-     main = "Ruptured_IA == Yes")
-
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
-plot(prop.table(table(sim)), col = "grey",
-     main = "Ruptured_IA == No")
-
-SAVEPLOTS <- F
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_rupture-age"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-  } 
-```
-
-
-```{r}
-SAVEPLOTS <- F
-
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "IAsize.groups.merged"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Ruptured_IA == "Yes"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "IAsize.groups.merged"), n = 10^5, evidence = (Ruptured_IA == "No"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Ruptured_IA == "No"')
-
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_rupture-smoking-size"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-  } 
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Ruptured_IA == "Yes"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("Smoking_Current_Former_No", "AgeDiag.group"), n = 10^5, evidence = (Ruptured_IA == "No"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Ruptured_IA == "No"')
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_rupture-smoking-age"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-} 
-
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Smoking_Current_Former_No == "Current"')
-
-sim = cpdist(tabu_th03_fit, nodes = c("IAsize.groups.merged", "AgeDiag.group"), n = 10^5, evidence = (Smoking_Current_Former_No == "Current" & Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Smoking_Current_Former_No == "Current" & Ruptured_IA == "Yes"')
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_smoking-age-size"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-} 
-```
-
-```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "Yes"))
-plot(prop.table(table(sim)),
-     main = 'Ruptured_IA == "Yes"')
-prop.table(table(sim))
-           
-sim = cpdist(tabu_th03_fit, nodes = c("Gender", "location.grouped"), n = 10^4, evidence = (Ruptured_IA == "No"))
-plot(prop.table(table(sim)),
-     main = 'Ruptured_IA == "No"')
-prop.table(table(sim))
-
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_rupture-location-gender"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-} 
-```
-
-```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Ruptured_IA"), n = 10^4, evidence = (Smoking_Current_Former_No == "Current" & Hypertension == "AnyType" & Positive.famillial.history == "Yes"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Smoking_Current_Former_No == "Current", Hypertension = "AnyType", Positive.famillial.history = "Yes"')
-sim = cpdist(tabu_th03_fit, nodes = c("AgeDiag.group", "Ruptured_IA"), n = 10^4, evidence = (Smoking_Current_Former_No == "No" & Hypertension == "Never" & Positive.famillial.history == "No"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'Smoking_Current_Former_No == "No" & Hypertension == "Never" & Positive.famillial.history == "No"')
-
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_rupture-age-smoking-hbp-family"
-  dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-            res = 600, width = 6000)
-  dev.off()
-} 
-```
-
-```{r}
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "AnyType"))
-barplot(prop.table(table(sim)), col = "grey",
-        ylim = c(0,0.8),
-     main = "P(Multiple.IAs | Hypertension == 'AnyType')")
-prop.table(table(sim))
-
-sim = cpdist(tabu_th03_fit, nodes = c("Multiple.IAs"), n = 10^4, evidence = (Hypertension == "Never"))
-barplot(prop.table(table(sim)), col = "grey",
-     ylim = c(0,0.8), 
-     main = "P(Multiple.IAs | Hypertension == 'Never')")
-prop.table(table(sim))
-
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_multiple_hbp"
-  # dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-  #           res = 600, width = 6000)
-  dev.print(pdf, file =paste0(PLOTPATH, "/", PLOTNAME, ".pdf"),
-            width = 16, height = 9)
-  dev.off()
-} 
-
-par(mfrow=c(1,2))
-sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "AnyType"))
-barplot(prop.table(table(sim)), col = "grey",
-        ylim = c(0,0.5), 
-     main = "P(IA Location | Hypertension == 'AnyType')")
-prop.table(table(sim))
-
-sim = cpdist(tabu_th03_fit, nodes = c("location.grouped"), n = 10^4, evidence = (Hypertension == "Never"))
-barplot(prop.table(table(sim)), col = "grey",
-        ylim = c(0,0.5),
-     main = "P(IA Location | Hypertension == 'Never')")
-prop.table(table(sim))
-
-if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_location_hbp"
-  # dev.print(png, filename =paste0(PLOTPATH, "/", PLOTNAME, ".png"),
-  #           res = 600, width = 6000)
-  dev.print(pdf, file =paste0(PLOTPATH, "/", PLOTNAME, ".pdf"),
-            width = 16)
-  dev.off()
-} 
-```
-
-
-```{r}
-str(data)
-```
-
