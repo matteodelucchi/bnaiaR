@@ -1,0 +1,358 @@
+---
+title: "Model Inference of discrete BNs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Model Inference of discrete BNs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(bnlearn)
+
+
+# Save plots as files? 
+SAVEPLOTS <- T
+PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+# Load discrete additive mixed-effects BN
+
+
+```{r message=FALSE, warning=FALSE}
+load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
+```
+
+
+```{r}
+data <- tobesaved$madbn_data %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+bl <- tobesaved$madbn_bl
+avg <- tobesaved$madbn_avg
+bb <- tobesaved$madbn_boot
+```
+
+```{r}
+strength.plot(avg,
+              bb,
+              main = "discrete additive mixed-effects BN",
+              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              shape = "rectangle")
+```
+
+
+
+# Inference by querying
+
+```{r}
+# remove study_source
+avg_mod <- bnlearn::remove.node(avg, "study_source")
+bb_mod <-  bb %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_mod, "nodes") <- attr(bb_mod, "nodes")[-10]
+data_mod <- data %>%
+  select(-c("study_source"))
+
+strength.plot(avg_mod,
+              bb_mod,
+              main = "discrete additive mixed-effects BN",
+              sub = "Fitting w/o study_source",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_admeBN_fitting_wo_studysource"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
+```
+
+
+
+```{r}
+madbn_fit <- bn.fit(data = data, x = avg)
+```
+
+
+```{r}
+plot(madbn_fit_mod$hpt_aware$prob)
+```
+
+Males tend to have an IA more often at a high risk location but
+Females tend to develop an IA in high risk location more often if they suffer HBP than males who suffer HBP.
+
+
+```{r}
+plot(madbn_fit_mod$IAsize_diag_grouped_merged$prob)
+```
+
+Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
+
+```{r}
+plot(madbn_fit_mod$IAruptured$prob)
+```
+
+Larger IAs tend to rupture more frequently.
+
+```{r cpdist_age_hpt_aware_rupture}
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit, nodes = c("hpt_aware", "age_diag_group"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(sim, col = "grey",
+     main = "IAruptured == yes")
+
+sim = cpdist(madbn_fit, nodes = c("hpt_aware", "age_diag_group"), n = 10^4, evidence = (IAruptured == "no"))
+plot(sim, col = "grey",
+     main = "IAruptured == no")
+
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "hpt_aware"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(sim, col = "grey",
+     main = "IAruptured == yes")
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "hpt_aware"), n = 10^4, evidence = (IAruptured == "no"))
+plot(sim, col = "grey",
+     main = "IAruptured == no")
+
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "yes"))
+plot(sim, col = "grey",
+     main = "hpt_aware == yes")
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "no"))
+plot(sim, col = "grey",
+     main = "hpt_aware == no")
+
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^5, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "IAruptured == yes")
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^5, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+     main = "IAruptured == no")
+
+# SAVEPLOTS <- F
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+```
+
+
+```{r}
+# SAVEPLOTS <- T
+
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "no"')
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-smoking-size"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "no"')
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-smoking-age"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current"')
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current" & IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current" & IAruptured == "yes"')
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_smoking-age-size"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+```
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)),
+     main = 'IAruptured == "yes"')
+prop.table(table(sim))
+           
+sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)),
+     main = 'IAruptured == "no"')
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-location-gender"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+```
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "current" & hpt_aware == "yes" & positive_famillial_history == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current", hpt_aware = "yes", positive_famillial_history = "yes"')
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"')
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-smoking-hbp-family"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+```
+
+```{r}
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (hpt_aware == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs | hpt_aware == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (hpt_aware == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+     ylim = c(0,0.8), 
+     main = "P(multipleIAs | hpt_aware == 'no')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_multiple_hbp"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("IAlocation_group"), n = 10^4, evidence = (hpt_aware == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.5), 
+     main = "P(IA Location | hpt_aware == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("IAlocation_group"), n = 10^4, evidence = (hpt_aware == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.5),
+     main = "P(IA Location | hpt_aware == 'no')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_location_hbp"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+```
+
+
+```{r}
+str(data)
+```
+
