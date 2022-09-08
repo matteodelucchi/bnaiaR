@@ -295,6 +295,174 @@ if (SAVEPLOTS){
 }
 ```
 
+```{r Corresponding to Morel et al. 2022, Fig 3a-b }
+par(mfrow=c(2,2))
+sim = cpdist(madbn_fit, nodes = c("multipleIAs", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("multipleIAs", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+# if (SAVEPLOTS){
+#   PLOTNAME <- "infquerry_rupture-multiple-location_barplt"
+#   if(PLOTFORMAT == "svg"){
+#     dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "png"){
+#     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "pdf"){
+#     dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } 
+# }
+# 
+# par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("multipleIAs", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("multipleIAs", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-multiple-location"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+```
+
+```{r Corresponding to Morel et al. 2022, Fig 3c}
+par(mfrow=c(2,2))
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(IAsize_diag_grouped_merged, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(IAsize_diag_grouped_merged, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+# if (SAVEPLOTS){
+#   PLOTNAME <- "infquerry_rupture-multiple-location_barplt"
+#   if(PLOTFORMAT == "svg"){
+#     dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "png"){
+#     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "pdf"){
+#     dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } 
+# }
+# 
+# par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(IAsize_diag_grouped_merged, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(IAsize_diag_grouped_merged, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-size-location"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+```
+
+```{r Corresponding to Morel et al. 2022, Fig 3d}
+par(mfrow=c(2,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(age_diag_group, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(age_diag_group, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+# if (SAVEPLOTS){
+#   PLOTNAME <- "infquerry_rupture-multiple-location_barplt"
+#   if(PLOTFORMAT == "svg"){
+#     dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "png"){
+#     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } else if(PLOTFORMAT == "pdf"){
+#     dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+#     dev.off()
+#   } 
+# }
+# 
+# par(mfrow=c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(age_diag_group, IAlocation_group | IAruptured == 'yes')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(age_diag_group, IAlocation_group | IAruptured == 'no')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-location"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+```
+
 ```{r}
 par(mfrow=c(1,2))
 sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (hpt_aware == "yes"))
@@ -321,8 +489,47 @@ if (SAVEPLOTS){
     dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } 
-} 
+}
+```
 
+
+```{r}
+par(mfrow=c(1,3))
+sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (IAlocation_group == "low"))
+barplot(prop.table(table(sim)), col = "grey",
+        ylim = c(0,0.8),
+     main = "P(multipleIAs | IAlocation_group == 'low')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (IAlocation_group == "medium"))
+barplot(prop.table(table(sim)), col = "grey",
+     ylim = c(0,0.8), 
+     main = "P(multipleIAs | IAlocation_group == 'medium')")
+prop.table(table(sim))
+
+sim = cpdist(madbn_fit, nodes = c("multipleIAs"), n = 10^4, evidence = (IAlocation_group == "high"))
+barplot(prop.table(table(sim)), col = "grey",
+     ylim = c(0,0.8), 
+     main = "P(multipleIAs | IAlocation_group == 'high')")
+prop.table(table(sim))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_multiple_location"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+```
+
+
+```{r}
 par(mfrow=c(1,2))
 sim = cpdist(madbn_fit, nodes = c("IAlocation_group"), n = 10^4, evidence = (hpt_aware == "yes"))
 barplot(prop.table(table(sim)), col = "grey",
