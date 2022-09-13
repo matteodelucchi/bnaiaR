@@ -119,9 +119,10 @@ if (SAVEPLOTS) {
     dpi = 600, width = PLOTWIDTH, height = PLOTHEIGHT*1.5
   )
 } else {
-  plt_overv_bnaiar_compl
+  plt_overv_bnaiar
 }
 ```
+
 
 
 ## bnaiaR vars with only complete entries
@@ -148,8 +149,132 @@ if (SAVEPLOTS) {
 }
 ```
 
+```{r}
+cont.vars=c("age_diag", "IAsize_diag", "IAsize_diag_log")
+
+df_counts <- data.frame(matrix(ncol=6, nrow = 0))
+colnames(df_counts) <- c("study", "variable", "level", "count", "total", "prop")
+
+i <- 1
+for (study in unique(df_bnaiar_compl$study_source)){
+  print(study)
+  df_temp <- df_bnaiar_compl %>%
+  select(-c(cont.vars, "ID_1")) %>%
+  filter(study_source == study)
+  
+  tot <- nrow(df_temp)
+  for (var in colnames(df_temp)){
+    for(lev in levels(df_temp[[var]])){
+    cnt <- length(df_temp[[var]][which(df_temp[[var]] == lev)])
+    
+    df_counts[i,] <- c(study, var, lev, cnt, tot, NA)
+    i <- i+1
+    }
+  }
+}
+
+radar_age <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "age_diag_group") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "age_diag_group",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_pfh <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "positive_famillial_history") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "positive_famillial_history",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_hpt <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "hpt_aware") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "hpt_aware",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_smoke <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "smoking_current_notcurrent") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "smoking_current_notcurrent",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_mult <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "multipleIAs") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "multipleIAs",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_loc <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "IAlocation_group") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "IAlocation_group",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_size <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "IAsize_diag_grouped_merged") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "IAsize_diag_grouped_merged",
+                   group.point.size = 3, plot.legend = FALSE)
+
+radar_rupt <- df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "IAruptured") %>%
+  pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggradar::ggradar(plot.title = "IAruptured",
+                   group.point.size = 3, legend.position = "right")
+
+plt_overv_bnaiar_compl_radar <- patchwork::wrap_plots(radar_age, radar_pfh, radar_hpt, radar_smoke, radar_mult, radar_loc, radar_size, radar_rupt,
+                                                      ncol=3, widths = c(3,3))
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt_overv_bnaiar_compl_radar,
+    filename = "overviewplt_df_bnaiar_compl_radar.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH*1.2, height = PLOTHEIGHT
+  )
+} else {
+  plt_overv_bnaiar_compl_radar
+}
+```
 
 
+```{r}
+plt_overv_bnaiar_compl_rupture <- overview_plt_max_grouped_rupture(df_bnaiar_compl, colorby = "IAruptured")
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = plt_overv_bnaiar_compl_rupture,
+    filename = "overviewplt_df_bnaiar_compl_rupture.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH, height = PLOTHEIGHT*1.5
+  )
+} else {
+  plt_overv_bnaiar_compl_rupture
+}
+```
 
 
 
