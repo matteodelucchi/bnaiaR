@@ -20,6 +20,7 @@ rm(list=ls())
 
 # Load libraries
 library(bnaiaR)
+library(dplyr)
 library(bnlearn)
 
 
@@ -114,13 +115,18 @@ plot(madbn_fit_mod$IAsize_diag_grouped_merged$prob)
 Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
 
 ```{r}
+plot(madbn_fit_mod$IAlocation_group$prob)
+```
+
+
+```{r}
 plot(madbn_fit_mod$IAruptured$prob)
 ```
 
 Larger IAs tend to rupture more frequently.
 
-```{r cpdist_age_hpt_aware_rupture}
-par(mfrow = c(1,2))
+```{r }
+par(mfrow = c(2,2))
 sim = cpdist(madbn_fit, nodes = c("hpt_aware", "age_diag_group"), n = 10^4, evidence = (IAruptured == "yes"))
 plot(sim, col = "grey",
      main = "IAruptured == yes")
@@ -129,7 +135,6 @@ sim = cpdist(madbn_fit, nodes = c("hpt_aware", "age_diag_group"), n = 10^4, evid
 plot(sim, col = "grey",
      main = "IAruptured == no")
 
-par(mfrow = c(1,2))
 sim = cpdist(madbn_fit, nodes = c("age_diag_group", "hpt_aware"), n = 10^4, evidence = (IAruptured == "yes"))
 plot(sim, col = "grey",
      main = "IAruptured == yes")
@@ -138,15 +143,23 @@ sim = cpdist(madbn_fit, nodes = c("age_diag_group", "hpt_aware"), n = 10^4, evid
 plot(sim, col = "grey",
      main = "IAruptured == no")
 
-par(mfrow = c(1,2))
-sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "yes"))
-plot(sim, col = "grey",
-     main = "hpt_aware == yes")
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-hpt"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+```
 
-sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "no"))
-plot(sim, col = "grey",
-     main = "hpt_aware == no")
 
+```{r }
 par(mfrow = c(1,2))
 sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^5, evidence = (IAruptured == "yes"))
 plot(prop.table(table(sim)), col = "grey",
@@ -166,7 +179,7 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
     dev.off()
   } 
 } 
@@ -174,15 +187,21 @@ if (SAVEPLOTS){
 
 
 ```{r}
-# SAVEPLOTS <- T
-
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "yes"))
 plot(prop.table(table(sim)), col = "grey",
      main = 'IAruptured == "yes"')
 
 sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "no"))
 plot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "no"')
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "IAsize_diag_grouped_merged"), n = 10^5, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
      main = 'IAruptured == "no"')
 
 if (SAVEPLOTS){
@@ -194,19 +213,35 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
     dev.off()
   } 
 }
+```
 
-par(mfrow=c(1,2))
+
+```{r}
+par(mfrow=c(2,2))
 sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "yes"))
 plot(prop.table(table(sim)), col = "grey",
      main = 'IAruptured == "yes"')
+round(prop.table(table(sim)), 2)
 
 sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "no"))
 plot(prop.table(table(sim)), col = "grey",
      main = 'IAruptured == "no"')
+round(prop.table(table(sim)), 2)
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "yes"')
+round(prop.table(table(sim)), 2)
+
+sim = cpdist(madbn_fit, nodes = c("smoking_current_notcurrent", "age_diag_group"), n = 10^5, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'IAruptured == "no"')
+round(prop.table(table(sim)), 2)
+
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_rupture-smoking-age"
   if(PLOTFORMAT == "svg"){
@@ -216,19 +251,31 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
     dev.off()
   } 
 }
+```
 
-par(mfrow=c(1,2))
-sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current"))
-plot(prop.table(table(sim)), col = "grey",
-     main = 'smoking_current_notcurrent == "current"')
 
+```{r}
+par(mfrow=c(2,2))
 sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current" & IAruptured == "yes"))
 plot(prop.table(table(sim)), col = "grey",
      main = 'smoking_current_notcurrent == "current" & IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current" & IAruptured == "no"))
+plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current" & IAruptured == "no"')
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current" & IAruptured == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current" & IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("IAsize_diag_grouped_merged", "age_diag_group"), n = 10^5, evidence = (smoking_current_notcurrent == "current" & IAruptured == "no"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current" & IAruptured == "no"')
+
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_smoking-age-size"
   if(PLOTFORMAT == "svg"){
@@ -238,23 +285,31 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
     dev.off()
   } 
 }
 ```
 
 ```{r}
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
 plot(prop.table(table(sim)),
      main = 'IAruptured == "yes"')
-prop.table(table(sim))
+round(prop.table(table(sim)), 2)
            
 sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
 plot(prop.table(table(sim)),
      main = 'IAruptured == "no"')
-prop.table(table(sim))
+round(prop.table(table(sim)), 2)
+
+sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "yes"))
+barplot(prop.table(table(sim)),
+     main = 'IAruptured == "yes"')
+
+sim = cpdist(madbn_fit, nodes = c("gender", "IAlocation_group"), n = 10^4, evidence = (IAruptured == "no"))
+barplot(prop.table(table(sim)),
+     main = 'IAruptured == "no"')
 
 if (SAVEPLOTS){
   PLOTNAME <- "infquerry_rupture-location-gender"
@@ -265,19 +320,26 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
     dev.off()
   } 
 }
 ```
 
 ```{r}
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "current" & hpt_aware == "yes" & positive_famillial_history == "yes"))
 plot(prop.table(table(sim)), col = "grey",
      main = 'smoking_current_notcurrent == "current", hpt_aware = "yes", positive_famillial_history = "yes"')
 sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"))
 plot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"')
+
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "current" & hpt_aware == "yes" & positive_famillial_history == "yes"))
+barplot(prop.table(table(sim)), col = "grey",
+     main = 'smoking_current_notcurrent == "current", hpt_aware = "yes", positive_famillial_history = "yes"')
+sim = cpdist(madbn_fit, nodes = c("age_diag_group", "IAruptured"), n = 10^4, evidence = (smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"))
+barplot(prop.table(table(sim)), col = "grey",
      main = 'smoking_current_notcurrent == "not_current" & hpt_aware == "no" & positive_famillial_history == "no"')
 
 if (SAVEPLOTS){
@@ -289,7 +351,7 @@ if (SAVEPLOTS){
     dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   } else if(PLOTFORMAT == "pdf"){
-    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH*1.2, height = PLOTWIDTH)
     dev.off()
   } 
 }
@@ -557,7 +619,30 @@ if (SAVEPLOTS){
   } 
 }
 ```
+```{r }
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "yes"))
+plot(sim, col = "grey",
+     main = "hpt_aware == yes")
 
+sim = cpdist(madbn_fit, nodes = c("age_diag_group"), n = 10^4, evidence = (hpt_aware == "no"))
+plot(sim, col = "grey",
+     main = "hpt_aware == no")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_hpt-age"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+}
+```
 
 ```{r}
 str(data)
