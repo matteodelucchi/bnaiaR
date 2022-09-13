@@ -10,7 +10,9 @@ maxparentsplot(
   filenamesuffix,
   filenamebase = FILENAMEbase,
   filename = FILENAME,
-  filetype = "pdf"
+  filetype = "pdf",
+  plotwidth = PLOTWIDTH,
+  plotheight = PLOTHEIGHT
 )
 }
 \arguments{
