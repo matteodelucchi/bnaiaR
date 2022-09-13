@@ -728,12 +728,6 @@ print(dist.dbn.additive)
 cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 ```
 
-try complex model
-if isSingular compl.mod
-  fit simpler model
-  return simple model
-else
-  return complex model
 
 ```{r additive discrete BN w/ mixed effects}
 glmm.bic = function(node, parents, data, args) {
@@ -903,573 +897,185 @@ tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "m
 save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
 ```
 
+# additive discrete BN with study source as mixed effect. Size -> location restricted
+
+
+```{r}
+data("exp1_dat")
+data.dbn.additive <- exp1_dat$abndata  %>%
+  # select(-c(study_source))
+  filter(positive_famillial_history != "probably")
+bl.dbn.additive.sizeloc <- exp1_dat$bl %>%
+  filter((From != "study_source") & (To != "study_source")) %>%
+  # Nothing can point to study source.
+  rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) %>%
+  filter(!(From == "study_source" & To == "study_source")) %>%
+  # Size can not point to Location
+  rbind(., data.frame(From = "IAsize_diag_grouped_merged", To = "IAlocation_group"))
+
+dist.dbn.additive <- exp1_dat$dist
+
+str(data.dbn.additive)
+print(bl.dbn.additive)
+print(dist.dbn.additive)
+```
+
+```{r}
+# cl = makeCluster(6)
+cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+glmm.bic = function(node, parents, data, args) {
+  dist = args$dist
+  mixed_effect = args$mixed_effect
+  
+  if (length(parents) == 0)
+    # no parent no random effect
+    model = as.formula(paste(node, "~ 1"))
+  else
+    model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+  
+  message(paste("\n",deparse1(model), "\n"))
+
+  if (dist[[node]] == "gaussian"){
+    # TODO: Proper Error-handling
+    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2}
+  
+  else if (dist[[node]] == "binomial" & length(parents) == 0){
+    tryCatch({
+      mod_glm = glm(model, data = data, family = "binomial")
+    }, error=function(e) NULL)
+    
+      return(-BIC(mod_glm)/2)
+    # }
+  } else if (dist[[node]] == "binomial" & length(parents) > 0){
+    tryCatch({
+      mod_glmer = lme4::glmer(model, data = data, family = "binomial")
+      }, error=function(e) NULL)
+    
+    # if mod_glmer is not null
+    if(!is.null(mod_glmer)){
+      # check if mod_glmer is singular and remove rand. effects if so
+      if(lme4::isSingular(mod_glmer)){
+        message(paste("Removing random effects due to singularity."))
+        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        tryCatch({
+          mod_glm_nore = glm(model_nore, data = data, family = "binomial")
+        }, error=function(e) NULL)
+      
+        # if fixed effect model is not null
+        if (!is.null(mod_glm_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(mod_glm_nore)/2)
+        } else {
+          # return very low score
+          return(-100000)
+        }
+      # if mod_glmer is not singular and not null, return BIC of mod_glmer
+      } else if (!lme4::isSingular(mod_glmer)){
+        return(-BIC(mod_glmer)/2)
+      }
+    } else if (is.null(mod_glmer)){
+      # return very low score
+      return(-100000) 
+    }
+
+  } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model, data = data)
+    }, error=function(e) NULL)
+    
+    if (!is.null(mod_mblogit)){
+      return(-BIC(mod_mblogit) / 2)
+    } else {
+      return(-100000) # return a very low score
+    }
+  } else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
+    model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
+    model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
+    message(paste("using mblogit with fixed term:", deparse1(model_basic), "and random term:", deparse1(model_random)))
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
+    }, error=function(e) NULL)
+    
+    # if mod_mblogit is not null
+    if(!is.null(mod_mblogit)){
+      # check if mod_mblogit is singular and remove rand. effects if so
+      if(mod_mblogit$converged == FALSE){
+        message(paste("Removing random effects due to singularity/non-convergence."))
+        tryCatch({
+          model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
+        }, error=function(e) NULL)
+        
+        # if fixed effect model is not null
+        if (!is.null(model_nnet_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(model_nnet_nore)/2)
+          } else {
+            # return a very low score
+            return(-100000) 
+          }
+      } else if(mod_mblogit$converged == TRUE){
+        # if not null and did converged, return BIC of mixed effects model
+          return(-BIC(mod_mblogit)/2)
+          } 
+    } else if(is.null(mod_mblogit)){
+        return(-100000) # return a very low score
+      }
+  }
+}#GLMM.BIC
+```
+
+```{r additive discrete BN w/ mixed effects size-loc restricted}
+stime <- Sys.time()
+
+bb = boot.strength(data.dbn.additive, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glmm.bic,
+                                         blacklist = bl.dbn.additive.sizeloc,
+                                         args = list(dist = dist.dbn.additive,
+                                                     mixed_effect = "study_source"),
+                                         tabu = 50),
+                   debug = TRUE)
+stopCluster(cl)
+etime <- Sys.time()
+running_time <- etime-stime
+print(paste("Running time: ", running_time))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+avg = averaged.network(bb)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+
+```{r}
+tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg)
+save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc.RData"))
+```
 
-Thoughts:
-Ideally, study_source is not present as node. But it can't be removed as it must
-be present as random effect. It can not either be completely blacklisted as this
-would cause it being removed from the data set in the backend.
 
-IDEA: restrict all arcs to source and (since we can't restrict all arcs from source)
-multiply score to make it very "bad" if study_source among covariates. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- # Bootstrap size optimization -->
-
-<!-- We estimate the size of the non-parametric bootstrap replicate stepwise to  -->
-<!-- investigate on the the model performance and number of bootstrap replicates. -->
-
-<!-- Since it is an open question to compare an estimated model to the true unknown model -->
-<!-- (see [(Thesis of Scutari 2011)](https://www.bnlearn.com/about/thesis/thesis.pdf)),  -->
-<!-- we try different measures. -->
-
-<!-- I don't go into detail about all the applied measures at this point. Please  -->
-<!-- look in the help page of the functions in `structureanalysis.R` for more details. -->
-
-<!-- ```{r bootstrap eval, echo=FALSE, message=FALSE, warning=FALSE} -->
-<!-- cl = makeCluster(6) -->
-
-<!-- eval <- NULL -->
-
-<!-- for (b in c(100,seq(500, 10000, 1000))) { -->
-<!--   print("--------------------------------------------------------------------------------") -->
-<!--   tabusize = 18 -->
-<!--   crt = "bic" # BIC standard -->
-<!--   priorname = "uniform" # uniform standard -->
-<!--   algo = "tabu" -->
-<!--   print(paste("Bootstrap replicates: ", b)) -->
-
-<!--   boot.tabu <- boot.strength(data = data, -->
-<!--                       R = b, -->
-<!--                         algorithm = algo, -->
-<!--                         algorithm.args = list( -->
-<!--                           tabu = tabusize, -->
-<!--                           blacklist = bl, -->
-<!--                           score = crt, -->
-<!--                           prior = priorname),     # prior distribution to be used with the various Bayesian Dirichlet scores -->
-<!--                         cluster = cl) -->
-
-<!--   avg.boot.tabu <- averaged.network(boot.tabu) -->
-<!--   avg.boot.tabu.th0 <- averaged.network(boot.tabu, threshold = 0) -->
-
-
-<!--   netmet <- network.metrics(data, avg.boot.tabu, avg.boot.tabu.th0, algo=algo, tabulistsize=tabusize, b=b, trueGraph=ekg, crt=crt, priorname=priorname) -->
-
-<!--   if (!is.null(eval)){ -->
-<!--     eval <- rbind(eval, netmet) -->
-<!--   } else{ -->
-<!--     eval <- netmet -->
-<!--     } -->
-<!--   } -->
-<!-- stopCluster(cl) -->
-
-<!-- eval.bootstrap.rep.tabu <- eval -->
-
-<!-- eval.bootstrap.rep.tabu.plot.data <- eval.bootstrap.rep.tabu %>% -->
-<!--   prep.data2plot() %>% -->
-<!--   select(-c(tabu.list.size, Algorithm)) %>% -->
-<!--   data.table::melt(id.vars = c("bootstrap.replicates", "score.function", "prior")) %>% -->
-<!--   mutate(across(5, function(x){round(as.numeric(x),3)})) %>% -->
-
-<!--   # rearrange order (of bootstrap.replicates) for grouped display (by prior) in graph -->
-<!--   mutate(bootstrap.replicates = as.integer(bootstrap.replicates)) %>% -->
-<!--   arrange(desc(bootstrap.replicates), .group_by = TRUE) %>% -->
-
-<!--   ggplot() + -->
-<!--   aes(x = bootstrap.replicates, y = value, group = score.function, color = prior)+ -->
-<!--   geom_point() + -->
-<!--   # geom_text(aes(label=round(value,2)), hjust=0, vjust=2, angle = -45)+ -->
-<!--   geom_line()+ -->
-<!--   facet_grid(c("variable"), scales = "free_y")+ -->
-<!--   # facet_wrap(~variable, scales = "free_y") + -->
-<!--   # scale_x_continuous(breaks = c(100,500,1000,5000))+ -->
-<!--   theme_minimal()+ -->
-<!--   scale_color_discrete(name = "Prior", -->
-<!--                        labels = c("Uniform"))+ -->
-<!-- #   scale_y_continuous(breaks = function(x, n = 5) { -->
-<!-- #     # Show only integers on y-axis -->
-<!-- #     l <- pretty(x, n) -->
-<!-- #     ifelse(!all(l > 0), -->
-<!-- #       return(l[abs(l %% 1) < .Machine$double.eps ^ 0.5]), -->
-<!-- #       return(l)) -->
-<!-- #     })+ -->
-<!--   ggtitle(c("Structure Learning Metrics"), -->
-<!--         subtitle = paste("Varying Bootstrap Replicas.\nSL Algorithm: ", algo,"\nTabulist size: ", tabusize, "\nScore:", crt)) + -->
-<!--   theme(axis.text.x = element_text(angle = 45, hjust = 1), -->
-<!--         strip.text.y = element_text(angle = 0, hjust = 0), -->
-<!--         panel.background = element_rect(), -->
-<!--         panel.spacing = unit(1, "lines")) -->
-<!-- ``` -->
-
-
-<!-- ```{r classic bootstrap plot, warning=FALSE, out.height=2400, out.width="80%"} -->
-<!-- plt <- eval.bootstrap.rep.tabu.plot.data + -->
-<!--   theme(panel.spacing = unit(0.3, "lines")) -->
-
-<!-- if (SAVEPLOTS){ -->
-<!--   ggsave(plot = plt, filename = "bootstrap_size_eval.png", path = PLOTPATH, -->
-<!--          width =9, height = 15, dpi = 600) -->
-<!-- } else { -->
-<!--   plt -->
-<!-- } -->
-<!-- ``` -->
-
-
-<!-- The network score is the typical goodness of fit measure of such a model.  -->
-<!-- We do not detect a clear relationship. Therefore, and because of still reasonable -->
-<!-- computation time, we just assume a large number of bootstrap replicates. -->
-
-<!-- # Structure learning algorithm assessment -->
-
-<!-- Analogous to the non-parametric bootstrap size estimate above, it would be  -->
-<!-- interesting to measure the model performance resulting from a set of different -->
-<!-- structure learning algorithms.   -->
-
-<!-- The open issue of measuring the goodness of fit of a model stays the same as  -->
-<!-- when optimizing the number bootstrap replicas: it's very difficult to measure and  -->
-<!-- in practice the network score (mostly BIC) is used to compare model performance. -->
-
-<!-- The results are therefore omitted at this point. -->
-
-<!-- # Structure Learning with TABU search and BIC -->
-
-<!-- For aforementioned reasons, we focus on recent but standard methodologies  -->
-<!-- and parameters. -->
-
-<!-- The final DAG is the averaged structural model resulting from repetitively applying -->
-<!-- the structure learning algorithm TABU on a non-parametric bootstrap sample.  -->
-
-<!-- ```{r bootstrap data, echo=FALSE, message=FALSE, warning=FALSE} -->
-<!-- cl = makeCluster(6) -->
-
-<!-- # Structure learning with non-parametric bootstrap framework -->
-<!-- cl = makeCluster(6) -->
-<!-- algo = "tabu" -->
-<!-- b = 10000 -->
-<!-- tabusize = 18 -->
-<!-- crt = "bic" # BIC standard -->
-<!-- priorname = "uniform" # uniform standard -->
-<!-- boot <- boot.strength( -->
-<!--   data = data, -->
-<!--   R = b, -->
-<!--   algorithm = algo, -->
-<!--   algorithm.args = list( -->
-<!--     tabu = tabusize, -->
-<!--     blacklist = bl, -->
-<!--     score = crt, -->
-<!--     prior = priorname -->
-<!--   ), -->
-<!--   # prior distribution to be used with the various Bayesian Dirichlet scores -->
-<!--   cluster = cl -->
-<!-- ) -->
-<!-- stopCluster(cl) -->
-
-<!-- arcstren[[algo]] <- boot -->
-
-<!-- avg.boot <- averaged.network(boot) -->
-<!-- avgnet[[algo]] <- avg.boot -->
-
-<!-- avg.boot.th0 <- averaged.network(boot, threshold = 0) -->
-<!-- avgnet.th0[[algo]] <- avg.boot.th0 -->
-
-<!-- netmet <- network.metrics( -->
-<!--   data, -->
-<!--   estGraph = avg.boot, -->
-<!--   estGraph.th0 = avg.boot.th0, -->
-<!--   algo = algo, -->
-<!--   tabulistsize = ifelse(algo == "tabu", tabusize, NA), -->
-<!--   b = b, -->
-<!--   trueGraph = ekg, -->
-<!--   crt = crt, -->
-<!--   priorname = priorname -->
-<!-- ) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "arcstren_tabu_bic", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   plot(arcstren[["tabu"]]) -->
-<!--   # abline(v=0.3) -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   plot(arcstren[["tabu"]]) -->
-<!--   abline(v = 0.3) -->
-<!-- } -->
-<!-- ``` -->
-
-
-<!-- We see many arcs of low support and no visually clear cut-point to set the arc-strength -->
-<!-- threshold.  -->
-
-<!-- We see it is difficult to argue from a statistical point of view -->
-<!-- where to set the threshold and this is a reason why we have the significance  -->
-<!-- threshold as a point of orientation. -->
-
-<!-- The significance threshold is close to the 50% threshold and the structure would -->
-<!-- not change upon changing it to that point. -->
-
-<!-- If it is reasonable one can vary from the proposed significance threshold. -->
-
-
-<!-- ```{r cpdag-tabu-strength} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot( -->
-<!--     cpdag(avg.boot, wlbl = TRUE), -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "CPDAG", -->
-<!--     sub = "SL: tabu\nth.=sign.level", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   strength.plot( -->
-<!--     cpdag(avg.boot, wlbl = TRUE), -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "CPDAG", -->
-<!--     sub = "SL: tabu\nth.=sign.level", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!-- } -->
-<!-- ``` -->
-
-<!-- ```{r dag-tabu-strength} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot( -->
-<!--     avgnet[["tabu"]], -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "DAG", -->
-<!--     sub = "SL: tabu\nth.=sign.level", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   strength.plot( -->
-<!--     avgnet[["tabu"]], -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "DAG", -->
-<!--     sub = "SL: tabu\nth.=sign.level", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!-- } -->
-<!-- ``` -->
-
-<!-- As already expected from the arc-strength plot, we see a very sparse, partially -->
-<!-- connected CPDAG with no arc directions. -->
-
-<!-- Variables, we know they must have an effect on rupture or at least some other -->
-<!-- variables are not connected. -->
-
-<!-- Eventhough methodologically sound, it is difficult to justify this network from -->
-<!-- a clinical point of view.  -->
-
-<!-- Interestingly all connections from the CPDAG above were found in the mcmcabn  -->
-<!-- consensus DAG as well.  -->
-
-<!-- If we lower the arc-strength threshold to 30% (dashed line in arc-strength plot.  -->
-<!-- We result in a fully connected, partially directed CPDAG. -->
-
-<!-- ```{r cpdag-tabu-strength-th30, layout="l-page"} -->
-<!-- avgnet[["tabu.th03"]] <- averaged.network(arcstren[["tabu"]], threshold = 0.3) -->
-
-
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic_th03", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot( -->
-<!--     cpdag(avgnet[["tabu.th03"]], wlbl = TRUE), -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "CPDAG", -->
-<!--     sub = "SL: tabu\nth.=0.3", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   strength.plot( -->
-<!--     cpdag(avgnet[["tabu.th03"]], wlbl = TRUE), -->
-<!--     arcstren[["tabu"]], -->
-<!--     main = "CPDAG", -->
-<!--     sub = "SL: tabu\nth.=0.3", -->
-<!--     shape = "rectangle" -->
-<!--   ) -->
-<!-- } -->
-<!-- ``` -->
-
-<!-- The respective DAG: -->
-
-<!-- ```{r} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic_th03", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot(avgnet[["tabu.th03"]], -->
-<!--                 arcstren[["tabu"]], -->
-<!--                 main = "DAG", -->
-<!--                 sub = "SL: tabu\nth.=0.3", -->
-<!--                 shape = "rectangle") -->
-<!--   dev.off() -->
-<!--   bnlearn::write.dot(graph = avgnet[["tabu.th03"]], -->
-<!--                      file = paste0(FILE, "dot")) -->
-<!--   write.csv(arcstren[["tabu"]], file = paste0(FILE, "csv")) -->
-<!-- } else { -->
-<!--   strength.plot(avgnet[["tabu.th03"]], -->
-<!--                 arcstren[["tabu"]], -->
-<!--                 main = "DAG", -->
-<!--                 sub = "SL: tabu\nth.=0.3", -->
-<!--                 shape = "rectangle") -->
-<!--   } -->
-<!-- ``` -->
-
-<!-- # Structure Learning with TABU search and custom BIC -->
-
-<!-- There are two possible way to remediate this issue. One is to lower the  -->
-<!-- threshold in averaged.network(). However, this is likely to let noisy arcs in -->
-<!-- the network and it is difficult to decide how much the threshold should be  -->
-<!-- lowered in an objective way. The other is to penalise model complexity less  -->
-<!-- harshly so that what were the children have a chance to be significant when they -->
-<!-- are included as parents. -->
-
-<!-- AIC has a smaller penalty coefficient than BIC, but the network it gives is too -->
-<!-- dense. The CDF plot of the arc strengths makes it really apparent the score is  -->
-<!-- overfitting: almost all arcs have non-zero strength. -->
-
-<!-- ```{r learn_with_aic, warning=FALSE} -->
-<!-- cl = makeCluster(6) -->
-
-<!-- bb = boot.strength(data, algorithm = "tabu", R = 500, cluster = cl,  -->
-<!--        algorithm.args = list(score = "aic", blacklist = bl, tabu = 50)) -->
-<!-- avg = averaged.network(bb) -->
-<!-- strength.plot(avg, bb, shape = "rectangle") -->
-<!-- plot(bb) -->
-<!-- ``` -->
-
-<!-- We can of course increase the threshold a bit to prune borderline arcs and paper -->
-<!-- over the shortcomings of AIC. -->
-
-<!-- ```{r learn_with_aic_and_threshold, warning=FALSE} -->
-<!-- avg = averaged.network(bb, threshold = 0.6) -->
-<!-- strength.plot(avg, bb, shape = "rectangle") -->
-<!-- ``` -->
-
-<!-- AIC (penalty coefficient = 1) overfits badly, and BIC (penalty coefficient =  -->
-<!-- log(n) / 2): the right amount of regularisation is likely to be somewhere in  -->
-<!-- between (say the average of the two penalty coefficients). -->
-
-<!-- ```{r learn_with_halved_bic, warning=FALSE} -->
-<!-- bb = boot.strength(data, algorithm = "tabu", R = 500, cluster = cl,  -->
-<!--        algorithm.args = list(score = "bic", k = (log(nrow(data)) / 2 + 1) /2, -->
-<!--                              blacklist = bl, tabu = 50)) -->
-<!-- avg = averaged.network(bb) -->
-<!-- strength.plot(avg, bb, shape = "rectangle") -->
-<!-- stopCluster(cl) -->
-<!-- ``` -->
-
-<!-- The simpler expression log(nrow(data)) / 4 (which is smaller) leads to a network -->
-<!-- without isolated components, one that looks sensible in a number of ways. -->
-
-<!-- ```{r bootstrap bic custom, echo=FALSE, message=FALSE, warning=FALSE} -->
-<!-- cl = makeCluster(6) -->
-
-<!-- # Structure learning with non-parametric bootstrap framework -->
-<!-- cl = makeCluster(6) -->
-<!-- algo = "tabu" -->
-<!-- b = 10000 -->
-<!-- tabusize = 18 -->
-<!-- crt = "bic" # BIC standard -->
-<!-- priorname = "uniform" # uniform standard -->
-<!-- boot <- boot.strength( -->
-<!--   data = data, -->
-<!--   R = b, -->
-<!--   algorithm = algo, -->
-<!--   algorithm.args = list( -->
-<!--     tabu = tabusize, -->
-<!--     blacklist = bl, -->
-<!--     score = crt, -->
-<!--     prior = priorname, -->
-<!--     k = log(nrow(data)) / 4 -->
-<!--   ), -->
-<!--   # prior distribution to be used with the various Bayesian Dirichlet scores -->
-<!--   cluster = cl -->
-<!-- ) -->
-<!-- stopCluster(cl) -->
-
-<!-- arcstren[["tabu.bic.custom"]] <- boot -->
-
-<!-- avg.boot <- averaged.network(boot) -->
-<!-- avgnet[["tabu.bic.custom"]] <- avg.boot -->
-
-<!-- avg.boot.th0 <- averaged.network(boot, threshold = 0) -->
-<!-- avgnet.th0[["tabu.bic.custom"]] <- avg.boot.th0 -->
-
-<!-- netmet <- network.metrics( -->
-<!--   data, -->
-<!--   estGraph = avg.boot, -->
-<!--   estGraph.th0 = avg.boot.th0, -->
-<!--   algo = algo, -->
-<!--   tabulistsize = ifelse(algo == "tabu", tabusize, NA), -->
-<!--   b = b, -->
-<!--   trueGraph = ekg, -->
-<!--   crt = crt, -->
-<!--   priorname = priorname -->
-<!-- ) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "arcstren_tabu_bic_custom", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   plot(arcstren[["tabu.bic.custom"]]) -->
-<!--   # abline(v = 0.3) -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   plot(arcstren[["tabu.bic.custom"]]) -->
-<!--   abline(v=0.3) -->
-<!-- } -->
-<!-- ``` -->
-
-
-
-<!-- ```{r cpdag-tabu-strength-bic-custom} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "cpdag_tabu_bic_custom", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot(cpdag(avg.boot, wlbl = TRUE), -->
-<!--               arcstren[["tabu.bic.custom"]], -->
-<!--               main = "CPDAG", -->
-<!--               sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom", -->
-<!--               shape = "rectangle") -->
-<!--   dev.off() -->
-<!-- } else { -->
-<!--   strength.plot(cpdag(avg.boot, wlbl = TRUE), -->
-<!--               arcstren[["tabu.bic.custom"]], -->
-<!--               main = "CPDAG", -->
-<!--               sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom", -->
-<!--               shape = "rectangle") -->
-<!-- } -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- if (SAVEPLOTS) { -->
-<!--   FILE <- paste0(PLOTPATH, "/", "dag_tabu_bic_custom", ".") -->
-<!--   if (PLOTFORMAT == "svg") { -->
-<!--     svg(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "png") { -->
-<!--     png(paste0(FILE, PLOTFORMAT)) -->
-<!--   } else if (PLOTFORMAT == "pdf") { -->
-<!--     pdf(paste0(FILE, PLOTFORMAT)) -->
-<!--   } -->
-<!--   strength.plot(avgnet[["tabu.bic.custom"]], -->
-<!--                 arcstren[["tabu.bic.custom"]], -->
-<!--                 main = "DAG", -->
-<!--                 sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom", -->
-<!--                 shape = "rectangle") -->
-<!--   dev.off() -->
-<!--   bnlearn::write.dot(graph = avgnet[["tabu.bic.custom"]], -->
-<!--                      file = paste0(FILE, "dot")) -->
-<!--   write.csv(arcstren[["tabu"]], file = paste0(FILE, "csv")) -->
-
-<!-- } else { -->
-<!--   strength.plot(avgnet[["tabu.bic.custom"]], -->
-<!--                 arcstren[["tabu.bic.custom"]], -->
-<!--                 main = "DAG", -->
-<!--                 sub = "SL: tabu\nth.=sign.level\nScore=BIC-custom", -->
-<!--                 shape = "rectangle") -->
-<!-- } -->
-<!-- ``` -->
-
-
-
-<!-- ## save to package data -->
-
-<!-- ```{r save avgnet and arcstren} -->
-<!-- # discrete_bns <- list(avgnet = avgnet,  -->
-<!-- #                      arcstren = arcstren) -->
-<!-- # usethis::use_data(discrete_bns, overwrite = TRUE) -->
-<!-- # devtools::document() -->
-<!-- ``` -->

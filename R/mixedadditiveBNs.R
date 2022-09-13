@@ -357,6 +357,8 @@ mcmcabn_bnaiar <-
 #' @param filenamebase character of path to location where results should be stored.
 #' @param filename character specifying the current set of runs.
 #' @param filetype "pdf" or "png" or any that is supported by \code{?ggplot2::ggsave()}.
+#' @param plotwidth integer specifying plot width.
+#' @param plotheight integer specifying plot height.
 #'
 #' @return ggplot2 and data.frame.
 #' @export
@@ -432,5 +434,88 @@ maxparentsplot <- function(net.scores,
     )
   } else {
     return(list(df, plt.comb))
+  }
+}
+
+#' Draw graphs for different number of max parents.
+#'
+#'
+#' @param net.scores.dags output from \code{bnaiaR::findOptNoParentNodes()$net.scores.dags}
+#' @param df data.frame with training data
+#' @param SAVEPLOTS If TRUE the plot will be saved.
+#' @param filenamesuffix character specifying the current run (e.g. experiment number).
+#' @param filenamebase character of path to location where results should be stored.
+#' @param filename character specifying the current set of runs.
+#' @param filetype "pdf" or "png" or any that is supported by \code{?ggplot2::ggsave()}.
+#' @param plotwidth integer specifying plot width.
+#' @param plotheight integer specifying plot height.
+#'
+#' @return plot
+#' @export
+dagswithdiffparentsplt <- function(net.scores.dags,
+                                   df,
+                                   SAVEPLOTS,
+                                   filenamesuffix,
+                                   filenamebase = FILENAMEbase,
+                                   filename = FILENAME,
+                                   filetype = "pdf",
+                                   plotwidth = PLOTWIDTH,
+                                   plotheight = PLOTHEIGHT) {
+  parents <- 1
+  plt <- list()
+  for (i in net.scores.dags) {
+    # plotAbn(i, dist, edge.direction = "undirected")
+
+    dag = bnlearn::empty.graph(names(df))
+    bnlearn::amat(dag) = t(i$dag)
+
+    temp.plt <- bnlearn::graphviz.plot(
+      dag,
+      shape = "rectangle",
+      main = paste0("DAG with max.par=", parents),
+      render = F
+    )
+    plt[[parents]] <- temp.plt
+    parents <- parents + 1
+  }
+
+  if (SAVEPLOTS) {
+    plotname <-
+      paste0(filenamebase,
+             filename,
+             filenamesuffix,
+             "_netscore_per_no.parent_nodes")
+    if (filetype == "png") {
+      png(
+        filename = paste0(plotname, ".", filetype),
+        width = plotwidth,
+        height = plotheight
+      )
+    } else if (filetype == "pdf") {
+      pdf(
+        file = paste0(plotname, ".", filetype),
+        width = plotwidth,
+        height = plotheight
+      )
+    }
+
+    par(mfrow = c(3, 3))
+    parents <- 1
+    for (i in plt) {
+      attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
+      Rgraphviz::plot(i, attrs=attrs)
+      title(paste0("DAG with max.par=", parents))
+      parents <- parents + 1
+    }
+    dev.off()
+  } else {
+    par(mfrow = c(3, 3))
+    parents <- 1
+    for (i in plt) {
+      attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
+      Rgraphviz::plot(i, attrs=attrs)
+      title(paste0("DAG with max.par=", parents))
+      parents <- parents + 1
+    }
   }
 }
