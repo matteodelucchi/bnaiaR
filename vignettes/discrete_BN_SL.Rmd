@@ -897,15 +897,185 @@ tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "m
 save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
 ```
 
+# additive discrete BN with study source as mixed effect. Size -> location restricted
 
-Thoughts:
-Ideally, study_source is not present as node. But it can't be removed as it must
-be present as random effect. It can not either be completely blacklisted as this
-would cause it being removed from the data set in the backend.
 
-IDEA: restrict all arcs to source and (since we can't restrict all arcs from source)
-multiply score to make it very "bad" if study_source among covariates. 
+```{r}
+data("exp1_dat")
+data.dbn.additive <- exp1_dat$abndata  %>%
+  # select(-c(study_source))
+  filter(positive_famillial_history != "probably")
+bl.dbn.additive.sizeloc <- exp1_dat$bl %>%
+  filter((From != "study_source") & (To != "study_source")) %>%
+  # Nothing can point to study source.
+  rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) %>%
+  filter(!(From == "study_source" & To == "study_source")) %>%
+  # Size can not point to Location
+  rbind(., data.frame(From = "IAsize_diag_grouped_merged", To = "IAlocation_group"))
 
+dist.dbn.additive <- exp1_dat$dist
+
+str(data.dbn.additive)
+print(bl.dbn.additive)
+print(dist.dbn.additive)
+```
+
+```{r}
+# cl = makeCluster(6)
+cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+glmm.bic = function(node, parents, data, args) {
+  dist = args$dist
+  mixed_effect = args$mixed_effect
+  
+  if (length(parents) == 0)
+    # no parent no random effect
+    model = as.formula(paste(node, "~ 1"))
+  else
+    model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+  
+  message(paste("\n",deparse1(model), "\n"))
+
+  if (dist[[node]] == "gaussian"){
+    # TODO: Proper Error-handling
+    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2}
+  
+  else if (dist[[node]] == "binomial" & length(parents) == 0){
+    tryCatch({
+      mod_glm = glm(model, data = data, family = "binomial")
+    }, error=function(e) NULL)
+    
+      return(-BIC(mod_glm)/2)
+    # }
+  } else if (dist[[node]] == "binomial" & length(parents) > 0){
+    tryCatch({
+      mod_glmer = lme4::glmer(model, data = data, family = "binomial")
+      }, error=function(e) NULL)
+    
+    # if mod_glmer is not null
+    if(!is.null(mod_glmer)){
+      # check if mod_glmer is singular and remove rand. effects if so
+      if(lme4::isSingular(mod_glmer)){
+        message(paste("Removing random effects due to singularity."))
+        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        tryCatch({
+          mod_glm_nore = glm(model_nore, data = data, family = "binomial")
+        }, error=function(e) NULL)
+      
+        # if fixed effect model is not null
+        if (!is.null(mod_glm_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(mod_glm_nore)/2)
+        } else {
+          # return very low score
+          return(-100000)
+        }
+      # if mod_glmer is not singular and not null, return BIC of mod_glmer
+      } else if (!lme4::isSingular(mod_glmer)){
+        return(-BIC(mod_glmer)/2)
+      }
+    } else if (is.null(mod_glmer)){
+      # return very low score
+      return(-100000) 
+    }
+
+  } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model, data = data)
+    }, error=function(e) NULL)
+    
+    if (!is.null(mod_mblogit)){
+      return(-BIC(mod_mblogit) / 2)
+    } else {
+      return(-100000) # return a very low score
+    }
+  } else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
+    model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
+    model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
+    message(paste("using mblogit with fixed term:", deparse1(model_basic), "and random term:", deparse1(model_random)))
+    tryCatch({
+      mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
+    }, error=function(e) NULL)
+    
+    # if mod_mblogit is not null
+    if(!is.null(mod_mblogit)){
+      # check if mod_mblogit is singular and remove rand. effects if so
+      if(mod_mblogit$converged == FALSE){
+        message(paste("Removing random effects due to singularity/non-convergence."))
+        tryCatch({
+          model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
+        }, error=function(e) NULL)
+        
+        # if fixed effect model is not null
+        if (!is.null(model_nnet_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(model_nnet_nore)/2)
+          } else {
+            # return a very low score
+            return(-100000) 
+          }
+      } else if(mod_mblogit$converged == TRUE){
+        # if not null and did converged, return BIC of mixed effects model
+          return(-BIC(mod_mblogit)/2)
+          } 
+    } else if(is.null(mod_mblogit)){
+        return(-100000) # return a very low score
+      }
+  }
+}#GLMM.BIC
+```
+
+```{r additive discrete BN w/ mixed effects size-loc restricted}
+stime <- Sys.time()
+
+bb = boot.strength(data.dbn.additive, 
+                   algorithm = "tabu", 
+                   R = 500,
+                   cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glmm.bic,
+                                         blacklist = bl.dbn.additive.sizeloc,
+                                         args = list(dist = dist.dbn.additive,
+                                                     mixed_effect = "study_source"),
+                                         tabu = 50),
+                   debug = TRUE)
+stopCluster(cl)
+etime <- Sys.time()
+running_time <- etime-stime
+print(paste("Running time: ", running_time))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+avg = averaged.network(bb)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+
+```{r}
+tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg)
+save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc.RData"))
+```
 
 
 
