@@ -260,6 +260,36 @@ if (SAVEPLOTS) {
 }
 ```
 
+```{r}
+paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+
+df_counts %>%
+  mutate(prop = as.integer(count)/as.integer(total)) %>%
+  mutate(across(c("count", "total"), as.integer)) %>% 
+  filter(variable == "age_diag_group") %>%
+  # pivot_wider(id_cols = c("study"), names_from = c("level"), values_from = prop) %>%
+  
+  ggplot(., aes(x = level, y= prop, fill = study)) +
+  # geom_histogram(stat = "count", position = "dodge") +
+  geom_col() +
+  theme_minimal() +
+  scale_fill_manual(values = paint) +
+  # ggtitle(deparse(substitute(df))) +
+  theme(
+    legend.spacing = unit(1, "cm"),
+    # axis.text.x = element_blank(),
+    axis.text.x = element_text(
+      angle = 45,
+      vjust = 1,
+      hjust = 1,
+      margin = margin(10, 10, 10, 10)
+    ),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+```
+one color adds up to 1
+
 
 ```{r}
 plt_overv_bnaiar_compl_rupture <- overview_plt_max_grouped_rupture(df_bnaiar_compl, colorby = "IAruptured")
@@ -354,44 +384,44 @@ print(pltAgedisc)
 ```
 
 ```{r age overlay}
-df.age <- adb %>% 
-  filter(AgeDiag != 0) %>%
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag)
+df.age <- adbisgc_reg %>% 
+  filter(age_diag != 0) %>%
+  select(c(age_diag, age_diag_group)) %>%
+  arrange(age_diag)
 
-df.age.cont <- adb %>% 
-  filter(AgeDiag != 0) %>%
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag) %>%
-  count(AgeDiag, name="AgeDiag.n")
+df.age.cont <- adbisgc_reg %>% 
+  filter(age_diag != 0) %>%
+  select(c(age_diag, age_diag_group)) %>%
+  arrange(age_diag) %>%
+  count(age_diag, name="AgeDiag.n")
 
-df.age.group <- adb %>% 
-  filter(AgeDiag != 0) %>%
-  select(c(AgeDiag, AgeDiag.group, AgeDiag.group.coarse)) %>%
-  arrange(AgeDiag) %>%
-  count(AgeDiag.group,  name="AgeDiag.group.n")
+df.age.group <- adbisgc_reg %>% 
+  filter(age_diag != 0) %>%
+  select(c(age_diag, age_diag_group)) %>%
+  arrange(age_diag) %>%
+  count(age_diag_group,  name="AgeDiag.group.n")
 
 plt.overlay.age <- df.age.cont %>%
   ggplot() +
   annotate(
     "rect",
     xmin = c(
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+      min(df.age$age_diag[which(df.age$age_diag_group == "A")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "B")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "C")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "D")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "E")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "F")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "G")])
     ),
     xmax = c(
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+      max(df.age$age_diag[which(df.age$age_diag_group == "A")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "B")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "C")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "D")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "E")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "F")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "G")])
     ),
     ymin = rep(0, 7),
     ymax = df.age.group$AgeDiag.group.n,
@@ -401,31 +431,31 @@ plt.overlay.age <- df.age.cont %>%
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
   geom_text(label = "A", family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "A")])+((max(df.age$age_diag[which(df.age$age_diag_group == "A")])-min(df.age$age_diag[which(df.age$age_diag_group == "A")]))/2), 
             y=df.age.group$AgeDiag.group.n[1]*1.1)+
   geom_text(label = "B",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "B")])+((max(df.age$age_diag[which(df.age$age_diag_group == "B")])-min(df.age$age_diag[which(df.age$age_diag_group == "B")]))/2), 
             y=df.age.group$AgeDiag.group.n[2]*1.1)+
   geom_text(label = "C",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "C")])+((max(df.age$age_diag[which(df.age$age_diag_group == "C")])-min(df.age$age_diag[which(df.age$age_diag_group == "C")]))/2), 
             y=df.age.group$AgeDiag.group.n[3]*1.1)+
   geom_text(label = "D",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "D")])+((max(df.age$age_diag[which(df.age$age_diag_group == "D")])-min(df.age$age_diag[which(df.age$age_diag_group == "D")]))/2), 
             y=df.age.group$AgeDiag.group.n[4]*1.1)+
   geom_text(label = "E",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "E")])+((max(df.age$age_diag[which(df.age$age_diag_group == "E")])-min(df.age$age_diag[which(df.age$age_diag_group == "E")]))/2), 
             y=df.age.group$AgeDiag.group.n[5]*1.1)+
   geom_text(label = "F",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "F")])+((max(df.age$age_diag[which(df.age$age_diag_group == "F")])-min(df.age$age_diag[which(df.age$age_diag_group == "F")]))/2), 
             y=df.age.group$AgeDiag.group.n[6]*1.1)+
   geom_text(label = "G",  family = "serif",
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "G")])+((max(df.age$age_diag[which(df.age$age_diag_group == "G")])-min(df.age$age_diag[which(df.age$age_diag_group == "G")]))/2), 
             y=df.age.group$AgeDiag.group.n[7]*1.05)+
   # Age group cont
-  geom_col(aes(x = AgeDiag, y = AgeDiag.n), width = 0.5) +
+  geom_col(aes(x = age_diag, y = AgeDiag.n), width = 0.5) +
   # Layouting
   theme_tufte()+
-  scale_x_continuous(breaks = c(min(df.age.cont$AgeDiag), 40, seq(40, 65, 5), max(df.age.cont$AgeDiag)),
+  scale_x_continuous(breaks = c(min(df.age.cont$age_diag), 40, seq(40, 65, 5), max(df.age.cont$age_diag)),
                      minor_breaks = seq(45, 65, 5)) +
   labs(
     title = "Age",
@@ -448,22 +478,22 @@ plt.overlay.age.large <- df.age.cont %>%
   annotate(
     "rect",
     xmin = c(
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+      min(df.age$age_diag[which(df.age$age_diag_group == "A")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "B")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "C")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "D")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "E")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "F")]),
+      min(df.age$age_diag[which(df.age$age_diag_group == "G")])
     ),
     xmax = c(
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]),
-      max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])
+      max(df.age$age_diag[which(df.age$age_diag_group == "A")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "B")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "C")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "D")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "E")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "F")]),
+      max(df.age$age_diag[which(df.age$age_diag_group == "G")])
     ),
     ymin = rep(0, 7),
     ymax = df.age.group$AgeDiag.group.n,
@@ -473,31 +503,31 @@ plt.overlay.age.large <- df.age.cont %>%
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
   geom_text(label = "A", family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "A")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "A")])+((max(df.age$age_diag[which(df.age$age_diag_group == "A")])-min(df.age$age_diag[which(df.age$age_diag_group == "A")]))/2), 
             y=df.age.group$AgeDiag.group.n[1]*1.1)+
   geom_text(label = "B",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "B")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "B")])+((max(df.age$age_diag[which(df.age$age_diag_group == "B")])-min(df.age$age_diag[which(df.age$age_diag_group == "B")]))/2), 
             y=df.age.group$AgeDiag.group.n[2]*1.1)+
   geom_text(label = "C",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "C")]))/2), 
+            x=min(df.age$AgeDiag[which(df.age$age_diag_group == "C")])+((max(df.age$AgeDiag[which(df.age$age_diag_group == "C")])-min(df.age$AgeDiag[which(df.age$age_diag_group == "C")]))/2), 
             y=df.age.group$AgeDiag.group.n[3]*1.1)+
   geom_text(label = "D",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "D")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "D")])+((max(df.age$age_diag[which(df.age$age_diag_group == "D")])-min(df.age$age_diag[which(df.age$age_diag_group == "D")]))/2), 
             y=df.age.group$AgeDiag.group.n[4]*1.1)+
   geom_text(label = "E",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "E")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "E")])+((max(df.age$age_diag[which(df.age$age_diag_group == "E")])-min(df.age$age_diag[which(df.age$age_diag_group == "E")]))/2), 
             y=df.age.group$AgeDiag.group.n[5]*1.1)+
   geom_text(label = "F",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "F")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "F")])+((max(df.age$age_diag[which(df.age$age_diag_group == "F")])-min(df.age$age_diag[which(df.age$age_diag_group == "F")]))/2), 
             y=df.age.group$AgeDiag.group.n[6]*1.1)+
   geom_text(label = "G",  family = "serif", size=8,
-            x=min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])+((max(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")])-min(df.age$AgeDiag[which(df.age$AgeDiag.group == "G")]))/2), 
+            x=min(df.age$age_diag[which(df.age$age_diag_group == "G")])+((max(df.age$age_diag[which(df.age$age_diag_group == "G")])-min(df.age$age_diag[which(df.age$age_diag_group == "G")]))/2), 
             y=df.age.group$AgeDiag.group.n[7]*1.05)+
   # Age group cont
-  geom_col(aes(x = AgeDiag, y = AgeDiag.n), width = 0.5) +
+  geom_col(aes(x = age_diag, y = AgeDiag.n), width = 0.5) +
   # Layouting
   theme_tufte()+
-  scale_x_continuous(breaks = c(min(df.age.cont$AgeDiag), 40, seq(40, 65, 5), max(df.age.cont$AgeDiag)),
+  scale_x_continuous(breaks = c(min(df.age.cont$age_diag), 40, seq(40, 65, 5), max(df.age.cont$age_diag)),
                      minor_breaks = seq(45, 65, 5)) +
   labs(
     title = "Age",
@@ -521,7 +551,7 @@ plt.overlay.age.large
 if (SAVEPLOTS) {
   ggsave(
     plot = plt.overlay.age,
-    filename = "age_overlay.png",
+    filename = "age_overlay.pdf",
     path = PLOTPATH,
     dpi = 600
   )
@@ -628,26 +658,34 @@ print(pltloc)
 ```
 
 ```{r}
-df.loc <- adb %>%
-  select(c(IA_Location, location.grouped))
+df.loc <- adbisgc_reg %>%
+  select(c(IAlocation, IAlocation_group)) %>%
+  filter(!is.na(IAlocation) & IAlocation != "Infundibulum") %>%
+  # mutate(IAlocation = factor(IAlocation, levels = c("NA", "Infundibulum", 
+  #                                                   "A1 segment ant", "Other", "Basilar", "ICA", "MCA", 
+  #                                                   "PC", "A2", "V-B", "Pcom", "Acom", 
+  #                                                   "CavICA", "OphtICA")))
+    mutate(IAlocation = factor(IAlocation, levels = c("PC", "A2", "V-B", "Pcom", "Acom", 
+                                                      "A1 segment ant", "Other", "Basilar", "ICA", "MCA", 
+                                                      "CavICA", "OphtICA")))
 str(df.loc)
 
 plt.loc.comb <- df.loc %>%
   # Plot
   ggplot()+
-  aes(x=IA_Location, fill=location.grouped)+
+  aes(x=IAlocation, fill=IAlocation_group)+
   geom_bar() +
   theme_minimal()+
   labs(title= "IA location",
        y="Number of records",
        x=NULL)+
   # scale_fill_manual(values=c("Low"="darkgreen", "Medium"= "darkorange", "High" = "darkred"), name = "Risk of IA rupture")+
-  scale_fill_manual(values=c("Low"=colorblind_pal()(8)[4], "Medium"= colorblind_pal()(8)[2], "High" = colorblind_pal()(8)[7]), name = "Risk of IA rupture")+
+  scale_fill_manual(values=c("low"=colorblind_pal()(8)[4], "medium"= colorblind_pal()(8)[2], "high" = colorblind_pal()(8)[7]), name = "Risk of IA rupture")+
   # scale_fill_tableau(name = "Risk of IA rupture")+
   theme_tufte()+
   theme(plot.caption = element_text(hjust = 0.5),
         plot.caption.position = "plot",
-        legend.position = c(0.8,0.7))+
+        legend.position = c(0.875,0.575))+
   coord_flip()
 
 plt.loc.comb.large <- plt.loc.comb +
@@ -656,7 +694,8 @@ plt.loc.comb.large <- plt.loc.comb +
           axis.text = element_text(size = 30),
           axis.title = element_text(size = 30),
           legend.text = element_text(size = 30),
-          legend.title = element_text(size = 32))
+          legend.title = element_text(size = 32),
+        legend.position = c(0.75,0.575))
   
 print(plt.loc.comb)
 ```
@@ -790,25 +829,25 @@ if (SAVEPLOTS) {
 ```
 
 ```{r IA size mm overlay}
-df.size <- adb %>% 
+df.size <- adbisgc_reg %>% 
     # Remove IA size outliers
-  filter(IAsize_log < 4) %>%
-  select(c(IAsize, IAsize.groups.merged)) %>%
-  arrange(IAsize)
+  filter(IAsize_diag_log < 4) %>%
+  select(c(IAsize_diag, IAsize_diag_grouped_merged)) %>%
+  arrange(IAsize_diag)
 
-df.size.cont <- adb %>% 
+df.size.cont <- adbisgc_reg %>% 
     # Remove IA size outliers
-  filter(IAsize_log < 4) %>%
-  select(c(IAsize, IAsize.groups.merged)) %>%
-  arrange(IAsize) %>%
-  count(IAsize, name="IAsize.n")
+  filter(IAsize_diag_log < 4) %>%
+  select(c(IAsize_diag, IAsize_diag_grouped_merged)) %>%
+  arrange(IAsize_diag) %>%
+  count(IAsize_diag, name="IAsize.n")
 
-df.size.group <- adb %>% 
+df.size.group <- adbisgc_reg %>% 
     # Remove IA size outliers
-  filter(IAsize_log < 4) %>%
-  select(c(IAsize, IAsize.groups.merged)) %>%
-  arrange(IAsize) %>%
-  count(IAsize.groups.merged, name="IAsize.group.n")
+  filter(IAsize_diag_log < 4) %>%
+  select(c(IAsize_diag, IAsize_diag_grouped_merged)) %>%
+  arrange(IAsize_diag) %>%
+  count(IAsize_diag_grouped_merged, name="IAsize.group.n")
 
 # small geom_text size
 plt.overlay.size.mm <- df.size.cont %>%
@@ -818,16 +857,16 @@ plt.overlay.size.mm <- df.size.cont %>%
   annotate(
     "rect",
     xmin = c(
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
-      # min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])
+      # min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "D")]),
     ),
     xmax = c(
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
-    #   max(df.size$IAsize_log[which(df.size$IAsize.groups.merged == "D")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])
+    #   max(df.size$IAsize_log[which(df.size$IAsize_diag_grouped_merged == "D")]),
     ),
     ymin = rep(0, 3),
     ymax = df.size.group$IAsize.group.n/10,
@@ -837,20 +876,20 @@ plt.overlay.size.mm <- df.size.cont %>%
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
   geom_text(label = "A≤7mm", family = "serif", fontface = "plain",
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]))/2),
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]))/2),
             y=df.size.group$IAsize.group.n[1]/10*1.05)+
   geom_text(label = "B=7-12mm",  family = "serif", fontface = "plain",
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]))/2),
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]))/2),
             y=df.size.group$IAsize.group.n[2]/10*1.1)+
   geom_text(label = "C≥13mm",  family = "serif", fontface = "plain",
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")]))/2),
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")]))/2),
             y=df.size.group$IAsize.group.n[3]/10*1.3)+
   # geom_text(label = "D",  family = "serif", fontface = "plain",
-  #           x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]))/2), 
+  #           x=min(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")])-min(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")]))/2), 
   #           y=df.size.group$IAsize.group.n[4]*1.1)+
 
   # Size group cont
-  geom_col(aes(x = IAsize, y = IAsize.n), width=0.1, position = "stack") +
+  geom_col(aes(x = IAsize_diag, y = IAsize.n), width=0.1, position = "dodge") +
   # Layouting
   theme_tufte()+
   # scale_x_continuous(breaks = round(c(seq(0, 4, 0.5)), 2)) +
@@ -874,39 +913,39 @@ plt.overlay.size.mm.large <- df.size.cont %>%
   annotate(
     "rect",
     xmin = c(
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
-      min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
-      # min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]),
+      min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])
+      # min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "D")]),
     ),
     xmax = c(
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]),
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]),
-      max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])
-    #   max(df.size$IAsize_log[which(df.size$IAsize.groups.merged == "D")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]),
+      max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])
+    #   max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "D")]),
     ),
     ymin = rep(0, 3),
-    ymax = df.size.group$IAsize.group.n/10,
+    ymax = df.size.group$IAsize.group.n/6,
     alpha = 0.2,
     color = "gray",
     fill = "lightgray"
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .2)))+
   geom_text(label = "A", family = "serif", fontface = "plain", size = 8,
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "A")]))/2),
-            y=df.size.group$IAsize.group.n[1]/10*1.05)+
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "A")]))/2),
+            y=df.size.group$IAsize.group.n[1]/6*1.05)+
   geom_text(label = "B",  family = "serif", fontface = "plain",size = 8,
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "B")]))/2),
-            y=df.size.group$IAsize.group.n[2]/10*1.1)+
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "B")]))/2),
+            y=df.size.group$IAsize.group.n[2]/6*1.15)+
   geom_text(label = "C",  family = "serif", fontface = "plain", size = 8,
-            x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "C")]))/2),
-            y=df.size.group$IAsize.group.n[3]/10*1.3)+
+            x=min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])+((max(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")])-min(df.size$IAsize_diag[which(df.size$IAsize_diag_grouped_merged == "C")]))/2),
+            y=df.size.group$IAsize.group.n[3]/6*1.35)+
   # geom_text(label = "D",  family = "serif", fontface = "plain",
-  #           x=min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")])-min(df.size$IAsize[which(df.size$IAsize.groups.merged == "D")]))/2), 
+  #           x=min(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")])+((max(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")])-min(df.size$IAsize[which(df.size$IAsize_diag_grouped_merged == "D")]))/2), 
   #           y=df.size.group$IAsize.group.n[4]*1.1)+
 
   # Size group cont
-  geom_col(aes(x = IAsize, y = IAsize.n), width=0.1, position = "stack") +
+  geom_col(aes(x = IAsize_diag, y = IAsize.n), width=0.1, position = "stack") +
   # Layouting
   theme_tufte()+
   # scale_x_continuous(breaks = round(c(seq(0, 4, 0.5)), 2)) +
@@ -1001,15 +1040,22 @@ if (SAVEPLOTS) {
 ```
 
 ```{r}
-multplt.overlay.small <- plot_grid(plotlist = list(plt.loc.comb.large,
+multplt.overlay.small <- cowplot::plot_grid(plotlist = list(plt.loc.comb.large,
                                                    plt.overlay.age.large, 
                                                    plt.overlay.size.mm.large),
           ncol = 3)
 
+
 if (SAVEPLOTS) {
+  # ggsave(
+  #   plot = multplt.overlay.small,
+  #   filename = "vars_overview_multiplt_overlay_small.png",
+  #   path = PLOTPATH,
+  #   dpi = 300, width = PLOTWIDTH*2.6, height = PLOTHEIGHT*1.2
+  # )
   ggsave(
     plot = multplt.overlay.small,
-    filename = "vars_overview_multiplt_overlay_small.png",
+    filename = "vars_overview_multiplt_overlay_small.pdf",
     path = PLOTPATH,
     dpi = 300, width = PLOTWIDTH*2, height = PLOTHEIGHT*1.2
   )
