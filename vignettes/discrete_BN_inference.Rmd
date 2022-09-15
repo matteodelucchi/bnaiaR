@@ -60,6 +60,11 @@ strength.plot(avg,
 
 # Inference by querying
 
+
+```{r}
+madbn_fit <- bn.fit(data = data, x = avg)
+```
+
 ```{r}
 # remove study_source
 avg_mod <- bnlearn::remove.node(avg, "study_source")
@@ -94,10 +99,11 @@ madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
 ```
 
 
-
-```{r}
-madbn_fit <- bn.fit(data = data, x = avg)
+```{r export as HUGIN flat network format}
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted.net"), fitted = madbn_fit)
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_wo_studysource.net"), fitted = madbn_fit_mod)
 ```
+
 
 
 ```{r}
