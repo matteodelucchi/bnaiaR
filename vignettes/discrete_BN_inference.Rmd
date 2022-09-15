@@ -25,7 +25,7 @@ library(bnlearn)
 
 
 # Save plots as files? 
-SAVEPLOTS <- T
+SAVEPLOTS <- F
 PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
 PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
 PLOTWIDTH = 16
@@ -33,7 +33,6 @@ PLOTHEIGHT = 9
 ```
 
 # Load discrete additive mixed-effects BN
-
 
 ```{r message=FALSE, warning=FALSE}
 load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
@@ -654,3 +653,87 @@ if (SAVEPLOTS){
 str(data)
 ```
 
+# with restricted size->location
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+# Load libraries
+library(bnaiaR)
+library(dplyr)
+library(bnlearn)
+
+
+# Save plots as files? 
+SAVEPLOTS <- F
+PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+## Load discrete additive mixed-effects BN
+
+```{r message=FALSE, warning=FALSE}
+load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc.RData"))
+```
+
+
+```{r}
+data <- tobesaved$madbn_data %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+bl <- tobesaved$madbn_bl
+avg <- tobesaved$madbn_avg
+bb <- tobesaved$madbn_boot
+```
+
+```{r}
+strength.plot(avg,
+              bb,
+              main = "discrete additive mixed-effects BN",
+              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              shape = "rectangle")
+```
+
+
+
+## Inference by querying
+
+
+```{r}
+madbn_fit <- bn.fit(data = data, x = avg)
+```
+
+```{r}
+# remove study_source
+avg_mod <- bnlearn::remove.node(avg, "study_source")
+bb_mod <-  bb %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_mod, "nodes") <- attr(bb_mod, "nodes")[-10]
+data_mod <- data %>%
+  select(-c("study_source"))
+
+strength.plot(avg_mod,
+              bb_mod,
+              main = "discrete additive mixed-effects BN",
+              sub = "Fitting w/o study_source",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_admeBN_fitting_wo_studysource"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
+```
