@@ -275,6 +275,7 @@ prep_exp_data <- function(dat = adb,
   colnames(banned) <- rownames(banned) <- names(abndata)
 
   ### Ban some arcs
+  # banned[to, from]
   gend_idx <- stringr::str_which(names(abndata), "gender")
   fam_idx <-
     stringr::str_which(names(abndata), "positive_famillial_history")
