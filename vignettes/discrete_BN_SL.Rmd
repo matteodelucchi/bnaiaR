@@ -1073,7 +1073,7 @@ if (SAVEPLOTS) {
 
 
 ```{r}
-tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg)
+tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive.sizeloc, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg)
 save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc.RData"))
 ```
 
