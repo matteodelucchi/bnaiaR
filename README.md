@@ -40,17 +40,26 @@ help(adb)
 
 To follow the data preparation and more details consider the vignettes in this order:
 
-1. [raw_data_harmonization](vignettes/raw_data_harmonization.Rmd): Querying the raw data from a private
-data base resulting in the `adb.raw` data set.  
-2. [data_preprocessing](vignettes/data_preprocessing.Rmd): From raw data to the preprocessed `adb` data set.    
-3. [data_preparation_for_experiments](vignettes/data_preparation_for_experiments.Rmd): Implementation of prior knowledge 
+0. Raw data is harmonized in the private R package [ExplorDataISGC](https://github.zhaw.ch/delt/ExploreDataISGC/tree/dev-multicentre) for data privacy reasons. 
+Specifically in the vignettes [geneva2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/geneva2isgc.Rmd), 
+[kuopio2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/kuopio2isgc.Rmd), 
+[nantes2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/nantes2isgc.Rmd), 
+[ucl2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/ucl2isgc.Rmd), 
+[utrecht2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/utrecht2isgc.Rmd) 
+and then pooled in 
+[combineISGC](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/combineISGC.Rmd).  
+The detailed steps from the harmonization can be inspected in [bnaiaR/R/harmonization.R](R/harmonization.R).
+
+1. [data_preprocessing](vignettes/data_preprocessing.Rmd) includes the pooled data `adbisgc` from step 0 in this package in 'inst/extdata/adbisgc.rda'.
+Various feature engineering steps are performed and stored in 'data/adbisgc.rda' and 'data/adbisgc_ohe.rda'.  
+2. [data_preparation_for_experiments](vignettes/data_preparation_for_experiments.Rmd): Implementation of prior knowledge 
 (blacklist, banned-matrix), specification of variable distributions and 
-variable selection for each analysis scenario.  
-4. [correlation_analysis](vignettes/correlation_analysis.Rmd): Descriptive statistics.
-5. [regression_analysis](vignettes/regression_analysis.Rmd): Multivariable logistic regression models.
-6. [Discrete BN structure learning](vignettes/discrete_BN_SL.Rmd): Structure learning for discrete BNs.
-7. [DBN validation](vignettes/discrete_BN_validation.Rmd): Classification error estimation and inference.
-8. [ABN analysis](inst/extdata/inst/extdata/mcmcabn/mcmcabn_result_postproc_analysis.Rmd): [Structure learning](inst/extdata/mcmcabn/mcmcabn_multinomial.R) was performed on a high-performance computing cluster followed by local [postprocessing](inst/extdata/mcmcabn/mcmcabn_result_postproc_analysis.Rmd) Details from additive BNs.  
+variable selection for each analysis scenario.
+The respective data sets are stored in 'data/*.rda'.  
+3. [regression_analysis](vignettes/regression_analysis.Rmd): Multivariable logistic regression models, generalized additive regressions and mixed-effect models thereof.  
+6. [discrete BN structure learning](vignettes/discrete_BN_SL.Rmd): Structure learning for discrete BNs, additive discrete BNs, additive discrete mixed-effect BNs.  
+7. [discrete BN validation](vignettes/discrete_BN_validation.Rmd): Classification error estimation and inference.  
+8. [continuous BN structure learning](vignettes/continuous_ABN_SL.Rmd): Structure learning for continuous additive BNs.  
 
 9. For the publication [additional figures](vignettes/additional_figures.Rmd) and [tables](vignettes/datastructure.Rmd) were produced.
 

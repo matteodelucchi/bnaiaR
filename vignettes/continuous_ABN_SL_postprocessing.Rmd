@@ -37,10 +37,10 @@ PLOTHEIGHT = 9
 DEBUG <- FALSE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
-FILENAMEbase <- Sys.getenv("PLOTPATH")
+FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
 ```
 
-# Exp 4.1
+# Exp. 4.1: maBN with study_source
 
 ```{r load data}
 THRESHOLD <- 0.5
@@ -770,3 +770,444 @@ if (SAVEPLOTS){
     print(result.table.mle)
   }
 ```
+
+# Exp. 4.2: maBN without study_source
+
+```{r load data}
+THRESHOLD <- 0.5
+METHOD <- "mle"
+
+filenamesuffix <- "4.2"
+load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate.RData"))
+load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_final.RData"))
+str(finalresults, max.level = 1)
+```
+
+
+List of all mcmcabn outputs. 
+```{r}
+length(finalresults$mcmc.out.list)
+```
+
+Show first mcmcabn output.
+```{r}
+str(finalresults$mcmc.out.list[1])
+```
+
+DAG from first mcmcabn output. [rows, columns, dags]. dags = number of returned DAGS specified in mcmcscheme.
+
+```{r}
+str(finalresults$mcmc.out.list[[1]]$dags)
+```
+
+
+## Max. parents plot
+
+```{r}
+maxparentsplot(net.scores, SAVEPLOTS, filenamesuffix, plotwidth = PLOTWIDTH, plotheight = PLOTHEIGHT, filetype = PLOTFORMAT)
+```
+
+
+### Plot DAGs with different max parents
+
+```{r}
+dagswithdiffparentsplt(net.scores.dags, df, SAVEPLOTS, filenamesuffix)
+```
+
+## Preprocess
+### Thin and Burn-in
+
+thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
+
+```{r}
+# THINNING <- 2 # keep every second draw
+# BURNIN.LEN <- 2500 # remove the first n draws
+THINNING <- 7
+BURNIN.LEN <- 25000 # remove the first n draws
+
+mcmc.out.list.burn <- postBURNin(mcmc.out.list = finalresults$mcmc.out.list, burnin.length = BURNIN.LEN)
+mcmc.out.list.thin <- postTHINN(mcmc.out.list = finalresults$mcmc.out.list, thinningsteps = THINNING)
+mcmc.out.list.burn.thin <- postTHINN(mcmc.out.list = mcmc.out.list.burn, thinningsteps = THINNING)
+str(mcmc.out.list.burn[1])
+str(mcmc.out.list.thin[1])
+str(mcmc.out.list.burn.thin[1])
+```
+
+### Reformat
+
+```{r}
+# thinned only
+mc.out.thin.1 <- mcmc.out.list.thin[[1]]
+mc.out.thin.2 <- mcmc.out.list.thin[[2]]
+mc.out.thin.3 <- mcmc.out.list.thin[[3]]
+mc.out.thin.4 <- mcmc.out.list.thin[[4]]
+
+mc.out.thin.score.1 <- mcmc(mc.out.thin.1$scores)
+mc.out.thin.score.2 <- mcmc(mc.out.thin.2$scores)
+mc.out.thin.score.3 <- mcmc(mc.out.thin.3$scores)
+mc.out.thin.score.4 <- mcmc(mc.out.thin.4$scores)
+
+list.mc.out.thin.score <- mcmc.list(mc.out.thin.score.1, mc.out.thin.score.2, mc.out.thin.score.3, mc.out.thin.score.4)
+
+# burned and thinned
+mc.out.burn.thin.1 <- mcmc.out.list.burn.thin[[1]]
+mc.out.burn.thin.2 <- mcmc.out.list.burn.thin[[2]]
+mc.out.burn.thin.3 <- mcmc.out.list.burn.thin[[3]]
+mc.out.burn.thin.4 <- mcmc.out.list.burn.thin[[4]]
+
+mc.out.burn.thin.score.1 <- mcmc(mc.out.burn.thin.1$scores)
+mc.out.burn.thin.score.2 <- mcmc(mc.out.burn.thin.2$scores)
+mc.out.burn.thin.score.3 <- mcmc(mc.out.burn.thin.3$scores)
+mc.out.burn.thin.score.4 <- mcmc(mc.out.burn.thin.4$scores)
+
+# list.mc <- mcmc.list(mc.score.1, mc.score.2, mc.score.3, mc.score.4)
+list.mc.out.burn.thin.score <- mcmc.list(mc.out.burn.thin.score.1, mc.out.burn.thin.score.2, mc.out.burn.thin.score.3, mc.out.burn.thin.score.4)
+
+mc.out.burn.thin.dag.1 <- mc.out.burn.thin.1$dags
+mc.out.burn.thin.dag.2 <- mc.out.burn.thin.2$dags
+mc.out.burn.thin.dag.3 <- mc.out.burn.thin.3$dags
+mc.out.burn.thin.dag.4 <- mc.out.burn.thin.4$dags
+
+list.mc.out.burn.thin.dag <- abind::abind(mc.out.burn.thin.dag.1, mc.out.burn.thin.dag.2, mc.out.burn.thin.dag.3, mc.out.burn.thin.dag.4)
+```
+
+## Best fitting DAG
+
+number of max parents per node.
+
+```{r}
+finalresults$max.par
+```
+
+total arcs.
+
+```{r}
+sum(finalresults$dag.maxpar$dag)
+summary(finalresults$fabn.maxpar)
+```
+
+## MCMC Quality check
+
+### Gelman
+```{r}
+gelman.diag(x = list.mc.out.thin.score,autoburnin = F) # if higher than 1.1 or 1.2, run chain longer to improve convergence
+gelman.plot(list.mc.out.thin.score, autoburnin = F)
+
+if (SAVEPLOTS){
+  PLOTNAME <- paste0("_gelmanplot")
+  if(PLOTFORMAT == "svg"){
+  dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+  dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  }
+  
+} else {
+  gelman.plot(list.mc.out.thin.score, autoburnin = T)
+}
+```
+
+### Raftery
+
+calculate no. of iterations and no. of burn-ins to satisfy specified conditions.
+
+```{r}
+raftery.diag(unlist(list.mc.out.thin.score))
+```
+
+### Heidelberg and Welch Diagnostics
+
+test H0: The Markov Chain is from a stationary distribution. If not passed, chain must run longer.
+
+```{r}
+for (chain in 1:length(list.mc.out.thin.score)){
+  print("------------------------")
+  print(paste("Chain no: ", chain))
+  print(heidel.diag(list.mc.out.thin.score[[chain]]))
+}
+
+```
+
+### Trace Plot
+
+```{r}
+mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+# SAVEPLOTS <- T
+if (SAVEPLOTS){
+  PLOTNAME <- paste0("_traceplot")
+  if(PLOTFORMAT == "svg"){
+  dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+  dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  dev.off()
+  } 
+} else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]])
+  }
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "_traceplot_maxscore"
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+} else {
+  mcmcabn::plot.mcmcabn(mcmc.out.list.burn.thin[[1]], max.score = TRUE)
+}
+```
+
+
+```{r}
+if (SAVEPLOTS){
+  PLOTNAME <- "_traceplot_classic"
+  plot(list.mc.out.burn.thin.score)
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+} else {
+  plot(list.mc.out.burn.thin.score)
+}
+```
+
+```{r do we need this?}
+# ## traceplot
+# fabn <-fitAbn(dag = dag.maxpar$dag,
+#               data.df = abndata,
+#               data.dists = dist, 
+#               method = METHOD) 
+# 
+# max.score <- -fabn$bic
+# 
+# dta <- data.frame(mc.out.thin.1[2:4],
+#                   mc.out.thin.2[2:4],
+#                   mc.out.thin.3[2:4],
+#                   mc.out.thin.4[2:4]) # Thinned but not burned
+# 
+# dta <- dta[,c(1,4,7,10)]
+# # dta <- dta[thin, ]
+# names(dta) <- c("Run1","Run2","Run3","Run4")
+# dta$X <- (1:length(dta$Run1))
+# dta <- reshape2::melt(dta, "X", value.name = "scores")
+# 
+# dta$cummax[1] <- dta$scores[1]
+# for (i in 2:length(dta$scores)) {
+#   if (dta$scores[i] > dta$cummax[i - 1]) {
+#     dta$cummax[i] <- dta$scores[i]
+#     } else {
+#       dta$cummax[i] <- dta$cummax[i - 1]
+#     }
+# }
+# 
+# # Create a text
+# 
+# original_plot <- ggplot(data = dta, aes_string(x = "X", y="scores", color = "variable")) +
+#   geom_line(alpha = 0.8,lwd=1.1) +
+#   geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+#   geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+#   labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+#   ggpubr::theme_pubr()+
+#   ylim(min(dta$scores),max(dta$scores)) 
+#   # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score,alpha = .3) +
+#   # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# # print(original_plot)
+# 
+# # Plot
+# y_density <- cowplot::axis_canvas(original_plot, axis = "y", coord_flip = TRUE) +
+#   geom_density(data = dta, aes_string(x = "scores",fill = "factor(variable)"), alpha = 0.5) +
+#   coord_flip()
+# 
+# cummax_plt <- ggplot(data = dta, aes_string(x = "X", y="cummax", color = "variable")) +
+#   geom_line(alpha = 0.8,lwd=1.1, inherit.aes = T) +
+#   geom_point(aes_string(color = "variable"), inherit.aes = T)+
+#   geom_hline(yintercept = max.score,linetype = "dashed", color = "red", alpha = 1) +
+#   geom_text(aes(25, max.score, label = round(max.score,digits = 2), vjust = -0.5), color = "red", check_overlap = TRUE) +
+#   labs(x = "DAG index", y = "DAG scores", colour = "MCMC:") +
+#   ggpubr::theme_pubr()+
+#   ylim(min(dta$scores),max(dta$scores)) 
+#   # annotate("rect", xmin=0, xmax=BURNIN.LEN, ymin=min(dta$scores), ymax=max.score, alpha = .3) +
+#   # geom_text(aes(BURNIN.LEN/THINNING*0.5, min(dta$scores), label = "Burn-in phase", vjust = -0.5, hjust=0), color = "black", check_overlap = TRUE)
+# # cummax_plt
+# 
+# # create the combined plot
+# combined_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right"))
+# combined_cummax_plot <- cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = cummax_plt, position = "right"))
+# # ggsave(paste0(FILENAMEbase, FILENAME, "traceplot_combined.png"),
+# #        plot = cowplot::ggdraw(cowplot::insert_yaxis_grob(plot = original_plot, grob = y_density, position = "right")),
+# #        width = 9,height = 7)
+# # dev.off()
+# # print(combined_plot)
+# 
+# if (SAVEPLOTS){
+#   PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns")
+#   ggsave(paste0(PLOTNAME, ".svg"),
+#          width = PLOTWIDTH, height = PLOTHEIGHT)
+# 
+#   PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_combined")
+#   ggsave(paste0(PLOTNAME, ".svg"),
+#          width = PLOTWIDTH, height = PLOTHEIGHT)  
+# 
+#   PLOTNAME <- paste0(getwd(), "/results/", FILENAME,"traceplot_allruns_cummax")
+#   ggsave(paste0(PLOTNAME, ".svg"),
+#          width = PLOTWIDTH, height = PLOTHEIGHT)  
+#   } else {
+#   original_plot
+#   combined_plot 
+#   cummax_plt
+# }
+```
+
+## Consensus DAG
+
+best dag trimmed for controlling overfitting
+
+```{r}
+# Best DAG not trimmed 
+dag.mcmc.boot <- apply(list.mc.out.burn.thin.dag, 1:2, mean)
+colnames(dag.mcmc.boot) <- rownames(dag.mcmc.boot) <- names(finalresults$dist)
+
+# Best DAG Trimmed on THRESHOLD
+dag.mcmc.boot.th <- dag.mcmc.boot
+dag.mcmc.boot.th[dag.mcmc.boot.th>THRESHOLD]<-1
+dag.mcmc.boot.th[dag.mcmc.boot.th<=THRESHOLD]<-0
+
+# Plot Best DAG trimmed
+cons.dag.plt <- plotAbn(dag = dag.mcmc.boot.th,data.dists = finalresults$dist, 
+                        node.shape = c("box", "box", "box", "box"),
+                        plot = F)
+
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_consensus_dag"
+  dag = bnlearn::empty.graph(names(finalresults$df))
+  bnlearn::amat(dag) = t(dag.mcmc.boot.th)
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = paste("MCMC ABN DAG", filenamesuffix))
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+  abn::toGraphviz(dag.mcmc.boot.th,
+                  data.dists = finalresults$dist,
+                  data.df = finalresults$df,
+                  outfile = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".dot"),
+                  directed=TRUE)
+  saveRDS(dag.mcmc.boot.th, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".rds"))
+
+  } else {
+  cons.dag.plt
+  dag = bnlearn::empty.graph(names(finalresults$df))
+  bnlearn::amat(dag) = t(dag.mcmc.boot.th)
+  bnlearn::graphviz.plot(dag,
+                         shape = "rectangle",
+                         main = paste("MCMC ABN DAG", filenamesuffix))
+  }
+```
+
+
+## Arc strength significance threshold
+
+```{r}
+dag.mcmc.boot.stren <- as.vector(round(dag.mcmc.boot, 3))
+arc.stren.sign.threshold <-arc.stren.threshold(dag.mcmc.boot.stren)
+
+
+# relative arc strength
+plot(ecdf(dag.mcmc.boot.stren))
+abline(v = arc.stren.sign.threshold, lty=2)
+abline(v=0.5)
+
+# # absolute arc strength
+# plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_cdf_arcstrength"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+}
+```
+
+Difference in DAG between two arc strength thresholds:
+```{r}
+# relative frequency of an arc appearing in the MCMC sample
+x <- dag.mcmc.boot
+
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold)]
+x[which(x<THRESHOLD & x>arc.stren.sign.threshold-0.01)] <- 100 # Assign impossible value to highlight arc
+x
+```
+
+
+```{r}
+# Fit best DAG trimmed 
+fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
+              data.df = finalresults$df,
+              data.dists = finalresults$dist, 
+              method = METHOD,
+              compute.fixed = T,
+              create.graph = T)
+
+fabn.boot.th.mle$bic
+infoDag(dag.mcmc.boot.th)
+
+# plot with arc strength
+plotdag <- dag.mcmc.boot
+plotdag[plotdag>THRESHOLD]<-1
+plotdag[plotdag<=THRESHOLD]<-0
+
+fitvals <- fabn.boot.th.mle$coef
+
+for (i in 1:length(fitvals)){
+  names(fitvals[[i]]) <- colnames(fitvals[[i]])
+}
+
+edgestren <- round(dag.mcmc.boot, 2)
+edgestren[edgestren<=THRESHOLD]<-0
+
+cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
+        data.dists = dist,
+        # fitted.values = fitvals,
+        digits = 2,
+        # edge.strength = edgestren,
+        # edge.arrowsize = "undirected",
+        node.shape = c("box", "box", "box", "box"),
+        plot = F)
+
+attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
+if (SAVEPLOTS){
+  PLOTNAME <- "_consensus_dag_edgestrength"
+  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+} else {
+  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+}
+```
+
+TODO: fix edge direction. They're all in the wrong direction...
