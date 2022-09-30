@@ -81,7 +81,7 @@ strength.plot(avg_mod,
               shape = "rectangle")
 
 if (SAVEPLOTS){
-  PLOTNAME <- "infquerry_admeBN_fitting_wo_studysource"  
+  PLOTNAME <- "admeBN_fitting_wo_studysource"  
   if(PLOTFORMAT == "svg"){
     dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
