@@ -306,7 +306,23 @@ if (SAVEPLOTS) {
 }
 ```
 
+table of variable level distribution
+```{r}
+var_level_dist <- df_bnaiar_compl %>%
+  select(-c(cont.vars, "ID_1", "IAlocation", "IAsize_diag_grouped", "study_source")) %>% 
+  filter(positive_famillial_history != "probably") %>%
+  gather("key", "value") %>%
+  group_by(key, value) %>%
+  summarise(no_records = n(), .groups = "drop_last") %>%
+  mutate(prop = round(no_records/sum(no_records), 3)) %>%
+  mutate(percent = prop*100)
 
+if (SAVEPLOTS) {
+  write.csv(var_level_dist, file = paste0(PLOTPATH, "/var_level_dist.csv"))
+} else {
+  var_level_dist
+}
+```
 
 
 
