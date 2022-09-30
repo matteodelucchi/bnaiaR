@@ -43,7 +43,7 @@ library(forcats)
 
 # Save plots as files? 
 # Warning: Bad layout with knitr. Works well if chunks are run without rendering.
-SAVEPLOTS <- FALSE
+SAVEPLOTS <- TRUE
 PLOTPATH <- Sys.getenv("PLOTPATH")
 ```
 
@@ -254,7 +254,7 @@ plt.age5y <- adbisgc_tmp %>%
         plot.caption.position = "plot")
 
 if (SAVEPLOTS){
-  ggsave(plot = plt.age10y, filename = "age_grouped_5y.png", path = PLOTPATH, dpi = 600)
+  ggsave(plot = plt.age5y, filename = "age_grouped_5y.png", path = PLOTPATH, dpi = 600)
 } else {
   plt.age5y
 }
@@ -487,13 +487,13 @@ summarytools::view(summary_adbisgc, method = "browser", file = paste0(PLOTPATH, 
 summarytools::view(summary_adbisgc_ohe, method = "browser", file = paste0(PLOTPATH, "/dfsummary_adbisgc_ohe.html"))
 
 saveRDS(adbisgc,
-        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.rds")
+        file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc.rds")
 write.csv(adbisgc, 
-          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc.csv")
+          file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc.csv")
 saveRDS(adbisgc_ohe,
-        file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.rds")
+        file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc_ohe.rds")
 write.csv(adbisgc_ohe, 
-          file = "/home/delt/ZHAW/ExplorDataISGC/2207_adbisgc_data/2207_adbisgc_ohe.csv")
+          file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc_ohe.csv")
 ```
 
 # Include Preprocessed Data in bnaiaR package
