@@ -37,7 +37,7 @@ library(kableExtra)
 
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
-SAVEPLOTS <- FALSE
+SAVEPLOTS <- TRUE
 PLOTPATH <- Sys.getenv("PLOTPATH")
 ```
 
@@ -131,7 +131,7 @@ if (SAVEPLOTS) {
 df_bnaiar_compl <- df_bnaiar %>%
   na.omit() 
 
-summarytools::dfSummary(df_bnaiar_compl)
+summarytools::dfSummary(df_bnaiar_compl, max.distinct.values = 15)
 ```
 
 ```{r}
