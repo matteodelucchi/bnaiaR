@@ -79,6 +79,7 @@ harmonize_loc <- function(IAloc){
     IAloc == "Ant communicating artery" ~ "Acom",
     IAloc == "anterior communicating midline" ~ "Acom",
     IAloc == "anterior cerebral at anterior communicating junction" ~ "Acom",
+    IAloc == "anterior cerebral proximal to anterior communicating" ~ "Acom",
 
     IAloc == "MCA" ~ "MCA",
     IAloc == "middle cerebral artery" ~ "MCA",
@@ -91,6 +92,8 @@ harmonize_loc <- function(IAloc){
     IAloc == "Middle cerebral MCA main trunk" ~ "MCA",
     IAloc == "middle cerebral proximal to first main branching" ~ "MCA",
     IAloc == "middle cerebral at main branchings (trifurcation)" ~ "MCA",
+    IAloc == "M1 segment middle cerebral artery" ~ "MCA",
+
 
 
     IAloc == "Pcom" ~ "Pcom",
@@ -101,6 +104,8 @@ harmonize_loc <- function(IAloc){
     IAloc == "posterior communicating artery" ~ "Pcom",
     IAloc == "Posterior Comm Segment - Inferior wall" ~ "Pcom",
     IAloc == "posterior communicating (distinct from internal carotid junction)" ~ "Pcom",
+    IAloc == "internal carotid posterior communicating junction" ~ "Pcom",
+    IAloc == "Lateral wall ICA CoP" ~ "Pcom",
 
 
     IAloc == "ICA" ~ "ICA",
@@ -108,18 +113,18 @@ harmonize_loc <- function(IAloc){
     IAloc == "L ICA" ~ "ICA",
     IAloc == "R ICA" ~ "ICA",
     IAloc == "Carotid bifurcation" ~ "ICA",
-    IAloc == "Anterior and superior wall carotid" ~ "ICA",
     IAloc == "Ant Choroidal segment carotid" ~ "ICA",
     IAloc == "R Anterior Choroidal" ~ "ICA",
     IAloc == "L Anterior Choroidal" ~ "ICA",
-    IAloc == "Superior wall ICA" ~ "ICA",
-    IAloc == "Lateral wall ICA CoP" ~ "ICA",
     IAloc == "Carotid bifurcation ICA bif" ~ "ICA",
     IAloc == "Lateral wall ICA ChA" ~ "ICA",
     IAloc == "Carotid Bifurcation" ~ "ICA",
     IAloc == "Ant Choroidal Segment - Inferior wall" ~ "ICA",
     IAloc == "internal carotid supra clinoid at bifurcation" ~ "ICA",
     IAloc == "internal carotid other" ~ "ICA",
+    IAloc == "Medial wall ICA distal" ~ "ICA",
+    IAloc == "Ant Choroidal segment carotid" ~ "ICA",
+
 
     IAloc == "OphtICA" ~ "OphtICA",
     IAloc == "OpthICA" ~ "OphtICA",
@@ -129,7 +134,6 @@ harmonize_loc <- function(IAloc){
     IAloc == "Ophthalmic segment carotid" ~ "OphtICA",
     IAloc == "Medial wall carotid" ~ "OphtICA",
     IAloc == "Medial wall ICA ophtalmic" ~ "OphtICA",
-    IAloc == "Medial wall ICA distal" ~ "OphtICA",
     IAloc == "Inferior wall ICA" ~ "OphtICA",
     IAloc == "Ophtalmic Segment - Medial wall" ~ "OphtICA",
     IAloc == "Ophtalmic Segment - Lateral wall" ~ "OphtICA",
@@ -148,9 +152,9 @@ harmonize_loc <- function(IAloc){
     IAloc == "VB" ~ "V-B",
     IAloc == "V-B" ~ "V-B",
     IAloc == "AICA" ~ "V-B",
-    IAloc == "anterior inferior cerebellar artery" ~ "V-B", # CHECK Utrecht
+    IAloc == "anterior inferior cerebellar artery" ~ "V-B",
     IAloc == "PICA" ~ "V-B",
-    IAloc == "posterior inferior cerebellar artery" ~ "V-B", # CHECK Utrecht
+    IAloc == "posterior inferior cerebellar artery" ~ "V-B",
     IAloc == "Superior cerebellar artery" ~ "V-B",
     IAloc == "superior cerebellar artery" ~ "V-B",
     IAloc == "Superior Cerebellar artery  (SCA)" ~ "V-B",
@@ -178,6 +182,9 @@ harmonize_loc <- function(IAloc){
     IAloc == "others anterior inferior cerebellar" ~ "V-B",
     IAloc == "others superior cerebellar" ~ "V-B",
     IAloc == "others posterior inferior cerebellar" ~ "V-B",
+    IAloc == "posterior cerebral trunk" ~ "V-B",
+    IAloc == "posterior cerebral at basilar" ~ "V-B",
+
 
     IAloc == "A2" ~ "A2",
     IAloc == "A2 segment ant" ~ "A2",
@@ -186,32 +193,26 @@ harmonize_loc <- function(IAloc){
     IAloc == "Pericallosal proximal" ~ "A2",
     IAloc == "Pericallosal typical" ~ "A2",
     IAloc == "Pericallosal and A2" ~ "A2",
-    IAloc == "pericallosal artery" ~ "A2", # CHECK Utrecht
-    IAloc == "anterior cerebral distal to anterior communicating" ~ "A2",
+    IAloc == "pericallosal artery" ~ "A2",
 
-    IAloc == "A1 segment ant" ~ "A1 segment ant",
+    IAloc == "A1 segment ant" ~ "A1 segment ant", # A1 are very rare...
     IAloc == "A1 segment ant cerebral artery" ~ "A1 segment ant",
-    IAloc == "anterior cerebral proximal to anterior communicating" ~ "A1 segment ant",
 
     IAloc == "PC" ~ "PC",
-    IAloc == "posterior cerebral artery" ~ "PC", # CHECK Utrecht
+    IAloc == "posterior cerebral artery" ~ "PC",
     IAloc == "L PCA" ~ "PC",
     IAloc == "R PCA" ~ "PC",
     IAloc == "P1-P2 junction posterior cerebral artery" ~ "PC",
     IAloc == "P2 posterior cerebral artery" ~ "PC",
     IAloc == "P 2 posterior cerebral" ~ "PC",
     IAloc == "P 1/2 posterior cerebral" ~ "PC",
-    IAloc == "posterior cerebral trunk" ~ "PC",
-    IAloc == "posterior cerebral at basilar" ~ "PC",
 
     IAloc == "Other" ~ "Other",
     IAloc == "Distal posterior cerebral artery" ~ "Other",
-    IAloc == "Ant Choroidal segment carotid" ~ "Other",
     IAloc == "L ACA" ~ "Other",
     IAloc == "R ACA" ~ "Other",
     IAloc == "anterior cerebral artery" ~ "Other", # CHECK Utrecht
     IAloc == "Distal to sylvian bifurcation" ~ "Other",
-    IAloc == "M1 segment middle cerebral artery" ~ "Other",
     IAloc == "Distal ant cerebral artery" ~ "Other",
     IAloc == "Middle cerebral peripheral" ~ "Other",
     IAloc == "Pericallosal distal" ~ "Other",
@@ -221,7 +222,12 @@ harmonize_loc <- function(IAloc){
     IAloc == "middle cerebral distal to main branchings" ~ "Other",
     IAloc == "anterior cerebral other" ~ "Other",
     IAloc == "posterior cerebral other" ~ "Other",
+    IAloc == "anterior cerebral distal to anterior communicating" ~ "Other", # might be dirty. Incl. fusiform aneurysms
+    IAloc == "Anterior and superior wall carotid" ~ "Other", # consider to remove cause very different behaviour from others (small and deadly).
+    IAloc == "Superior wall ICA" ~ "Other", # consider to remove cause very different behaviour from others (small and deadly).
+    IAloc == "middle cerebral other" ~ "Other",
 
+    # dirty group... not everyone includes these IAs as intracranial IA. They could also be opthalmic
     IAloc == "Cavernous ICA" ~ "CavICA",
     IAloc == "CavICA" ~ "CavICA",
     IAloc == "CavICa" ~ "CavICA",
@@ -230,13 +236,12 @@ harmonize_loc <- function(IAloc){
     IAloc == "internal carotid sublinoid" ~ "CavICA",
 
     IAloc == "Infundibulum" ~ "Infundibulum",
-    IAloc == "internal carotid posterior communicating junction" ~ "Infundibulum",
 
+    # Outside of head
     IAloc == "Cervical internal carotid" ~ "Removed",
     IAloc == "Petrous pyramidal" ~ "Removed",
 
     is.na(IAloc) ~ NA_character_,
-    IAloc == "middle cerebral other" ~ NA_character_,
 
     TRUE ~ paste("UNDEFINED:", IAloc)
   )
