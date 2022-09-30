@@ -916,13 +916,13 @@ bl.dbn.additive.sizeloc <- exp1_dat$bl %>%
 dist.dbn.additive <- exp1_dat$dist
 
 str(data.dbn.additive)
-print(bl.dbn.additive)
+print(bl.dbn.additive.sizeloc)
 print(dist.dbn.additive)
 ```
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+cl = makeCluster(25, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
 ```
 
 
