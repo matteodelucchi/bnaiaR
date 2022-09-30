@@ -28,7 +28,7 @@ library(ggplot2)
 ```
 
 ```{r settings}
-DEBUG <- TRUE
+DEBUG <- FALSE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
 FILENAMEbase <- Sys.getenv("PLOTPATH")
@@ -328,7 +328,7 @@ for (study in unique(df43$study_source)) {
 
 
 
-```{r MRE UCL Error}
+```{r MRE UCL Error, eval=FALSE, include=FALSE}
 # Prepare data
 df43_group <- df43 %>%
   # filter(IAlocation_group != "low") %>%
@@ -511,8 +511,27 @@ mcmcabn44 <-
     dist = dist44,
     banned = banned44,
     retain = retain44,
-    filenamesuffix = "4.4"
+    filenamesuffix = "4.4",
+    prob.rev = 0
   )
+```
+
+```{r MRE, eval=FALSE, include=FALSE}
+mcmcabn(
+        score.cache = abnwithmaxpar44$mycache.maxpar,
+        score = SCORE,
+        data.dists = dist44,
+        max.parents = abnwithmaxpar44$max.par,
+        mcmc.scheme = MCMC.SCHEME,
+        seed = MCMC.SEEDS,
+        verbose = TRUE,
+        start.dag = abnwithmaxpar44$dag.maxpar$dag,
+        # prob.rev = PROB.REV,
+        prob.rev = 0,
+        # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
+        prob.mbr = PROB.MBR,
+        prior.choice = MCMC.PRIOR
+      ) # Koivisto prior
 ```
 
 
