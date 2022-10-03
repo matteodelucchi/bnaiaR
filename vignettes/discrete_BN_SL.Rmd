@@ -53,7 +53,9 @@ PLOTHEIGHT = 9
 
 ```{r}
 data("exp1_dat")
-data.dbn <- exp1_dat$abndata
+data.dbn <- exp1_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 dist.dbn <- exp1_dat$dist
 banned.dbn <- exp1_dat$banned
 bl.dbn <- exp1_dat$bl
@@ -63,14 +65,6 @@ print(bl.dbn)
 ```
 
 Nothing can point to study source.
-```{r}
-bl.dbn <- bl.dbn[-which(bl.dbn$From=="study_source"),]
-bl.dbn <- bl.dbn[-which(bl.dbn$To=="study_source"),]
-
-bl.dbn <- rbind(bl.dbn, data.frame("From" = names(data.dbn), "To" = rep("study_source", length(names(data.dbn)))))
-bl.dbn <- bl.dbn[-which(bl.dbn$From=="study_source" & bl.dbn$To=="study_source"),]
-bl.dbn
-```
 
 
 ```{r learn_with_aic, warning=FALSE}
@@ -191,7 +185,8 @@ parallel::stopCluster(cl)
 data("exp1_dat")
 data.dbn.nostudy <- exp1_dat$abndata %>%
   select(-c(study_source)) %>%
-  filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.nostudy <- exp1_dat$bl %>%
   filter(From != "study_source" & To != "study_source")
 
@@ -312,7 +307,8 @@ parallel::stopCluster(cl)
 ```{r}
 data("exp1_dat")
 data.dbn <- exp1_dat$abndata  %>%
-  filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.nostudy <- exp1_dat$bl %>%
   filter(From != "study_source" & To != "study_source")
 
@@ -478,7 +474,8 @@ if (SAVEPLOTS) {
 ```{r}
 data("exp1_dat")
 data.dbn.allstudy <- exp1_dat$abndata %>%
-  filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.allstudy <- exp1_dat$bl %>%
   filter(From != "study_source" & To != "study_source") 
 
@@ -587,8 +584,9 @@ parallel::stopCluster(cl)
 ```{r}
 data("exp1_dat")
 data.dbn.nostudy <- exp1_dat$abndata %>%
-  select(-c(study_source)) 
-  # filter(positive_famillial_history != "probably")
+  select(-c(study_source)) %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.nostudy <- exp1_dat$bl %>%
   filter(From != "study_source" & To != "study_source")
 
@@ -709,7 +707,8 @@ parallel::stopCluster(cl)
 data("exp1_dat")
 data.dbn.additive <- exp1_dat$abndata  %>%
   # select(-c(study_source))
-  filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.additive <- exp1_dat$bl %>%
   filter((From != "study_source") & (To != "study_source")) %>%
   # Nothing can point to study source.
@@ -904,7 +903,8 @@ save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffect
 data("exp1_dat")
 data.dbn.additive <- exp1_dat$abndata  %>%
   # select(-c(study_source))
-  filter(positive_famillial_history != "probably")
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 bl.dbn.additive.sizeloc <- exp1_dat$bl %>%
   filter((From != "study_source") & (To != "study_source")) %>%
   # Nothing can point to study source.
