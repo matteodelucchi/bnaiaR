@@ -58,12 +58,25 @@ str(adbisgc, give.attr=F)
 summarytools::dfSummary(adbisgc)
 ```
 
+## remove pos. fam. history == "probably"
+
+There are only very few cases with a pos. fam. history == probably wo we remove
+them and consider pos. fam. history as dichotome variable.
+
+```{r}
+adbisgc <- adbisgc %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+```
+
+## reorder reference levels 
 
 ```{r}
 adbisgc_reg <- adbisgc %>%
   mutate(gender = fct_relevel(gender,c("male","female"))) %>%
   # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
-  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  # mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "yes"))) %>%
   mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
   mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
   mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
@@ -102,47 +115,6 @@ summarytools::dfSummary(df_bnaiar)
 str(df_bnaiar, give.attr=F)
 ```
 
-
-
-```{r}
-# df_bnaiar %>%
-#   # dataxray::report_xray(data_name = "bnaiaR", study = "multicentre")
-#   dataxray::make_xray() %>%
-#   dataxray::view_xray()
-```
-
-
-```{r}
-# plt <- df_bnaiar %>%
-#   select(-c(ID_1)) %>%
-#   
-#   ggpairs(ggplot2::aes(colour=source),
-#                upper = list(
-#                  continuous = wrap("cor", method="spearman", size=15),
-#                  discrete = wrap("facetbar", binwidth=5),
-#                  combo = wrap("facethist", binwidth=5)
-#                  # combo = "summarise_by"
-#                  ),
-#                lower = list(
-#                  continuous = wrap("smooth", binwidth=5),
-#                  discrete = wrap("colbar", size=7),
-#                  combo = wrap("box", width=5)
-#                ),
-#                proportions = "auto") +
-#   theme(text = element_text(size = 30), 
-#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-#         strip.text.x = element_text(angle = 30, vjust = 0.5), 
-#         strip.text.y = element_text(angle = 0, vjust = 0.5), 
-#         strip.placement = "outside") 
-# 
-# ggsave(plot = plt,
-#        filename = "bnaiar_adbisgc_scatterplot.pdf", 
-#          path = "~/ZHAW/ExplorDataISGC/", 
-#          width = 100, height = 80, limitsize = F,
-#          # width = 150, height = 150, limitsize = F,
-#          device = "pdf")
-```
-
 ## bnaiaR vars with only complete entries
 
 count the number of NAs per source
@@ -159,18 +131,23 @@ NAs_per_source <- adbisgc_reg %>%
          comment = NA)
   
 NAs_per_source$comment[which(NAs_per_source$data_source == "kuopio")] <- "4% of values are missing hypertension."
-NAs_per_source$comment[which(NAs_per_source$data_source == "ucl")] <- "17% of IA size and 2% of IA location values are missing"
-NAs_per_source$comment[which(NAs_per_source$data_source == "nantes")] <- "Many missing age (5%), IA location (3%), IA size (3%) and IA ruptured (6%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "ucl")] <- "0.2% of IA location values are missing"
+NAs_per_source$comment[which(NAs_per_source$data_source == "nantes")] <- "0.5% of IA ruptured values are missing."
 NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht")] <- "Many missing smoking (11%) and multiplicity (4%) values."
-NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht_ruptured")] <- "Many missing IA size (46%) and smoking (37%) values."
-NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneuquest")] <- "Many pos. fam. history (12%) and hypertension (7%) are missing."
-NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneux")] <- "Many missing pos. fam. history (7%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht_ruptured")] <- "Many missing smoking (37%) values."
+NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneuquest")] <- "2.4% of IA locations are missing."
+NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneux")] <- "2.8% of smoking are missing."
 
 NAs_per_source
 
+
 # df_bnaiar %>%
+#   filter(study_source == "nantes") %>%
+#   summarytools::dfSummary()
+# 
+# adbisgc_reg %>%
 #   filter(data_source == "geneva_aneux") %>%
-#   dfSummary()
+#   summarytools::dfSummary()
 ```
 
 ```{r}
@@ -682,7 +659,18 @@ print(gam_model_3)
 ```
 
 ```{r}
-# renv::install("gtsummary")
+# remove labels for correct variable names
+attributes(gam_model_3$model$IAruptured)$label <- NULL
+attributes(gam_model_3$model$gender)$label <- NULL
+attributes(gam_model_3$model$positive_famillial_history)$label <- NULL
+attributes(gam_model_3$model$hpt_aware)$label <- NULL
+attributes(gam_model_3$model$smoking_current_notcurrent)$label <- NULL
+attributes(gam_model_3$model$multipleIAs)$label <- NULL
+attributes(gam_model_3$model$IAlocation_group)$label <- NULL
+attributes(gam_model_3$model$study_source)$label <- NULL
+attributes(gam_model_3$model$age_diag)$label <- NULL
+attributes(gam_model_3$model$IAsize_diag_log)$label <- NULL
+
 gtplt <- gam_model_3 %>%
   gtsummary::tbl_regression(intercept = T,
                             tidy_fun = gtsummary::tidy_gam) %>% 
@@ -690,7 +678,7 @@ gtplt <- gam_model_3 %>%
   gtsummary::add_global_p(anova_fun = broom::tidy) %>%
   gtsummary::bold_p(t = 0.10) %>%
   gtsummary::bold_labels() %>%
-  gtsummary::italicize_levels()  
+  gtsummary::italicize_levels() 
 
 if (SAVEPLOTS){
   FILE <- "gam_model_3"
@@ -772,7 +760,18 @@ print(gam_model_4)
 - rest looks similar...
 
 ```{r}
-# renv::install("gtsummary")
+# remove labels for correct variable names
+attributes(gam_model_4$model$IAruptured)$label <- NULL
+attributes(gam_model_4$model$gender)$label <- NULL
+attributes(gam_model_4$model$positive_famillial_history)$label <- NULL
+attributes(gam_model_4$model$hpt_aware)$label <- NULL
+attributes(gam_model_4$model$smoking_current_notcurrent)$label <- NULL
+attributes(gam_model_4$model$multipleIAs)$label <- NULL
+attributes(gam_model_4$model$IAlocation_group)$label <- NULL
+attributes(gam_model_4$model$study_source)$label <- NULL
+attributes(gam_model_4$model$age_diag)$label <- NULL
+attributes(gam_model_4$model$IAsize_diag_log)$label <- NULL
+
 gtplt <- gam_model_4 %>%
   gtsummary::tbl_regression(intercept = T,
                             tidy_fun = gtsummary::tidy_gam) %>% 
@@ -908,7 +907,18 @@ print(gam_model_12)
 ```
 
 ```{r}
-# renv::install("gtsummary")
+# remove labels for correct variable names
+attributes(gam_model_12$model$IAruptured)$label <- NULL
+attributes(gam_model_12$model$gender)$label <- NULL
+attributes(gam_model_12$model$positive_famillial_history)$label <- NULL
+attributes(gam_model_12$model$hpt_aware)$label <- NULL
+attributes(gam_model_12$model$smoking_current_notcurrent)$label <- NULL
+attributes(gam_model_12$model$multipleIAs)$label <- NULL
+attributes(gam_model_12$model$IAlocation_group)$label <- NULL
+attributes(gam_model_12$model$study_source)$label <- NULL
+attributes(gam_model_12$model$age_diag)$label <- NULL
+attributes(gam_model_12$model$IAsize_diag_log)$label <- NULL
+
 gtplt <- gam_model_12 %>%
   gtsummary::tbl_regression(intercept = T,
                             tidy_fun = gtsummary::tidy_gam) %>% 
@@ -977,7 +987,18 @@ $$
 $$
 
 ```{r}
-# renv::install("gtsummary")
+# remove labels for correct variable names
+attributes(glmer_model@frame$IAruptured)$label <- NULL
+attributes(glmer_model@frame$gender)$label <- NULL
+attributes(glmer_model@frame$positive_famillial_history)$label <- NULL
+attributes(glmer_model@frame$hpt_aware)$label <- NULL
+attributes(glmer_model@frame$smoking_current_notcurrent)$label <- NULL
+attributes(glmer_model@frame$multipleIAs)$label <- NULL
+attributes(glmer_model@frame$IAlocation_group)$label <- NULL
+attributes(glmer_model@frame$study_source)$label <- NULL
+attributes(glmer_model@frame$age_diag)$label <- NULL
+attributes(glmer_model@frame$IAsize_diag_log)$label <- NULL
+
 gtplt <- glmer_model %>%
   gtsummary::tbl_regression(intercept = T) %>%
   gtsummary::add_global_p() %>%
