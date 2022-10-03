@@ -1055,13 +1055,94 @@ Since both have equal values of AIC, BIC, LL I'd go for the less complex, first 
 Compared to the GAMs, they have smaller BIC values.
 
 
+# Multivariate Generalized Linear Mixed Effects Model (mixed effects logistic regression) w/o Utrecht (3 levels for smoking)
+
+```{r}
+gam_dat_woUtrecht <- adbisgc_reg %>%
+  filter(study_source != "utrecht") %>%
+  mutate(study_source = factor(study_source)) %>%
+  
+  # reorder factor levels
+  mutate(gender = fct_relevel(gender,c("male","female"))) %>%
+  # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
+  # mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "yes"))) %>%
+  mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
+  mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
+  mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
+  mutate(hpt_aware = fct_relevel(hpt_aware,c("no","yes"))) %>%
+  mutate(IAlocation_group = fct_relevel(IAlocation_group, c("low","medium","high")))%>%
+  mutate(IAruptured = fct_relevel(IAruptured,c("no","yes"))) %>%
+  # mutate(IAsize_diag_grouped_merged = fct_relevel(IAsize_diag_grouped_merged, c(LETTERS[seq(3,1,-1)])))
+  
+  # select variables of interest
+  select(all_of(c(bnaiar_vars, "smoking_current_former_no"))) %>%
+  # remove duplicate variable-versions. Keep contiunuous vars and IA locations by risk.
+  select(-c(age_diag_group, IAsize_diag, IAsize_diag_grouped, IAsize_diag_grouped_merged, ID_1, "smoking_current_notcurrent")) %>%
+  
+  # remove NAs
+  na.omit() 
+
+str(gam_dat_woUtrecht, give.attr=F)
+```
+
+### Data preparation
+
+```{r}
+train <- sample.int(n = nrow(gam_dat_woUtrecht), size = 0.7*nrow(gam_dat_woUtrecht), replace = FALSE)
+TrainSet <- gam_dat_woUtrecht[train,]
+ValidSet <- gam_dat_woUtrecht[-train,]
+```
 
 
 
 
+```{r}
+# x <- lme4::glmer(IAruptured ~ gender+age_diag^2+(0+positive_famillial_history|study_source)+hpt_aware+smoking_current_notcurrent+multipleIAs+ IAlocation_group+IAsize_diag_log^2 + (1|study_source), family = "binomial", data=TrainSet) # uncorrelated random intercept and random slope within group
 
+# Starting with a simple model
+# covariates left untransformed and uncorrelated random effects for the study_source means
+glmer_model_woUtrecht <- lme4::glmer(IAruptured ~ gender+age_diag+positive_famillial_history+hpt_aware+smoking_current_former_no+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), family = "binomial", data=TrainSet) # random group intercept
 
+# equatiomatic::extract_eq(glmer_model, wrap=T, use_coefs = F, terms_per_line = 3)
 
+print(glmer_model_woUtrecht)
+print(summary(glmer_model_woUtrecht))
+plot(glmer_model_woUtrecht)
+```
+
+```{r}
+# remove labels for correct variable names
+attributes(glmer_model_woUtrecht@frame$IAruptured)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$gender)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$positive_famillial_history)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$hpt_aware)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$smoking_current_former_no)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$multipleIAs)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$IAlocation_group)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$study_source)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$age_diag)$label <- NULL
+attributes(glmer_model_woUtrecht@frame$IAsize_diag_log)$label <- NULL
+
+gtplt <- glmer_model_woUtrecht %>%
+  gtsummary::tbl_regression(intercept = T) %>%
+  gtsummary::add_global_p() %>%
+  gtsummary::bold_p(t = 0.10) %>%
+  gtsummary::bold_labels() %>%
+  gtsummary::italicize_levels()  
+
+if (SAVEPLOTS){
+  FILE <- "glmer_model_woUtrecht"
+  FILENAME <- paste0(FILE, ".", PLOTFORMAT)
+
+  gtplt %>%
+    gtsummary::as_gt() %>%
+    gt::gtsave(filename = FILENAME, path = PLOTPATH)
+  
+} else {
+  gtplt
+}
+```
 
 
 
