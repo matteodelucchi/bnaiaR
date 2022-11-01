@@ -1,0 +1,84 @@
+---
+title: "Playground abn with glmm"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Playground abn with glmm}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(bnaiaR)
+library(abn)
+# renv::install("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"))
+```
+
+# abn example 3
+```{r}
+mydat <- ex3.dag.data ## this data comes with abn see ?ex3.dag.data
+str(mydat)
+mydists <- list(b1="binomial", b2="binomial", b3="binomial",
+            b4="binomial", b5="binomial", b6="binomial", b7="binomial",
+            b8="binomial", b9="binomial", b10="binomial",b11="binomial",
+            b12="binomial", b13="binomial" )
+max.par <- 2
+
+## in this example INLA is used as default since these are glmm nodes
+## when running this at node-parent combination 71 the default accuracy check on the
+## INLA modes is exceeded (default is a max. of 10 percent difference from
+## modes estimated using internal code) and a message is given that internal code
+## will be used in place of INLA's results.
+
+mycache <- buildScoreCache(data.df=mydat, data.dists=mydists, group.var="group",
+                        cor.vars=c("b1","b2","b3","b4","b5","b6","b7",
+                                   "b8","b9","b10","b11","b12","b13"),
+                        max.parents=max.par, which.nodes=c(1))
+str(mycache)
+
+table(mycache$used.INLA, useNA = "always")
+```
+
+
+# Data preparation
+
+```{r}
+data("exp4_dat")
+df5 <- exp4_dat$abndata
+str(df5)
+```
+
+
+```{r}
+df51 <- df5
+str(df51)
+(banned51 <- exp4_dat$banned)
+(retain51 <- exp4_dat$retain)
+(dist51 <- exp4_dat$dist)
+
+```
+
+# ABN with glmm
+
+```{r}
+mycache <- buildScoreCache(data.df=df51,
+                           data.dists=dist51[-10], # all except study_source
+                           group.var="study_source",
+                           cor.vars=names(df51)[-10], # all except study_source
+                           max.parents=9, 
+                           which.nodes=c(1))
+```
+
+Grouping method is implemented in "method = bayes". However, "bayes-method" does not support multinomial data. 
+In particular, [buildscorecache_bayes.R](https://git.math.uzh.ch/reinhard.furrer/abn/-/blob/master/R/build_score_cache_bayes.R#L57) checks if the distributions are one of "bin, gaus, pois".
+Method MLE does support multinomial data distributions but doesn't support random effects.
+In particular, [buildscorechache_mle.R calculates the network score with fitting a `nnet` model](https://git.math.uzh.ch/reinhard.furrer/abn/-/blob/master/R/build_score_cache_mle.R#L349) which does not support multinomial distributions. An alternative could be `mclogit::mblogit`.
+
+bayes: calculates individual node score (log marginal likelihoods) using `INLA`.
+mle: calculates information-theoretic node scores (maximum likelihood/marginal likelihood, AIC, BIC, Minimum distance Length (mdl)).
