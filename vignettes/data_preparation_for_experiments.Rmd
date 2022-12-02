@@ -144,6 +144,78 @@ str(bl)
 # usethis::use_data(exp1_dat, overwrite = TRUE)
 ```
 
+## Experiment 1.1: discrete data with three-level smoking (CFN)
+
+Smoking with three levels (current, former, no smoker) is not for all 'sources' 
+available. 
+
+```{r}
+bnaiar_vars_smokCFN <- c("ID_1", 
+           "study_source", 
+           "gender", 
+           "age_diag", "age_diag_group", 
+           "positive_famillial_history", 
+           "hpt_aware", 
+           "smoking_current_former_no", 
+           "multipleIAs", 
+           "IAlocation", "IAlocation_group", 
+           "IAsize_diag", "IAsize_diag_log", "IAsize_diag_grouped", "IAsize_diag_grouped_merged",
+           "IAruptured")
+
+df_bnaiar_smokCFN <- adbisgc_reg %>%
+  select(all_of(bnaiar_vars_smokCFN))
+
+table(select(df_bnaiar_smokCFN, c("study_source", "smoking_current_former_no")), useNA = "always")
+```
+
+It seems as former smoking in utrecht is systematically missing. 
+Therefore, we remove Utrecht completely.
+For Geneva, we delete the entries with NAs.
+
+```{r}
+df_bnaiar_compl_smokCFN <- df_bnaiar_smokCFN %>% 
+  filter(study_source != "utrecht") %>% 
+  mutate(study_source = factor(study_source)) %>% # remove factor level 'utrecht'
+  na.omit() 
+
+summarytools::dfSummary(df_bnaiar_compl_smokCFN)
+```
+
+Age: discrete  
+Location: grouped by risk of rupture  
+Size: discrete and merged (see vignette `data_preprocessing` for details)  
+Smoking: Current, former, no
+
+```{r}
+exp11_dat <- prep_exp_data(
+  dat = df_bnaiar_compl_smokCFN,
+  EXPNO = 1.1,
+  age = "disc.grouped-multinomial",
+  location = "byRisk-multinomial",
+  size = "grouped.merged-multinomial",
+  smoking = "mult",
+  SAVE = F)
+```
+
+The prepared data is returned as list of inputs for the following 
+BN modeling:
+
+```{r}
+abndata <- exp11_dat$abndata
+dist <- exp11_dat$dist
+banned <- exp11_dat$banned
+bl <- exp11_dat$bl
+
+str(abndata)
+str(dist)
+str(banned)
+str(bl)
+```
+
+```{r}
+# usethis::use_data(exp11_dat, overwrite = TRUE)
+```
+
 # Experiment 4: Continuous data
 
 With additive Bns we can combine continuous and discrete variables.
