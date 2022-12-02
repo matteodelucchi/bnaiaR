@@ -1,0 +1,195 @@
+---
+title: "Investigate on the effect of Smoking as two or three level variable"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Investigate on the effect of Smoking as two or three level variable}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# Clear working environment
+rm(list=ls())
+
+library(bnaiaR)
+library(dplyr)
+library(ggplot2)
+library(bnlearn)
+library(doParallel)
+
+set.seed(100)
+
+SAVEPLOTS <- F
+PLOTPATH <- Sys.getenv("PLOTPATH")
+PLOTFORMAT <- "pdf" # "svg", "png"
+PLOTWIDTH = 16
+PLOTHEIGHT = 9
+```
+
+Two additive discrete BN with study source as mixed effect are fit to the data
+with smoking as binary variable (current, none smoker) and the second with smoking 
+as multinomial, three level variable (current, former, none smoker).
+
+# BN with two-level smoking
+
+
+```{r}
+data("exp1_dat")
+data.dbn.additive <- exp1_dat$abndata  %>%
+  # select(-c(study_source))
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+bl.dbn.additive <- exp1_dat$bl %>%
+  filter((From != "study_source") & (To != "study_source")) %>%
+  # Nothing can point to study source.
+  rbind(., data.frame(From = names(data.dbn.additive), To = rep("study_source", length(names(data.dbn.additive))))) %>%
+  filter(!(From == "study_source" & To == "study_source"))
+
+dist.dbn.additive <- exp1_dat$dist
+
+str(data.dbn.additive)
+print(bl.dbn.additive)
+print(dist.dbn.additive)
+```
+
+```{r}
+# cl = makeCluster(6)
+cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCN.out")))
+```
+
+```{r additive discrete BN w/ mixed effects}
+stime <- Sys.time()
+
+bb = boot.strength(data.dbn.additive, 
+                   algorithm = "tabu", 
+                   R = 1,
+                   # R = 500,
+                   cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glmm.bic,
+                                         blacklist = bl.dbn.additive,
+                                         # whitelist = wl.dbn.allstudy,
+                                         args = list(dist = dist.dbn.additive,
+                                                     mixed_effect = "study_source"),
+                                         tabu = 50),
+                   debug = TRUE)
+stopCluster(cl)
+etime <- Sys.time()
+running_time <- etime-stime
+print(paste("Running time: ", running_time))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+avg = averaged.network(bb)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic_mixedeffects_smokCN", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg, bb, shape = "rectangle")
+  plot(bb)
+}
+```
+
+# BN with three-level smoking
+
+```{r}
+data("exp11_dat")
+data.dbn.additive_smokCFN <- exp11_dat$abndata  %>%
+  # select(-c(study_source))
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+bl.dbn.additive_smokCFN <- exp11_dat$bl %>%
+  filter((From != "study_source") & (To != "study_source")) %>%
+  # Nothing can point to study source.
+  rbind(., data.frame(From = names(data.dbn.additive_smokCFN), To = rep("study_source", length(names(data.dbn.additive_smokCFN))))) %>%
+  filter(!(From == "study_source" & To == "study_source"))
+
+dist.dbn.additive_smokCFN <- exp11_dat$dist
+
+str(data.dbn.additive_smokCFN)
+print(bl.dbn.additive_smokCFN)
+print(dist.dbn.additive_smokCFN)
+```
+
+```{r}
+# cl = makeCluster(6)
+cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCFN.out")))
+```
+
+```{r additive discrete BN w/ mixed effects}
+stime <- Sys.time()
+
+bb_smokCFN = boot.strength(data.dbn.additive_smokCFN, 
+                   algorithm = "tabu", 
+                   R = 1,
+                   # R = 500,
+                   cluster = cl,
+                   algorithm.args = list(score = "custom",
+                                         fun = glmm.bic,
+                                         blacklist = bl.dbn.additive_smokCFN,
+                                         args = list(dist = dist.dbn.additive_smokCFN,
+                                                     mixed_effect = "study_source"),
+                                         tabu = 50),
+                   debug = TRUE)
+stopCluster(cl)
+etime <- Sys.time()
+running_time <- etime-stime
+print(paste("Running time: ", running_time))
+```
+
+
+```{r additive discrete BN w/ mixed effects}
+avg_smokCFN = averaged.network(bb)
+
+if (SAVEPLOTS) {
+  FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic_mixedeffects_smokCFN", ".")
+  if (PLOTFORMAT == "svg") {
+    svg(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "png") {
+    png(paste0(FILE, PLOTFORMAT))
+  } else if (PLOTFORMAT == "pdf") {
+    pdf(paste0(FILE, PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+  }
+  par(mfrow=c(1,2))
+  strength.plot(avg_smokCFN, bb_smokCFN, shape = "rectangle")
+  plot(bb)
+  dev.off()
+} else {
+  strength.plot(avg_smokCFN, bb_smokCFN, shape = "rectangle")
+  plot(bb)
+}
+```
+
+
+```{r save all intermediate results}
+# tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg,
+#                   "madbn_data_smokCFN"=data.dbn.additive_smokCFN, "madbn_bl_smokCFN"=bl.dbn.additive_smokCFN, "madbn_dists_smokCFN"=dist.dbn.additive_smokCFN, "madbn_boot_smokCFN"=bb_smokCFN, "madbn_avg_smokCFN"=avg_smokCFN)
+# save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
+```
+
+# Comparison
+
+Note, that the smokCN model uses 7670 observations and 5 levels for its random effect (study_source).
+The smokCFN model however uses XX observations and 4 levels for its random effect.
+
+## qualitative (structure)
+## quantitative (odds ratio)
