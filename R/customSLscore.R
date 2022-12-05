@@ -78,7 +78,7 @@ glmm.bic = function(node, parents, data, args) {
           return(-BIC(mod_glm_nore)/2)
         } else {
           # return very low score
-          return(-100000)
+          return(-Inf)
         }
         # if mod_glmer is not singular and not null, return BIC of mod_glmer
       } else if (!lme4::isSingular(mod_glmer)){
@@ -86,7 +86,7 @@ glmm.bic = function(node, parents, data, args) {
       }
     } else if (is.null(mod_glmer)){
       # return very low score
-      return(-100000)
+      return(-Inf)
     }
 
   } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
@@ -97,7 +97,7 @@ glmm.bic = function(node, parents, data, args) {
     if (!is.null(mod_mblogit)){
       return(-BIC(mod_mblogit) / 2)
     } else {
-      return(-100000) # return a very low score
+      return(-Inf) # return a very low score
     }
   } else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
     model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
@@ -122,14 +122,14 @@ glmm.bic = function(node, parents, data, args) {
           return(-BIC(model_nnet_nore)/2)
         } else {
           # return a very low score
-          return(-100000)
+          return(-Inf)
         }
       } else if(mod_mblogit$converged == TRUE){
         # if not null and did converged, return BIC of mixed effects model
         return(-BIC(mod_mblogit)/2)
       }
     } else if(is.null(mod_mblogit)){
-      return(-100000) # return a very low score
+      return(-Inf) # return a very low score
     }
   }
 }#GLMM.BIC
