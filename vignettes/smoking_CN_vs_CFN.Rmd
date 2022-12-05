@@ -39,6 +39,7 @@ as multinomial, three level variable (current, former, none smoker).
 
 # BN with two-level smoking
 
+## Data preparation
 
 ```{r}
 data("exp1_dat")
@@ -58,6 +59,8 @@ str(data.dbn.additive)
 print(bl.dbn.additive)
 print(dist.dbn.additive)
 ```
+
+## Structure learning
 
 ```{r}
 # cl = makeCluster(6)
@@ -109,7 +112,75 @@ if (SAVEPLOTS) {
 }
 ```
 
+## Inference 
+
+```{r}
+load(paste0(PLOTPATH, "/fourierplots/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
+```
+
+
+```{r}
+data.dbn.additive <- tobesaved$madbn_data %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+bl <- tobesaved$madbn_bl
+avg <- tobesaved$madbn_avg
+bb <- tobesaved$madbn_boot
+
+strength.plot(avg,
+              bb,
+              main = "discrete additive mixed-effects BN",
+              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              shape = "rectangle")
+
+```
+
+
+```{r}
+madbn_fit <- bn.fit(data = data.dbn.additive, x = avg)
+```
+
+```{r}
+# remove study_source
+avg_mod <- bnlearn::remove.node(avg, "study_source")
+bb_mod <-  bb %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_mod, "nodes") <- attr(bb_mod, "nodes")[-10]
+data.dbn.additive_mod <- data.dbn.additive %>%
+  select(-c("study_source"))
+
+strength.plot(avg_mod,
+              bb_mod,
+              main = "discrete additive mixed-effects BN",
+              sub = "Fitting w/o study_source, Smoking as Current/None",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "admeBN_fitting_wo_studysource_smokCN"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_mod <- bn.fit(data = data.dbn.additive_mod, x = avg_mod)
+```
+
+
+```{r export as HUGIN flat network format}
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_smokCN.net"), fitted = madbn_fit)
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_wo_studysource_smokCN.net"), fitted = madbn_fit_mod)
+```
+
 # BN with three-level smoking
+
+## Data preparation
 
 ```{r}
 data("exp11_dat")
@@ -129,6 +200,8 @@ str(data.dbn.additive_smokCFN)
 print(bl.dbn.additive_smokCFN)
 print(dist.dbn.additive_smokCFN)
 ```
+
+## Structure learning
 
 ```{r}
 # cl = makeCluster(6)
@@ -186,10 +259,206 @@ if (SAVEPLOTS) {
 # save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
 ```
 
+## Inference
+
+## Inference 
+
+# Load discrete additive mixed-effects BN
+
+```{r message=FALSE, warning=FALSE}
+data.dbn.additive_smokCFN <- tobesaved$madbn_data_smokCFN %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+bl.dbn.additive_smokCFN <- tobesaved$madbn_bl_smokCFN
+avg_smokCFN <- tobesaved$madbn_avg_smokCFN
+bb_smokCFN <- tobesaved$madbn_boot_smokCFN
+
+strength.plot(avg_smokCFN,
+              bb_smokCFN,
+              main = "discrete additive mixed-effects BN",
+              sub = "Smoking as Current, former, never",
+              shape = "rectangle")
+```
+
+```{r}
+madbn_fit_smokCFN <- bn.fit(data = data.dbn.additive_smokCFN, x = avg_smokCFN)
+```
+
+```{r}
+# remove study_source
+avg_smokCFN_mod <- bnlearn::remove.node(avg_smokCFN, "study_source")
+bb_smokCFN_mod <-  bb_smokCFN %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_smokCFN_mod, "nodes") <- attr(bb_smokCFN_mod, "nodes")[-10]
+data.dbn.additive_smokCFN_mod <- data.dbn.additive_smokCFN %>%
+  select(-c("study_source"))
+
+strength.plot(avg_smokCFN_mod,
+              bb_smokCFN_mod,
+              main = "discrete additive mixed-effects BN",
+              sub = "Fitting w/o study_source, Smoking as Current/Former/None",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "admeBN_fitting_wo_studysource_smokCFN"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_smokCFN_mod <- bn.fit(data = data.dbn.additive_smokCFN_mod, x = avg_smokCFN_mod)
+```
+
+
+```{r export as HUGIN flat network format}
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_smokCFN.net"), fitted = madbn_fit)
+bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_wo_studysource_smokCFN.net"), fitted = madbn_fit_mod)
+```
+
 # Comparison
 
 Note, that the smokCN model uses 7670 observations and 5 levels for its random effect (study_source).
 The smokCFN model however uses XX observations and 4 levels for its random effect.
 
 ## qualitative (structure)
+
+```{r}
+# rename smoking node to have the same label in each graph.
+avg_mod_renamed <- avg_mod
+nds <- nodes(avg_mod_renamed)
+nds[5] <- "smoking"
+avg_mod_renamed <-bnlearn::rename.nodes(avg_mod_renamed, nds)
+
+
+avg_smokCFN_mod_renamed <- avg_smokCFN_mod
+nds <- nodes(avg_smokCFN_mod_renamed)
+nds[5] <- "smoking"
+avg_smokCFN_mod_renamed <-bnlearn::rename.nodes(avg_smokCFN_mod_renamed, nds)
+
+graphviz.compare(avg_mod_renamed, avg_smokCFN_mod_renamed, shape = "rectangle")
+```
+
 ## quantitative (odds ratio)
+
+### reference population
+
+The aim is a treatment decision support model. 
+Therefore the reference population is framed of all those patients (i.e. IA detected), 
+that are not treated but followed-up.
+Following Bijlenga et al., (Stroke, 2013) these are patients fulfilling the following criteria:
+1. No pos. familial history
+2. IA size < 4mm & IA at high risk location
+or 
+2. IA size between 4-7mm & IA at medium risk location
+3. IA is not ruptured.
+
+```{r}
+plot(cpdist(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), nodes = c("IAruptured")))
+
+prev_ref <- cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no"))
+prev_ref
+```
+
+The prevalence of patients fulfilling the above criteria in our study population is 45%.
+Most patients present with a ruptured IA at time of diagnosis.
+
+Why?
+- Hypothesis: Many unruptured IAs remain undiagnosed as they are frequently asymptomatic.
+This could be tested in a cohort study.
+
+The odds of no rupture at diagnosis are therefor smaller than 1, meaning that patients 
+have been rather unlikely to present with an unruptured IA in our study population.
+
+```{r}
+prev_ref / (1 - prev_ref)
+```
+
+### Rupture probability depending on smoking status
+
+```{r }
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit_mod, nodes = c("IAruptured"), n = 10^5, evidence = (smoking_current_notcurrent == "current"))
+plot(sim, col = "grey",
+     main = "smoking_CN == current")
+
+sim = cpdist(madbn_fit_mod, nodes = c("IAruptured"), n = 10^5, evidence = (smoking_current_notcurrent == "not_current"))
+plot(sim, col = "grey",
+     main = "smoking_CN == not_current")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-hpt"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+
+# P(rupture | smoking == current)
+# cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = (IAruptured == "no"))
+cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = (IAruptured == "yes"))
+# P(rupture | smoking == not_current)
+# cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = (IAruptured == "no"))
+cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = (IAruptured == "yes"))
+```
+
+
+```{r}
+oddsstatistics <- function(p_event_evidence, p_event_reference){
+  #P(event | evidence=e)
+  
+  # Odds = (event=true | evidence = e) / (event=false | evidence = e)
+  odds_event_evidence <- p_event_evidence / (1 - p_event_evidence)
+  
+  # Odds of event in reference population
+  odds_event_reference <- p_event_reference / (1 - p_event_reference)
+  
+  odds_ratio = odds_event_evidence / odds_event_reference
+  
+  # CAVE: se and CI are not guaranteed for small values (and we have percentages here...)
+  se = sqrt((1/p_event_evidence)+(1/(1-p_event_evidence))+(1/p_event_reference)+(1/(1-p_event_reference)))
+  cilower <- exp(log(odds_ratio)-1.96*se)
+  ciupper <- exp(log(odds_ratio)+1.96*se)
+  
+  return(list("odds_event_evidence" = odds_event_evidence, "odds_event_reference" = odds_event_reference, "OR" = odds_ratio, "se"=se, "95%-CI"=c(cilower, ciupper)))
+}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no")))
+```
+
+The odds of IA rupture are increased in current smokers compared to the reference population.
+
+```{r}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = c(IAruptured == "yes")))
+```
+
+The odds of IA rupture are increased in current smokers compared to non-smokers.
+
+```{r}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_smokCFN_mod, evidence = c(smoking_current_former_no == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no")))
+
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_smokCFN_mod, evidence = c(smoking_current_former_no == "former"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no")))
+
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_smokCFN_mod, evidence = c(smoking_current_former_no == "no"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no")))
+```
+
+The odds of IA rupture are increased in current and non-smokers compared to the reference population
+but are decreased in former smokers.
+
+
