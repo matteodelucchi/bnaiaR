@@ -46,7 +46,7 @@ top_body_row <- 3
 
 ```{r}
 data("df_bnaiar_compl")
-table1 <- df_bnaiar_compl  %>% 
+table1_grp <- df_bnaiar_compl  %>% 
   # remove spurious familial history entries
   filter(positive_famillial_history != "probably") %>%
   mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes"))) %T>%
@@ -125,7 +125,95 @@ table1 <- df_bnaiar_compl  %>%
   
   janitor::adorn_percentages("col") %>% # Get column proportions
   janitor::adorn_pct_formatting() %>% # Convert proportions to percents
-  janitor::adorn_ns(position = "front") %>% # display % and counts (with counts in front)
+  janitor::adorn_ns(position = "front") # display % and counts (with counts in front)
+
+table1_grp
+```
+
+```{r}
+table1_all <- df_bnaiar_compl  %>% 
+  # remove spurious familial history entries
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes"))) %T>%
+  
+  # extract total of rupture status for later
+  {sum(.$IAruptured == "no") ->> total_unrupt} %T>%
+  {sum(.$IAruptured == "yes") ->> total_rupt} %>%
+  
+  ###
+  # summary statistics
+  ###
+  # group_by(IAruptured, study_source) %>%
+  # summarise(
+  #   centre = sum(n(), na.rm = F)
+  # ) %>%
+  # 
+  # pivot_wider(names_from = IAruptured, values_from = centre)
+
+
+  # group_by(IAruptured, study_source) %>%
+  # summarise(
+  #   centre = sum(n(), na.rm = F),
+  #   gender_male = sum(n()[gender == "male"], na.rm = F)
+  # ) %>%
+  # 
+  # pivot_wider(names_from = c("IAruptured", "gender"), values_from = c("centre", "gender_male"))
+
+  # group_by(IAruptured) %>%
+
+  summarise(
+    IAruptured = "total", # used for column header further downstream
+    # rupt_n = sum(IAruptured == "no"),
+    
+    centre_geneva = sum(study_source == "geneva"),
+    centre_kuopio = sum(study_source == "kuopio"),
+    centre_nantes = sum(study_source == "nantes"),
+    centre_ucl = sum(study_source == "ucl"),
+    centre_utrecht = sum(study_source == "utrecht"), 
+    
+    sex_m = sum(gender == "male"),
+    sex_f = sum(gender == "female"),
+    
+    # age_med = median(age_diag),
+    # age_q1 = quantile(age_diag)[2], 
+    # age_q3 = quantile(age_diag)[4], 
+    age_medq1q3 = medianQ1Q3(x = cur_data(), varname = "age_diag"),
+    age_A = sum(age_diag_group == "A"),
+    age_B = sum(age_diag_group == "B"),
+    age_C = sum(age_diag_group == "C"),
+    age_D = sum(age_diag_group == "D"),
+    age_E = sum(age_diag_group == "E"),
+    age_F = sum(age_diag_group == "F"),
+    age_G = sum(age_diag_group == "G"),
+    
+    pfh_y = sum(positive_famillial_history == "yes"),
+    pfh_n = sum(positive_famillial_history == "no"),
+    
+    hbp_a = sum(hpt_aware == "yes"),
+    hbp_u = sum(hpt_aware == "no"),
+    
+    smok_c = sum(smoking_current_notcurrent == "current"),
+    smok_nc = sum(smoking_current_notcurrent == "not_current"),
+    # smok_f = sum(),
+    
+    mult_y = sum(multipleIAs == "yes"),
+    mult_n = sum(multipleIAs == "no"),
+    
+    loc_l = sum(IAlocation_group == "low"),
+    loc_m = sum(IAlocation_group == "medium"),
+    loc_h = sum(IAlocation_group == "high"),
+    
+    size_medq1q3 = medianQ1Q3(x = cur_data(), varname = "IAsize_diag"),
+    size_A = sum(IAsize_diag_grouped_merged == "A"),
+    size_B = sum(IAsize_diag_grouped_merged == "B"),
+    size_C = sum(IAsize_diag_grouped_merged == "C")
+  ) 
+table1_all
+```
+
+
+```{r}
+table1 <- rbind(table1_grp, table1_all) %>% 
   
   ###
   # Rename and Transform
@@ -138,14 +226,13 @@ table1 <- df_bnaiar_compl  %>%
          male = sex_m,
          female = sex_f,
          "Median [Q1, Q3]" = age_medq1q3,
-         A = age_A,
-         B = age_B,
-         C = age_C,
-         D = age_D,
-         E = age_E,
-         "F" = age_F,
-         E = age_E,
-         G = age_G,
+         "A = 20-39y" = age_A,
+         "B = 40-44y" = age_B,
+         "C = 45-49y" = age_C,
+         "D = 50-54y" = age_D,
+         "E = 55-59y" = age_E,
+         "F = 60-64y" = age_F,
+         "G = 65-93y" = age_G,
          yes = pfh_y,
          no = pfh_n,
          aware = hbp_a,
@@ -154,13 +241,13 @@ table1 <- df_bnaiar_compl  %>%
          "not current" = smok_nc,
          "yes " = mult_y,
          "no " = mult_n,
-         low = loc_l,
-         medium = loc_m,
-         high = loc_h,
+         "low risk" = loc_l,
+         "medium risk" = loc_m,
+         "high risk" = loc_h,
          "Median [Q1, Q3] " = size_medq1q3,
-         "A " = size_A,
-         "B " = size_B,
-         "C " = size_C) %>%
+         "A ≤ 7mm" = size_A,
+         "B = 8 − 12mm" = size_B,
+         "C ≥ 13mm" = size_C) %>%
   t() %>%
   as.data.frame() %>%
   janitor::row_to_names(1) %>%
@@ -168,9 +255,9 @@ table1 <- df_bnaiar_compl  %>%
   
   add_row(rowname = "Centre", no = "", yes="", .before = 1) %>%
   add_row(rowname = "Sex", no = "", yes="", .after = 6) %>%
-  add_row(rowname = "Age", no = "", yes="", .after = 9) %>%
+  add_row(rowname = "Age at diagnosis", no = "", yes="", .after = 9) %>%
   add_row(rowname = "Familial history", no = "", yes="", .after = 18) %>%
-  add_row(rowname = "Hypertension", no = "", yes="", .after = 21) %>%
+  add_row(rowname = "Hypertension awareness", no = "", yes="", .after = 21) %>%
   add_row(rowname = "Smoking", no = "", yes="", .after = 24) %>%
   add_row(rowname = "IA Multiplicity", no = "", yes="", .after = 27) %>%
   add_row(rowname = "IA Location", no = "", yes="", .after = 30) %>%
@@ -182,32 +269,66 @@ table1 <- df_bnaiar_compl  %>%
   flextable::flextable() %>%
 
   # flextable::add_body(rowname = "Centre", no = "", yes="") %>%
+  flextable::border_remove()%>%
+  # flextable::theme_booktabs() %>%
+  # flextable::theme_vanilla() %>%
+  flextable::hline_top(j = c(1:4), border = officer::fp_border(color = "black", width = 1.5)) %>%
   
-  flextable::add_header_row(
-    top = TRUE,
-    values = c("",
-               "Diagnosis",
-               "")) %>%
+  # flextable::add_header_row(
+  #   top = TRUE,
+  #   values = c("",
+  #              "Intracranial Aneursym Presentation",
+  #              "", 
+  #              # paste0("Total count"))) %>%
+  #              ""))) %>%
+  # flextable::hline(part = "body", i = c(1), j = c(1:4)) %>%
+  # flextable::hline(part = "header", i = c(1), j = c(2:3)) %>%
+
+
   flextable::set_header_labels(rowname = "",
                                no = paste0("Unruptured\n(N= ", total_unrupt, ")"),
-                               yes = paste0("Ruptured\n(N= ", total_rupt, ")")) %>%
+                               yes = paste0("Ruptured\n(N= ", total_rupt, ")"),
+                               # total = paste0("\n(N= ", total_rupt, ")")) %>%
+                               total = paste0("Total\n(N= ", (total_rupt+total_unrupt), ")")) %>%
   # flextable::compose() # to add a label colum
   flextable::merge_at(i = 1, j = 2:3) %>%
   
-  flextable::border_remove()%>%
-  flextable::theme_booktabs() %>%
+  
+  flextable::hline_bottom(j = c(1:4), border = officer::fp_border(color = "black", width = 1.5)) %>%
   flextable::hline(part = "body", i = c(1,6,7,9,10,18,19,21,22,24,25,27,28,30,31,34,35), border = officer::fp_border(color = "black", width = 1.5)) %>%
   flextable::padding(part = "body", i = c(2:6, 8:9, 11:18, 20:21, 23:24, 26:27, 29:30, 32:34, 36:39), padding.left = 20) %>%
   
-  flextable::autofit()
+  flextable::autofit() %>%
+  
+  flextable::footnote(i = c(32:34), j = c(1), 
+                      value = flextable::as_paragraph(
+                        c("Cavernous ICA, Ophtalmic ICA", # low risk
+                          "MCA, ICA, Basilar, A1 segment ant, others", # medium risk
+                          "Acom, A2, PC, Pcom, V-B")),  # high risk
+                      ref_symbols = c(letters[1:3]),
+                      inline = TRUE) 
 
 table1
 ```
 
-TODO: Think abou coloring the background of the rows according the blacklist graphic.
+
+```{r}
+table1_colored <- table1 %>%
+  flextable::bg(i = c(1:21), j = c(1:4), bg = "#434867") %>%
+  flextable::color(i = c(1:21), j = c(1:4), color = "white") %>% 
+  flextable::hline_top(j = c(1:4), border = officer::fp_border(color = "gray", width = 1.5)) %>%
+  flextable::hline(part = "body", i = c(1,6,7,9,10,18,19,21), border = officer::fp_border(color = "gray", width = 1.5)) %>%
+  flextable::bg(i = c(22:27), j = c(1:4), bg = "#eb874f") %>%
+  flextable::bg(i = c(28:39), j = c(1:4), bg = "#ff5440") 
+table1_colored
+```
+
 
 ```{r}
 table1 %>%
   flextable::save_as_html(path = paste0(PLOTPATH, "/table1.html"))
+
+table1_colored %>%
+  flextable::save_as_html(path = paste0(PLOTPATH, "/table1_colored.html"))
 ```
 
