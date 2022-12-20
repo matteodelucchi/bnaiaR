@@ -46,6 +46,8 @@ Specifically in the vignettes [geneva2isgc](https://github.zhaw.ch/delt/ExploreD
 [nantes2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/nantes2isgc.Rmd), 
 [ucl2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/ucl2isgc.Rmd), 
 [utrecht2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/utrecht2isgc.Rmd) 
+[tum2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/tum2isgc.Rmd) 
+[kssg2isgc](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/kssg2isgc.Rmd) 
 and then pooled in 
 [combineISGC](https://github.zhaw.ch/delt/ExploreDataISGC/blob/dev-multicentre/vignettes/combineISGC.Rmd).  
 The detailed steps from the harmonization can be inspected in [bnaiaR/R/harmonization.R](R/harmonization.R).
