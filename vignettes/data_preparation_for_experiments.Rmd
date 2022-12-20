@@ -172,12 +172,13 @@ table(select(df_bnaiar_smokCFN, c("study_source", "smoking_current_former_no")),
 ```
 
 It seems as former smoking in utrecht is systematically missing. 
-Therefore, we remove Utrecht completely.
+TUM did not collect smoking in that level of detail.
+Therefore, we remove Utrecht and TUM completely.
 For Geneva, we delete the entries with NAs.
 
 ```{r}
 df_bnaiar_compl_smokCFN <- df_bnaiar_smokCFN %>% 
-  filter(study_source != "utrecht") %>% 
+  filter(!(study_source %in% c("utrecht", "tum"))) %>% 
   mutate(study_source = factor(study_source)) %>% # remove factor level 'utrecht'
   na.omit() 
 
