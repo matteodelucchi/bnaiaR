@@ -64,7 +64,7 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCN.out")))
+cl = makeCluster(60, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCN.out")))
 ```
 
 ```{r additive discrete BN w/ mixed effects}
@@ -72,8 +72,8 @@ stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
                    algorithm = "tabu", 
-                   R = 1,
-                   # R = 500,
+                   # R = 1,
+                   R = 500,
                    cluster = cl,
                    algorithm.args = list(score = "custom",
                                          fun = glmm.bic,
@@ -115,22 +115,22 @@ if (SAVEPLOTS) {
 ## Inference 
 
 ```{r}
-load(paste0(PLOTPATH, "/fourierplots/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
+# load(paste0(PLOTPATH, "/fourierplots/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
 ```
 
 
 ```{r}
-data.dbn.additive <- tobesaved$madbn_data %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history))
-bl <- tobesaved$madbn_bl
-avg <- tobesaved$madbn_avg
-bb <- tobesaved$madbn_boot
-
-strength.plot(avg,
-              bb,
-              main = "discrete additive mixed-effects BN",
-              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
-              shape = "rectangle")
+# data.dbn.additive <- tobesaved$madbn_data %>%
+#   mutate(positive_famillial_history = factor(positive_famillial_history))
+# bl <- tobesaved$madbn_bl
+# avg <- tobesaved$madbn_avg
+# bb <- tobesaved$madbn_boot
+# 
+# strength.plot(avg,
+#               bb,
+#               main = "discrete additive mixed-effects BN",
+#               # sub = "SL: tabu\nth.=0.3\nScore=BIC",
+#               shape = "rectangle")
 
 ```
 
@@ -205,7 +205,7 @@ print(dist.dbn.additive_smokCFN)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(6, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCFN.out")))
+cl = makeCluster(60, outfile = path.expand(paste0(getwd(), "/glmm.bic_smokCFN.out")))
 ```
 
 ```{r additive discrete BN w/ mixed effects}
@@ -213,8 +213,8 @@ stime <- Sys.time()
 
 bb_smokCFN = boot.strength(data.dbn.additive_smokCFN, 
                    algorithm = "tabu", 
-                   R = 1,
-                   # R = 500,
+                   # R = 1,
+                   R = 500,
                    cluster = cl,
                    algorithm.args = list(score = "custom",
                                          fun = glmm.bic,
@@ -231,7 +231,7 @@ print(paste("Running time: ", running_time))
 
 
 ```{r additive discrete BN w/ mixed effects}
-avg_smokCFN = averaged.network(bb)
+avg_smokCFN = averaged.network(bb_smokCFN)
 
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_additive_bic_mixedeffects_smokCFN", ".")
@@ -254,9 +254,9 @@ if (SAVEPLOTS) {
 
 
 ```{r save all intermediate results}
-# tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg,
-#                   "madbn_data_smokCFN"=data.dbn.additive_smokCFN, "madbn_bl_smokCFN"=bl.dbn.additive_smokCFN, "madbn_dists_smokCFN"=dist.dbn.additive_smokCFN, "madbn_boot_smokCFN"=bb_smokCFN, "madbn_avg_smokCFN"=avg_smokCFN)
-# save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
+tobesaved <- list("madbn_data"=data.dbn.additive, "madbn_bl"=bl.dbn.additive, "madbn_dists"=dist.dbn.additive, "madbn_boot"=bb, "madbn_avg"=avg,
+                  "madbn_data_smokCFN"=data.dbn.additive_smokCFN, "madbn_bl_smokCFN"=bl.dbn.additive_smokCFN, "madbn_dists_smokCFN"=dist.dbn.additive_smokCFN, "madbn_boot_smokCFN"=bb_smokCFN, "madbn_avg_smokCFN"=avg_smokCFN)
+save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_smokCNvsCFN.RData"))
 ```
 
 ## Inference
@@ -266,17 +266,17 @@ if (SAVEPLOTS) {
 # Load discrete additive mixed-effects BN
 
 ```{r message=FALSE, warning=FALSE}
-data.dbn.additive_smokCFN <- tobesaved$madbn_data_smokCFN %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history))
-bl.dbn.additive_smokCFN <- tobesaved$madbn_bl_smokCFN
-avg_smokCFN <- tobesaved$madbn_avg_smokCFN
-bb_smokCFN <- tobesaved$madbn_boot_smokCFN
-
-strength.plot(avg_smokCFN,
-              bb_smokCFN,
-              main = "discrete additive mixed-effects BN",
-              sub = "Smoking as Current, former, never",
-              shape = "rectangle")
+# data.dbn.additive_smokCFN <- tobesaved$madbn_data_smokCFN %>%
+#   mutate(positive_famillial_history = factor(positive_famillial_history))
+# bl.dbn.additive_smokCFN <- tobesaved$madbn_bl_smokCFN
+# avg_smokCFN <- tobesaved$madbn_avg_smokCFN
+# bb_smokCFN <- tobesaved$madbn_boot_smokCFN
+# 
+# strength.plot(avg_smokCFN,
+#               bb_smokCFN,
+#               main = "discrete additive mixed-effects BN",
+#               sub = "Smoking as Current, former, never",
+#               shape = "rectangle")
 ```
 
 ```{r}
