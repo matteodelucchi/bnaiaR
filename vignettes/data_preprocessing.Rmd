@@ -462,7 +462,12 @@ adbisgc_tmp <- adbisgc_tmp %>%
   pipe_message("filter age outliers.") %>%
   filter((age_diag >= 10)&(age_diag <=100)|is.na(age_diag)) %>% 
   pipe_message("filter IA size outliers.") %>%
-  filter((IAsize_diag_log>=0)&(IAsize_diag_log<=4)|is.na(IAsize_diag_log)) 
+  filter((IAsize_diag_log>=0)&(IAsize_diag_log<=4)|is.na(IAsize_diag_log)) %>%
+  pipe_message("Filter probable familial history.") %>%
+  filter((positive_famillial_history != "probably")|is.na(positive_famillial_history)) %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+
+summarytools::label(adbisgc_tmp$positive_famillial_history) <- "Familiar incidence known (yes/no). 'yes' if aware of one or more 1st degree relative(s) with intracranial aneurysm. 'NA' if familiar history is unknown. 'no' otherwise."
 
 adbisgc_tmp %>%
   # sort variables alphabetically

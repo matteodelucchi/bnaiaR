@@ -22,7 +22,6 @@ knitr::opts_chunk$set(
 # devtools::document()
 # devtools::load_all()
 # renv::snapshot(prompt = F)
-
 ```
 
 
@@ -56,17 +55,6 @@ SAVESUMMARYPLT <- TRUE
 data("adbisgc")
 str(adbisgc, give.attr=F)
 summarytools::dfSummary(adbisgc)
-```
-
-## remove pos. fam. history == "probably"
-
-There are only very few cases with a pos. fam. history == probably wo we remove
-them and consider pos. fam. history as dichotome variable.
-
-```{r}
-adbisgc <- adbisgc %>%
-  filter(positive_famillial_history != "probably") %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 ```
 
 ## reorder reference levels 
