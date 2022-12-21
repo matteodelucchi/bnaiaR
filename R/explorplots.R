@@ -290,6 +290,7 @@ overview_plt_max_grouped_rupture <- function(df, colorby="IAruptured", ignore.id
 #' PLOTPATH.
 #'
 #' @param df data.frame.
+#' @param MAXVALS number of levels to be displayed. Defaults to 10.
 #' @param FILENAME str. with file name suffix: "dfsummary_<FILENAME>"
 #' @param SAVE TRUE if output should be stored as html file or printed to the console.
 #' @param PLOTPATH str. with path to save. i.e. `/home/user/Documents`
@@ -301,9 +302,9 @@ overview_plt_max_grouped_rupture <- function(df, colorby="IAruptured", ignore.id
 #' \dontrun{
 #' printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = FALSE, PLOTPATH = PLOTPATH)
 #' }
-printorsave_dfsummary <- function(df, FILENAME, SAVE=SAVE, PLOTPATH=PLOTPATH){
+printorsave_dfsummary <- function(df, FILENAME, MAXVALS=10, SAVE=SAVE, PLOTPATH=PLOTPATH){
   if(SAVE){
-    summarytools::view(summarytools::dfSummary(df), method = "browser", file = paste0(PLOTPATH, "/dfsummary_", FILENAME, ".html"))
+    summarytools::view(summarytools::dfSummary(df, max.distinct.values = MAXVALS), method = "browser", file = paste0(PLOTPATH, "/dfsummary_", FILENAME, ".html"))
   } else {
     summarytools::dfSummary(df)
   }

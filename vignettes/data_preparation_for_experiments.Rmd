@@ -87,8 +87,7 @@ df_bnaiar <- adbisgc_reg %>%
 ```
 
 ```{r}
-# summarytools::dfSummary(df_bnaiar)
-# summarytools::view(dfSummary(df_bnaiar), method = "pander", file = "~/ZHAW/ExplorDataISGC/220623_HUG-ZHAW_Retreat/summary_adbisgc_bnaiaR.html")
+printorsave_dfsummary(df_bnaiar, FILENAME = "summary_adbisgc_bnaiar", MAXVALS=15, SAVE = TRUE, PLOTPATH = PLOTPATH)
 str(df_bnaiar, give.attr=F)
 ```
 
@@ -99,6 +98,7 @@ str(df_bnaiar, give.attr=F)
 df_bnaiar_compl <- df_bnaiar %>%
   na.omit() 
 
+printorsave_dfsummary(df_bnaiar_compl, FILENAME = "summary_adbisgc_bnaiar_compl", MAXVALS=15, SAVE = TRUE, PLOTPATH = PLOTPATH)
 summarytools::dfSummary(df_bnaiar_compl)
 ```
 

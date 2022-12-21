@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r development, eval=FALSE, include=FALSE}
-devtools::document()
-devtools::load_all()
+# devtools::document()
+# devtools::load_all()
 # renv::snapshot(prompt = F)
 ```
 
@@ -51,7 +51,8 @@ PLOTPATH <- Sys.getenv("PLOTPATH")
 
 Copy the data to the current package that was prepared in local, private package.
 ```{r}
-system("cp ../../ExplorDataISGC/ExplorDataISGC/data/adbisgc.rda ../inst/extdata/")
+# system("cp ../../ExplorDataISGC/ExplorDataISGC/data/adbisgc.rda ../inst/extdata/")
+# devtools::load_all()
 ```
 
 
@@ -250,7 +251,7 @@ plt.age5y <- adbisgc_tmp %>%
   theme_minimal()+
   labs(title= "Case-distribution of grouped Age at time of Diagnosis",
           subtitle = "Grouped in bins of 5y for patients between 40y and 65y.",
-          caption = stringr::str_wrap("Age at time of diagnosis of IA grouped in A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-max(age)"),
+          caption = stringr::str_wrap("Age at time of diagnosis of IA grouped in A=0-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-94"),
        y="Number of records",
        x="Age Group")+
   theme(plot.caption = element_text(hjust = 0.5),
@@ -436,10 +437,16 @@ if (SAVEPLOTS){
 
 ```{r}
 summarytools::label(adbisgc_tmp$age_diag_group) <- "age_diag grouped in A=0-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-94 years."
+summarytools::label(adbisgc_tmp$smoking_current_notcurrent) <- "Wrapper of three level smoking, combining former and non-smoker as 'not_current'."
+summarytools::label(adbisgc_tmp$multipleIAs) <- "Detection of multiple IAs (binary). Wrapper of number of IAs if number of IAs is provided."
 summarytools::label(adbisgc_tmp$IAlocation_group) <- "IA location grouped into their respective rupture risk levels. For details see '?harmonize_locbyrisk'"
+summarytools::label(adbisgc_tmp$IAsize_diag) <- "Maximum diameter of IA dome at the time of diagnosis."
+summarytools::label(adbisgc_tmp$IAsize_diag_log) <- "Log of 'IAsize_diag'."
 summarytools::label(adbisgc_tmp$IAsize_diag_grouped) <- "IA size group A ≤ 7mm, B = 8 − 12mm, C 13 - 25mm, D ≥ 25mm, E == NA."
 summarytools::label(adbisgc_tmp$IAsize_diag_grouped_merged) <- "IA size groups C and D merged and E encoded as NA."
-summarytools::label(adbisgc_tmp$IAsize_diag_grouped_merged) <- "IA size groups C and D merged and E encoded as NA."
+summarytools::label(adbisgc_tmp$mRS_afterSAH) <- "Modified ranking scale at 1y after ruptured IA or corresponding to maxFUtime (ambiguous)."
+summarytools::label(adbisgc_tmp$gos_afterSAH) <- "Glasgow outcome scale at 1y after ruptured IA or corresponding to maxFUtime (ambiguous)."
+summarytools::label(adbisgc_tmp$IAruptured) <- "IA rupture status with respect to the time of diagnosis."
 
 adbisgc_tmp %>%
   # sort variables alphabetically
@@ -451,11 +458,11 @@ adbisgc_tmp %>%
 
 
 ```{r}
-adbisgc_tmp <- adbisgc_tmp %>%
+adbisgc_tmp <- adbisgc_tmp %>% 
   pipe_message("filter age outliers.") %>%
-  filter((age_diag >= 10)&(age_diag <=100)) %>%
+  filter((age_diag >= 10)&(age_diag <=100)|is.na(age_diag)) %>% 
   pipe_message("filter IA size outliers.") %>%
-  filter((IAsize_diag_log>0)&(IAsize_diag_log<4)) 
+  filter((IAsize_diag_log>=0)&(IAsize_diag_log<=4)|is.na(IAsize_diag_log)) 
 
 adbisgc_tmp %>%
   # sort variables alphabetically
@@ -464,7 +471,6 @@ adbisgc_tmp %>%
   str(give.attr = F) %>%
   summarytools::dfSummary(max.distinct.values = 20)
 ```
-
 
 # one-hot-encoding
 
