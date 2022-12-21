@@ -12,7 +12,8 @@ harmonize2isgc(
   borcol,
   agecol,
   posfamhistcol,
-  smokingcol,
+  smokingcol = NULL,
+  smokingCNcol = NULL,
   IAnumcol,
   multIAcol = NULL,
   hbpcol,
@@ -31,7 +32,7 @@ harmonize2isgc(
 \arguments{
 \item{df}{data.frame of raw data set.}
 
-\item{IDcol1}{character string with indiviudal patient identifier or label for link with genomes of the respective study source}
+\item{IDcol1}{character string with individual patient identifier or label for link with genomes of the respective study source}
 
 \item{IDcol2}{optional other label to identify cases in original study}
 
@@ -43,7 +44,9 @@ harmonize2isgc(
 
 \item{posfamhistcol}{character string of column name for positive familial history}
 
-\item{smokingcol}{character string of column name for smoking behaviour}
+\item{smokingcol}{character string of column name for smoking behavior in three levels (current, former, none smoker)}
+
+\item{smokingCNcol}{character string of column name for smoking behavior (current, not current)}
 
 \item{IAnumcol}{character string of column name for total number of diagnosed IAs per patient}
 

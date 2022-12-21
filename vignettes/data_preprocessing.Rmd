@@ -166,6 +166,7 @@ plt.size.comb <- adbisgc_tmp %>%
 plt.size.comb
 ```
 
+
 ## Large Age groups reduce number of levels
 
 ```{r}
@@ -228,9 +229,11 @@ grouping is included.
 
 ```{r}
 adbisgc_tmp <- adbisgc_tmp %>%
-    mutate(age_diag_group = wrap_age(age_diag))
-```
+  mutate(age_diag = round(age_diag, 0)) %>%
+  mutate(age_diag_group = wrap_age(age_diag))
 
+table(round(adbisgc_tmp$age_diag, 0), adbisgc_tmp$age_diag_group)
+```
 
 ```{r}
 plt.age5y <- adbisgc_tmp %>%
@@ -266,7 +269,8 @@ We group IA location by vessel into three classes according their risk of ruptur
 
 ```{r}
 adbisgc_tmp <- adbisgc_tmp %>%
-  mutate(IAlocation_group = harmonize_locbyrisk(IAlocation))
+  mutate(IAlocation_group = harmonize_locbyrisk(IAlocation)) %>%
+  mutate(IAlocation_group = factor(IAlocation_group, labels = c("low", "medium", "high"))) # 1: low; 2: medium, 3: high
 
 str(adbisgc_tmp, give.attr=F)
 ```
@@ -431,7 +435,7 @@ if (SAVEPLOTS){
 # Filter
 
 ```{r}
-summarytools::label(adbisgc_tmp$age_diag_group) <- "age_diag grouped in A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-93 years."
+summarytools::label(adbisgc_tmp$age_diag_group) <- "age_diag grouped in A=0-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-94 years."
 summarytools::label(adbisgc_tmp$IAlocation_group) <- "IA location grouped into their respective rupture risk levels. For details see '?harmonize_locbyrisk'"
 summarytools::label(adbisgc_tmp$IAsize_diag_grouped) <- "IA size group A ≤ 7mm, B = 8 − 12mm, C 13 - 25mm, D ≥ 25mm, E == NA."
 summarytools::label(adbisgc_tmp$IAsize_diag_grouped_merged) <- "IA size groups C and D merged and E encoded as NA."
@@ -487,13 +491,13 @@ summarytools::view(summary_adbisgc, method = "browser", file = paste0(PLOTPATH, 
 summarytools::view(summary_adbisgc_ohe, method = "browser", file = paste0(PLOTPATH, "/dfsummary_adbisgc_ohe.html"))
 
 saveRDS(adbisgc,
-        file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc.rds")
+        file = "/home/matteo/ZHAW/ExplorDataISGC/2212_adbisgc_data/2212_adbisgc.rds")
 write.csv(adbisgc, 
-          file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc.csv")
+          file = "/home/matteo/ZHAW/ExplorDataISGC/2212_adbisgc_data/2212_adbisgc.csv")
 saveRDS(adbisgc_ohe,
-        file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc_ohe.rds")
+        file = "/home/matteo/ZHAW/ExplorDataISGC/2212_adbisgc_data/2212_adbisgc_ohe.rds")
 write.csv(adbisgc_ohe, 
-          file = "/home/matteo/ZHAW/ExplorDataISGC/2209_adbisgc_data/2209_adbisgc_ohe.csv")
+          file = "/home/matteo/ZHAW/ExplorDataISGC/2212_adbisgc_data/2212_adbisgc_ohe.csv")
 ```
 
 # Include Preprocessed Data in bnaiaR package

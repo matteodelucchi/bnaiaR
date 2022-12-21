@@ -67,6 +67,7 @@ harmonize_loc <- function(IAloc){
   case_when(
     IAloc == "ACom" ~ "Acom",
     IAloc == "Acom" ~ "Acom",
+    IAloc == "ACOM" ~ "Acom",
     IAloc == "L AComm" ~ "Acom",
     IAloc == "R AComm" ~ "Acom",
     IAloc == "Ant Communicating artery" ~ "Acom",
@@ -82,6 +83,10 @@ harmonize_loc <- function(IAloc){
     IAloc == "anterior cerebral proximal to anterior communicating" ~ "Acom",
 
     IAloc == "MCA" ~ "MCA",
+    IAloc == "MCA (" ~ "MCA",
+    IAloc == "MCA li" ~ "MCA",
+    IAloc == "MCA re" ~ "MCA",
+    IAloc == "MCA bds" ~ "MCA",
     IAloc == "middle cerebral artery" ~ "MCA",
     IAloc == "L MCA" ~ "MCA",
     IAloc == "R MCA" ~ "MCA",
@@ -93,11 +98,14 @@ harmonize_loc <- function(IAloc){
     IAloc == "middle cerebral proximal to first main branching" ~ "MCA",
     IAloc == "middle cerebral at main branchings (trifurcation)" ~ "MCA",
     IAloc == "M1 segment middle cerebral artery" ~ "MCA",
-
-
+    IAloc == "M1" ~ "MCA",
+    IAloc == "M 1" ~ "MCA",
+    IAloc == "M2" ~ "MCA",
 
     IAloc == "Pcom" ~ "Pcom",
     IAloc == "PCom" ~ "Pcom",
+    IAloc == "PComA" ~ "Pcom",
+    IAloc == "PcomA" ~ "Pcom",
     IAloc == "L PComm" ~ "Pcom",
     IAloc == "R PComm" ~ "Pcom",
     IAloc == "Posterior Comm" ~ "Pcom",
@@ -124,11 +132,13 @@ harmonize_loc <- function(IAloc){
     IAloc == "internal carotid other" ~ "ICA",
     IAloc == "Medial wall ICA distal" ~ "ICA",
     IAloc == "Ant Choroidal segment carotid" ~ "ICA",
+    IAloc == "ICA Bif" ~ "ICA",
 
 
     IAloc == "OphtICA" ~ "OphtICA",
     IAloc == "OpthICA" ~ "OphtICA",
     IAloc == "OptICA" ~ "OphtICA",
+    IAloc == "OphthICA" ~ "OphtICA",
     IAloc == "Ophthalmic artery" ~ "OphtICA",
     IAloc == "opthalmic artery" ~ "OphtICA",
     IAloc == "Ophthalmic segment carotid" ~ "OphtICA",
@@ -140,6 +150,8 @@ harmonize_loc <- function(IAloc){
     IAloc == "internal carotid ophtalmic region" ~ "OphtICA",
 
     IAloc == "Basilar" ~ "Basilar",
+    IAloc == "Basliar" ~ "Basilar",
+    IAloc == "Basillaris" ~ "Basilar",
     IAloc == "basilar artery" ~ "Basilar",
     IAloc == "Basilar Tip" ~ "Basilar",
     IAloc == "Basilar tip" ~ "Basilar",
@@ -148,9 +160,12 @@ harmonize_loc <- function(IAloc){
     IAloc == "P 1 posterior cerebral" ~ "Basilar",
     IAloc == "P1 Posterior cerebral artery" ~ "Basilar",
     IAloc == "basilar termination" ~ "Basilar",
+    IAloc == "P1" ~ "Basilar",
+    IAloc == "BA" ~ "Basilar",
 
     IAloc == "VB" ~ "V-B",
     IAloc == "V-B" ~ "V-B",
+    IAloc == "V-Bis" ~ "V-B",
     IAloc == "AICA" ~ "V-B",
     IAloc == "anterior inferior cerebellar artery" ~ "V-B",
     IAloc == "PICA" ~ "V-B",
@@ -166,6 +181,7 @@ harmonize_loc <- function(IAloc){
     IAloc == "L PICA" ~ "V-B",
     IAloc == "R PICA" ~ "V-B",
     IAloc == "Vertebral" ~ "V-B",
+    IAloc == "VA" ~ "V-B",
     IAloc == "vertebral artery" ~ "V-B",
     IAloc == "Vertebral trunk" ~ "V-B",
     IAloc == "Basilar others" ~ "V-B",
@@ -175,6 +191,8 @@ harmonize_loc <- function(IAloc){
     IAloc == "SCA Segment of Basilar Trunk" ~ "V-B",
     IAloc == "L SCA" ~ "V-B",
     IAloc == "R SCA" ~ "V-B",
+    IAloc == "SUCA" ~ "V-B",
+    IAloc == "SCA" ~ "V-B",
     IAloc == "PICA Segment of Vertebral Artery" ~ "V-B",
     IAloc == "AICA Segment of Basilar Trunk" ~ "V-B",
     IAloc == "others other (vertebral basilar)" ~ "V-B",
@@ -197,15 +215,18 @@ harmonize_loc <- function(IAloc){
 
     IAloc == "A1 segment ant" ~ "A1 segment ant", # A1 are very rare...
     IAloc == "A1 segment ant cerebral artery" ~ "A1 segment ant",
+    IAloc == "A1" ~ "A1 segment ant",
 
     IAloc == "PC" ~ "PC",
     IAloc == "posterior cerebral artery" ~ "PC",
     IAloc == "L PCA" ~ "PC",
     IAloc == "R PCA" ~ "PC",
+    IAloc == "PCA" ~ "PC",
     IAloc == "P1-P2 junction posterior cerebral artery" ~ "PC",
     IAloc == "P2 posterior cerebral artery" ~ "PC",
     IAloc == "P 2 posterior cerebral" ~ "PC",
     IAloc == "P 1/2 posterior cerebral" ~ "PC",
+    IAloc == "P2" ~ "PC",
 
     IAloc == "Other" ~ "Other",
     IAloc == "Distal posterior cerebral artery" ~ "Other",
@@ -283,25 +304,22 @@ harmonize_loc <- function(IAloc){
 #'                   .names = "locrisk_{.col}"))
 #' }
 harmonize_locbyrisk <- function(IAlocation){
-  # stopifnot("IAlocation must be a character" = is.character(IAlocation))
   IAlocation <- as.character(IAlocation)
 
   # Construct location by risk
-  IAlocation_group <- if_else(IAlocation == "Acom" |
+  if_else(IAlocation == "Acom" |
             IAlocation == "Pcom" |
             IAlocation == "V-B" |
             IAlocation == "A2" |
-            IAlocation == "PC", "high",
+            IAlocation == "PC", 3,
           if_else(IAlocation == "MCA" |
                     IAlocation == "ICA" |
                     IAlocation == "Basilar" |
                     IAlocation == "Other" |
-                    IAlocation == "A1 segment ant", "medium",
+                    IAlocation == "A1 segment ant", 2,
                   if_else(IAlocation == "CavICA" |
-                            IAlocation == "OphtICA", "low",
-                          NA_character_)))
-
-  return(factor(IAlocation_group, levels = c("high", "medium", "low")))
+                            IAlocation == "OphtICA", 1,
+                          NA_real_)))
 }
 
 #' Dictionary translating IA location numbers to vessel names
@@ -384,7 +402,7 @@ harmonize_bor <- function(basis_of_recruitment){
     basis_of_recruitment %in% c("Retrospective Symptomatic Intracranial Aneurysm") ~ "retro_sympt_IA",
     basis_of_recruitment %in% c("Symptomatic Intracranial Aneurysm", "Symptomatic unruptured IA", "Compression or stroke") ~ "sympt_IA",
     basis_of_recruitment %in% c("Retrospective Incidental Intracranial Aneurysm") ~ "retro_IIA",
-    basis_of_recruitment %in% c("Incidental Intracranial Aneurysm", "Incidental unruptured IA", "UIA", "Sporadic UIA", "Fortuite") ~ "IIA",
+    basis_of_recruitment %in% c("Incidental Intracranial Aneurysm", "Incidental intracranial aneurysm", "Incidental unruptured IA", "UIA", "Sporadic UIA", "Fortuite") ~ "IIA",
     basis_of_recruitment %in% c("Retrospective Sub Arachnoid Hemorrhage") ~ "retro_SAH",
     basis_of_recruitment %in% c("Sub Arachnoid Hemorrhage", "Subarachnoid Haemorrhage", "aSAH", "IA rupture") ~ "SAH",
     basis_of_recruitment %in% c("Genetically linked family member", "Screening for Familial IAs", "Familial UIA", "Familial screening") ~ "gen_link_fam",
@@ -414,19 +432,44 @@ harmonize_age <- function(age){
 
 harmonize_posfamhist <- function(posfamhist){
   case_when(
-    posfamhist %in% c(0, "no", "FALSCH", "No") ~ "no",
+    posfamhist %in% c(0, "0", "no", "FALSCH", "No") ~ "no",
     posfamhist %in% c("probably") ~ "probably",
-    posfamhist %in% c(1, "yes", "WAHR", "Yes") ~ "yes",
+    posfamhist %in% c(1, "1", "yes", "WAHR", "Yes") ~ "yes",
     (posfamhist == "NA") | is.na(posfamhist) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", posfamhist)
   )
 }
 
+#' Harmonize Smoking (three levels) values
+#'
+#' See also \code{\link[=harmonize_smokingCN]{harmonize_smokingCN()}}.
+#'
+#' @param smoking as character string with three possible levels: current, former, none smoker
+#'
+#' @return character string
+#' @export
 harmonize_smokingCFN <- function(smoking){
   case_when(
-    smoking %in% c("Current", "CurSmoker", "Yes", "active smoking", "Yes: still smoking") ~ "current",
-    smoking %in% c("Former", "exSmoker", "Quit smoking < 3y", "Quit smoking > 3y",  "Yes: quit smoking") ~ "former",
-    smoking %in% c("No", "NonSmoker", "never smoking") ~ "no",
+    smoking %in% c("Current", "current", "CurSmoker", "Yes", "active smoking", "Yes: still smoking") ~ "current",
+    smoking %in% c("Former", "former", "exSmoker", "Quit smoking < 3y", "Quit smoking > 3y",  "Yes: quit smoking") ~ "former",
+    smoking %in% c("No", "no", "NonSmoker", "never smoking") ~ "no",
+    (smoking == "Unknown") |is.na(smoking) ~ NA_character_,
+    TRUE ~ paste("UNDEFINED:", smoking)
+  )
+}
+
+#' Harmonize Smoking (two levels) values
+#'
+#' See also \code{\link[=harmonize_smokingCFN]{harmonize_smokingCFN()}}.
+#'
+#' @param smoking as character string with two possible levels: current, none smoker
+#'
+#' @return character string
+#' @export
+harmonize_smokingCN <- function(smoking){
+  case_when(
+    smoking %in% c("1", "Current", "current", "CurSmoker", "Yes", "active smoking", "Yes: still smoking") ~ "current",
+    smoking %in% c("0", "No", "no", "NonSmoker", "never smoking", "not current", "Not Current", "Not current") ~ "not_current",
     (smoking == "Unknown") |is.na(smoking) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", smoking)
   )
@@ -442,8 +485,8 @@ harmonize_IAnum <- function(IAnum){
 
 harmonize_IAmult <- function(IAmult){
   case_when(
-    IAmult %in% c("No", "FALSE") ~ "no",
-    IAmult %in% c("Yes", "TRUE") ~ "yes",
+    IAmult %in% c("No", "FALSE", "0") ~ "no",
+    IAmult %in% c("Yes", "TRUE", "1") ~ "yes",
     is.na(IAmult) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", IAmult)
   )
@@ -451,8 +494,8 @@ harmonize_IAmult <- function(IAmult){
 
 harmonize_hbp <- function(hbp){
   case_when(
-    hbp %in% c("No", "no", "no HBP", "Never") ~ "no",
-    hbp %in% c("Yes", "yes", "non-treated HBP", "pregnancy HBP", "treated HBP", "Yes - Treated and Controlled", "Yes - Treated and Poorly Controlled", "Yes - Not Treated", "AnyType") ~ "yes",
+    hbp %in% c("No", "no", "no HBP", "Never", "0") ~ "no",
+    hbp %in% c("Yes", "yes", "non-treated HBP", "pregnancy HBP", "treated HBP", "Yes - Treated and Controlled", "Yes - Treated and Poorly Controlled", "Yes - Not Treated", "AnyType", "1") ~ "yes",
     (hbp == "NA") | is.na(hbp) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", hbp)
   )
@@ -460,8 +503,8 @@ harmonize_hbp <- function(hbp){
 
 harmonize_hbptreat <- function(hbptreat){
   case_when(
-    hbptreat %in% c("No", "FALSE", "non-treated HBP", "Yes - Not Treated") ~ "no",
-    hbptreat %in% c("Yes", "TRUE", "treated HBP", "pregnancy HBP", "Yes - Treated and Controlled", "Yes - Treated and Poorly Controlled") ~ "yes",
+    hbptreat %in% c("No", "no", "FALSE", "non-treated HBP", "Yes - Not Treated") ~ "no",
+    hbptreat %in% c("Yes", "yes", "TRUE", "treated HBP", "pregnancy HBP", "Yes - Treated and Controlled", "Yes - Treated and Poorly Controlled") ~ "yes",
     (hbptreat == "no HBP") | is.na(hbptreat) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", hbptreat)
   )
@@ -512,7 +555,7 @@ harmonize_termreas <- function(termreas){
   case_when(
     termreas %in% c("IAex") ~ "IAex",
     termreas %in% c("aSAH") ~ "aSAH",
-    termreas %in% c("ended", "Ended") ~ "lossFU",
+    termreas %in% c("lossFU", "ended", "Ended") ~ "lossFU",
     termreas %in% c("deathOC", "DeathOc", "DeathOC") ~ "deathOC",
     (termreas == "NA") | is.na(termreas) ~ NA_character_,
     TRUE ~ paste("UNDEFINED:", termreas)
@@ -551,6 +594,7 @@ wrap_IAnum <- function(IAnum){
 wrap_IAsize <- function(IAsize){
   # make numeric
   IAsize <- as.numeric(IAsize)
+  IAsize <- round(IAsize, digits = 0) # required to avoid misclassifications due to different levels of significance
 
   # Group IA size
   case_when(
@@ -567,6 +611,7 @@ wrap_IAsize <- function(IAsize){
 
 wrap_age <- function(age){
   age <- as.numeric(age)
+  age <- round(age, digits = 0) # required to avoid misclassifications due to different levels of significance
 
   # Discretise age in bins of A=20-39, B=40-44, C=45-49, D=50-54, E=55-59, F=60-64, G=65-93 years
   age_grouped <- cut(
@@ -587,13 +632,14 @@ wrap_age <- function(age){
 #' Harmonize individual data structures to the least common denominator.
 #'
 #' @param df data.frame of raw data set.
-#' @param IDcol1 character string with indiviudal patient identifier or label for link with genomes of the respective study source
+#' @param IDcol1 character string with individual patient identifier or label for link with genomes of the respective study source
 #' @param IDcol2 optional other label to identify cases in original study
 #' @param gendcol character string of column name for biological sex
 #' @param borcol character string of column name for reason of patient's recruitment
 #' @param agecol character string of column name for age of patient at time of intracranial aneurysm diagnosis: if Ruptured_IA = Yes -> "Age" refers to the patient age at time of rupture. If Ruptured_IA = No -> "Age" refers to the patient age at the time of her first diagnosed IA (oldest IA).
 #' @param posfamhistcol character string of column name for positive familial history
-#' @param smokingcol character string of column name for smoking behaviour
+#' @param smokingcol character string of column name for smoking behavior in three levels (current, former, none smoker)
+#' @param smokingCNcol character string of column name for smoking behavior (current, not current)
 #' @param IAnumcol character string of column name for total number of diagnosed IAs per patient
 #' @param multIAcol character string of column name for wrapper of number of IAs.
 #' @param hbpcol character string of column name for hypertension y/n
@@ -641,26 +687,27 @@ wrap_age <- function(age){
 #' str(kuopio_isgc_geno)
 #' }
 harmonize2isgc <- function(df,
-                           IDcol1,
-                           IDcol2= NULL,
-                           gendcol,
-                           borcol,
-                           agecol,
-                           posfamhistcol,
-                           smokingcol,
-                           IAnumcol,
-                           multIAcol=NULL,
-                           hbpcol,
-                           hbptreatcol=NULL,
-                           IAloccol,
-                           IAruptcol,
-                           IAsizecol,
-                           mRScol=NULL,
-                           goscol=NULL,
-                           maxFUtimecol=NULL,
-                           termreascol=NULL,
-                           source,
-                           returnall=FALSE){
+                        IDcol1,
+                        IDcol2= NULL,
+                        gendcol,
+                        borcol,
+                        agecol,
+                        posfamhistcol,
+                        smokingcol = NULL,
+                        smokingCNcol = NULL,
+                        IAnumcol,
+                        multIAcol=NULL,
+                        hbpcol,
+                        hbptreatcol=NULL,
+                        IAloccol,
+                        IAruptcol,
+                        IAsizecol,
+                        mRScol=NULL,
+                        goscol=NULL,
+                        maxFUtimecol=NULL,
+                        termreascol=NULL,
+                        source,
+                        returnall=FALSE){
   ### rename columns for down-stream consistency. If name of column is NA build an empty (NA) column
   # Required variables
   dftemp <- df %>%
@@ -670,7 +717,7 @@ harmonize2isgc <- function(df,
            basis_of_recruitment = .data[[borcol]],
            age = .data[[agecol]],
            posfamhist = .data[[posfamhistcol]],
-           smoking = .data[[smokingcol]],
+           # smoking = .data[[smokingcol]],
            IAnum = .data[[IAnumcol]],
            hbp = .data[[hbpcol]],
            IAloc = .data[[IAloccol]],
@@ -685,6 +732,22 @@ harmonize2isgc <- function(df,
   } else {
     dftemp <- dftemp %>%
       mutate(ID_2 = NA_character_)
+  }
+
+  if((!is.null(smokingcol)) & (!is.null(smokingCNcol))){
+    warning(simpleWarning("Two smoking variables provided. Don't know which one to keep. Please provide only one of them."))
+    stop(simpleError("Can not guarantee coherence between Smoking_current_former_no and smoking_curent_former."))
+  } else if(!is.null(smokingcol)){
+    dftemp <- dftemp %>%
+      mutate(smoking = .data[[smokingcol]])
+  } else if(!is.null(smokingCNcol)){
+    dftemp <- dftemp %>%
+      mutate(smoking = .data[[smokingCNcol]])
+  } else if((is.null(smokingcol)) & (is.null(smokingCNcol))){
+    warning(simpleWarning("No smoking variable provided. Please provide one of them.
+                          Meanwhile, I mark all entries as missing (NAs)."))
+    dftemp <- dftemp %>%
+      mutate(smoking =  NA_character_)
   }
 
   if(!is.null(multIAcol)){
@@ -795,7 +858,6 @@ harmonize2isgc <- function(df,
       across(.cols = basis_of_recruitment, .fns = harmonize_bor, .names = "{.col}"),
       across(.cols = age, .fns = harmonize_age, .names = "{.col}"),
       across(.cols = posfamhist, .fns = harmonize_posfamhist, .names = "{.col}"),
-      across(.cols = smoking, .fns = harmonize_smokingCFN, .names = "smokingCFN"),
       across(.cols = IAnum, .fns = harmonize_IAnum, .names = "{.col}"),
       across(.cols = IAloc, .fns = harmonize_loc, .names = "{.col}"),
       across(.cols = IAmult, .fns = harmonize_IAmult, .names = "{.col}"),
@@ -809,6 +871,27 @@ harmonize2isgc <- function(df,
       across(.cols = termreas, .fns = harmonize_termreas, .names = "{.col}")
     )
 
+  # Harmonize smoking variable depending on provided level of detail
+  if (!is.null(smokingcol) & is.null(smokingCNcol)){
+    # if only CFN is provided and CN is null (the case where both are provided was catched earlier)
+    # harmonize CFN
+    dftemp <- dftemp %>%
+      mutate(across(.cols = smoking, .fns = harmonize_smokingCFN, .names = "smokingCFN")) %>%
+      # build wrapper CN
+      mutate(across(.cols = smokingCFN, .fns = wrap_smokingCFN, .names = "smokingCN"))
+  } else if (is.null(smokingcol) & !is.null(smokingCNcol)){
+    # if only CN is provided and CFN is null
+    # harmonize CN
+    dftemp <- dftemp %>%
+      mutate(across(.cols = smoking, .fns = harmonize_smokingCN, .names = "smokingCN")) %>%
+      # make CFN all NAs
+      mutate(smokingCFN = NA_character_)
+  } else if (is.null(smokingcol) & is.null(smokingCNcol)){
+    # if none of them is provided, mark all missing
+    dftemp <- dftemp %>%
+      mutate(smokingCN = smoking,
+             smokingCFN = smoking)
+  }
 
   # Detect undefined values
   detectUndefinedValue(dftemp, "gender", gendcol)
@@ -816,6 +899,7 @@ harmonize2isgc <- function(df,
   detectUndefinedValue(dftemp, "age", agecol)
   detectUndefinedValue(dftemp, "posfamhist", posfamhistcol)
   detectUndefinedValue(dftemp, "smokingCFN", smokingcol)
+  detectUndefinedValue(dftemp, "smokingCN", smokingCNcol)
   detectUndefinedValue(dftemp, "IAnum", IAnumcol)
   detectUndefinedValue(dftemp, "hbp", hbpcol)
   detectUndefinedValue(dftemp, "hbptreat", hbptreatcol)
@@ -830,7 +914,6 @@ harmonize2isgc <- function(df,
   dftemp <- dftemp %>%
     mutate(
       across(.cols = basis_of_recruitment, .fns = wrap_bor, .names = "basis_of_recruitment_CaseControl"),
-      across(.cols = smokingCFN, .fns = wrap_smokingCFN, .names = "smokingCN"),
       across(.cols = IAsize, .fns = wrap_IAsize, .names = "IAsize_group")
     )
 
@@ -839,7 +922,7 @@ harmonize2isgc <- function(df,
     dftemp <- dftemp %>%
       mutate(
         across(.cols = IAnum, .fns= wrap_IAnum, .names = "IAmult")
-      )
+        )
     message("IA multiplicity is built from reported number of IAs.\n")
   } else if(!is.null(multIAcol)){
     message("IA multiplicity is taken from original source.\n")
@@ -849,7 +932,6 @@ harmonize2isgc <- function(df,
 
   ### Final Checks
   # Detect undefined values
-  detectUndefinedValue(dftemp, "smokingCN", smokingCFN)
   detectUndefinedValue(dftemp, "IAmult", IAnum)
   detectUndefinedValue(dftemp, "IAsize_group", IAsize)
 
@@ -926,26 +1008,26 @@ harmonize2isgc <- function(df,
 #'
 #' @export
 crim2ISGC <- function(df = aneuquest.raw,
-                      IDcol1="patientID",
-                      IDcol2="aneuUniqueID",
-                      gendcol="patSex",
-                      borcol="recruBasis",
-                      agecol = "aneuReportPatAge",
-                      posfamhistcol="prf_PosFamHis",
-                      smokingcol = "prf_SmokedTobacco",
-                      IAnumcol="IAnum",
-                      multIAcol=NULL,
-                      hbpcol="prf_HyperTension",
-                      hbptreatcol="prf_HyperTension",
-                      IAloccol = "aneuLoca",
-                      IAruptcol="ruptureStatus",
-                      IAsizecol="maxDiam",
-                      mRScol=NULL,
-                      goscol=NULL,
-                      maxFUtimecol=NULL,
-                      termreascol=NULL,
-                      source="geneva_aneuquest",
-                      returnall=FALSE){
+                        IDcol1="patientID",
+                        IDcol2="aneuUniqueID",
+                        gendcol="patSex",
+                        borcol="recruBasis",
+                        agecol = "aneuReportPatAge",
+                        posfamhistcol="prf_PosFamHis",
+                        smokingcol = "prf_SmokedTobacco",
+                        IAnumcol="IAnum",
+                        multIAcol=NULL,
+                        hbpcol="prf_HyperTension",
+                        hbptreatcol="prf_HyperTension",
+                        IAloccol = "aneuLoca",
+                        IAruptcol="ruptureStatus",
+                        IAsizecol="maxDiam",
+                        mRScol=NULL,
+                        goscol=NULL,
+                        maxFUtimecol=NULL,
+                        termreascol=NULL,
+                        source="geneva_aneuquest",
+                        returnall=FALSE){
   ### rename columns for down-stream consistency. If name of column is NA build an empty (NA) column
   # Required variables
   dftemp <- df %>%
@@ -1079,18 +1161,18 @@ crim2ISGC <- function(df = aneuquest.raw,
   crim.mod <- dftemp
   # This part is moved to the vignette for visibility
   # %>%
-  # # If multiple entries for the same IA (by aneuUniqueID) merge the entries (Fill NAs for same IA)
-  # group_by(ID_2, aneuUniqueID) %>%
-  # select(-c(ID)) %>%
-  # fill(everything(), .direction = "updown") %>%
-  # distinct() %>%
-  # ungroup() %>%
-  #
-  # # If same aneuUniqueID but different maxDiam, keep the larger
-  # group_by(ID_2, aneuUniqueID) %>%
-  # mutate(IAsize = max(IAsize)) %>%
-  # distinct() %>%
-  # ungroup()
+    # # If multiple entries for the same IA (by aneuUniqueID) merge the entries (Fill NAs for same IA)
+    # group_by(ID_2, aneuUniqueID) %>%
+    # select(-c(ID)) %>%
+    # fill(everything(), .direction = "updown") %>%
+    # distinct() %>%
+    # ungroup() %>%
+    #
+    # # If same aneuUniqueID but different maxDiam, keep the larger
+    # group_by(ID_2, aneuUniqueID) %>%
+    # mutate(IAsize = max(IAsize)) %>%
+    # distinct() %>%
+    # ungroup()
 
   # Build ISGC variables
   # ---------
@@ -1182,30 +1264,30 @@ crim2ISGC <- function(df = aneuquest.raw,
     dftemp <- dftemp %>%
       # IA Multiplicity according to aneuUniqueID.: Multiple IAs, if anything bigger than only 1. Equal to aneuUniqueID.
       group_by(ID_1) %>%
-      mutate(IAmult = case_when(any(aneuUniqueID >= 2) ~ "yes",
+      mutate(IAmult = case_when(any(ID_2 >= 2) ~ "yes",
+                                all(ID_2 == 1) ~ "no",
                                 is.na(IAnum) ~ NA_character_,
-                                # all(aneuUniqueID == 1) ~ "no" )) %>% # Does not yet work! There are multiple entries for the same IA but also multiple different IAs with the same aneuUniqueID
-                                TRUE ~ "no")) %>%
+                                TRUE ~ paste("UNDEFINED:", ID_2))) %>%
       ungroup()
-  } else if(is.null(multIAcol) & !all(is.na(dftemp$IAnum)) & all(dftemp$source == "geneva_aneux")){
-    dftemp <- dftemp %>%
-      # IA Multiplicity according to noAnevrisme
-      group_by(ID_1) %>%
-      mutate(IAmult = case_when(IAnum > 1 ~ "yes",
-                                IAnum == 1 ~"no",
-                                is.na(IAnum) ~ NA_character_,
-                                TRUE ~paste("UNDEFINED:", IAnum))) %>%
-      ungroup()
-  } else {
-    warning(simpleWarning("Not sure how to build 'IA multiplicity' based on the provided variable for the number of IAs. Check manually!"))
-  }
+    } else if(is.null(multIAcol) & !all(is.na(dftemp$IAnum)) & all(dftemp$source == "geneva_aneux")){
+      dftemp <- dftemp %>%
+        # IA Multiplicity according to noAnevrisme
+        group_by(ID_1) %>%
+        mutate(IAmult = case_when(IAnum > 1 ~ "yes",
+                                  IAnum == 1 ~"no",
+                                  is.na(IAnum) ~ NA_character_,
+                                  TRUE ~paste("UNDEFINED:", IAnum))) %>%
+        ungroup()
+    } else {
+      warning(simpleWarning("Not sure how to build 'IA multiplicity' based on the provided variable for the number of IAs. Check manually!"))
+    }
 
   dftemp <- dftemp %>%
     group_by(ID_1) %>%
     # Keep only the most important IA (according to surgeons opinion)
     # filter(aneuUniqueID == 1)
-    filter(case_when(n() > 1 ~ aneuUniqueID == 1,
-                     TRUE ~ aneuUniqueID == aneuUniqueID)) %>%
+    filter(case_when(n() > 1 ~ ID_2 == 1,
+                     TRUE ~ ID_2 == ID_2)) %>%
     ungroup()
 
   ### Final Checks
