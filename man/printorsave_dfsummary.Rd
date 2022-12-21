@@ -4,12 +4,20 @@
 \alias{printorsave_dfsummary}
 \title{Save or print summarytools::dfSummary()}
 \usage{
-printorsave_dfsummary(df, FILENAME, SAVE = SAVE, PLOTPATH = PLOTPATH)
+printorsave_dfsummary(
+  df,
+  FILENAME,
+  MAXVALS = 10,
+  SAVE = SAVE,
+  PLOTPATH = PLOTPATH
+)
 }
 \arguments{
 \item{df}{data.frame.}
 
 \item{FILENAME}{str. with file name suffix: "dfsummary_<FILENAME>"}
+
+\item{MAXVALS}{number of levels to be displayed. Defaults to 10.}
 
 \item{SAVE}{TRUE if output should be stored as html file or printed to the console.}
 
