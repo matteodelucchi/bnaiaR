@@ -458,11 +458,11 @@ adbisgc_tmp %>%
 
 
 ```{r}
-adbisgc_tmp <- adbisgc_tmp %>%
+adbisgc_tmp <- adbisgc_tmp %>% 
   pipe_message("filter age outliers.") %>%
-  filter((age_diag >= 10)&(age_diag <=100)) %>%
+  filter((age_diag >= 10)&(age_diag <=100)|is.na(age_diag)) %>% 
   pipe_message("filter IA size outliers.") %>%
-  filter((IAsize_diag_log>0)&(IAsize_diag_log<4)) 
+  filter((IAsize_diag_log>=0)&(IAsize_diag_log<=4)|is.na(IAsize_diag_log)) 
 
 adbisgc_tmp %>%
   # sort variables alphabetically
@@ -471,7 +471,6 @@ adbisgc_tmp %>%
   str(give.attr = F) %>%
   summarytools::dfSummary(max.distinct.values = 20)
 ```
-
 
 # one-hot-encoding
 
