@@ -102,6 +102,9 @@ df_bnaiar_compl <- df_bnaiar %>%
 summarytools::dfSummary(df_bnaiar_compl)
 ```
 
+```{r}
+# usethis::use_data(df_bnaiar_compl, overwrite = TRUE)
+```
 
 # Experiment 1: discrete data
 

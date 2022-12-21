@@ -322,3 +322,14 @@
 #' objects respectively.
 #'
 "discrete_bns"
+
+#' BnaiaR variables without NAs in different transformations
+#'
+#' This is the basis on which the experiment-data was prepared.
+#'
+#' For details consider the vignette
+#' \code{vignette("data_preparation_for_experiments", package = "bnaiaR")}.
+#'
+#' @format A data.frame
+#'
+"df_bnaiar_compl"
