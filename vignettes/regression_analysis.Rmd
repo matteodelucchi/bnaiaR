@@ -22,7 +22,6 @@ knitr::opts_chunk$set(
 # devtools::document()
 # devtools::load_all()
 # renv::snapshot(prompt = F)
-
 ```
 
 
@@ -56,17 +55,6 @@ SAVESUMMARYPLT <- TRUE
 data("adbisgc")
 str(adbisgc, give.attr=F)
 summarytools::dfSummary(adbisgc)
-```
-
-## remove pos. fam. history == "probably"
-
-There are only very few cases with a pos. fam. history == probably wo we remove
-them and consider pos. fam. history as dichotome variable.
-
-```{r}
-adbisgc <- adbisgc %>%
-  filter(positive_famillial_history != "probably") %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
 ```
 
 ## reorder reference levels 
@@ -137,6 +125,8 @@ NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht")] <- "Many 
 NAs_per_source$comment[which(NAs_per_source$data_source == "utrecht_ruptured")] <- "Many missing smoking (37%) values."
 NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneuquest")] <- "2.4% of IA locations are missing."
 NAs_per_source$comment[which(NAs_per_source$data_source == "geneva_aneux")] <- "2.8% of smoking are missing."
+NAs_per_source$comment[which(NAs_per_source$data_source == "tum")] <- "76% of IA size are missing, due to unavailable images from treatment somewhere else."
+NAs_per_source$comment[which(NAs_per_source$data_source == "kssg")] <- "2.9% of IA size are missing, due to unavailable images from external sources."
 
 NAs_per_source
 
@@ -146,7 +136,7 @@ NAs_per_source
 #   summarytools::dfSummary()
 # 
 # adbisgc_reg %>%
-#   filter(data_source == "geneva_aneux") %>%
+#   filter(data_source == "kssg") %>%
 #   summarytools::dfSummary()
 ```
 
@@ -155,6 +145,7 @@ df_bnaiar_compl <- df_bnaiar %>%
   na.omit() 
 
 printorsave_dfsummary(df=df_bnaiar_compl, FILENAME = "df_bnaiar_compl", SAVE = SAVESUMMARYPLT, PLOTPATH = PLOTPATH)
+summarytools::dfSummary(df_bnaiar_compl)
 ```
 
 
@@ -167,9 +158,7 @@ printorsave_dfsummary(df=df_bnaiar_compl, FILENAME = "df_bnaiar_compl", SAVE = S
 As in Figure 6 in Morel et al. 2022.
 
 ```{r}
-data.logreg <- adbisgc_reg %>%
-  select(all_of(c(bnaiar_vars, "smoking_current_former_no"))) %>%
-  na.omit() %>%
+data.logreg <- exp11_dat$abndata %>%
   
   select(c(IAlocation_group, smoking_current_former_no, multipleIAs, gender, hpt_aware, IAruptured)) %>%
   mutate(IAlocation_group = case_when(IAlocation_group =="high" ~ "high_risk_loc",
@@ -1058,8 +1047,8 @@ Compared to the GAMs, they have smaller BIC values.
 # Multivariate Generalized Linear Mixed Effects Model (mixed effects logistic regression) w/o Utrecht (3 levels for smoking)
 
 ```{r}
-gam_dat_woUtrecht <- adbisgc_reg %>%
-  filter(study_source != "utrecht") %>%
+gam_dat_woUtrechtTUM <- adbisgc_reg %>%
+  filter(!(study_source %in% c("utrecht", "tum"))) %>% 
   mutate(study_source = factor(study_source)) %>%
   
   # reorder factor levels
@@ -1083,15 +1072,15 @@ gam_dat_woUtrecht <- adbisgc_reg %>%
   # remove NAs
   na.omit() 
 
-str(gam_dat_woUtrecht, give.attr=F)
+str(gam_dat_woUtrechtTUM, give.attr=F)
 ```
 
 ### Data preparation
 
 ```{r}
-train <- sample.int(n = nrow(gam_dat_woUtrecht), size = 0.7*nrow(gam_dat_woUtrecht), replace = FALSE)
-TrainSet <- gam_dat_woUtrecht[train,]
-ValidSet <- gam_dat_woUtrecht[-train,]
+train <- sample.int(n = nrow(gam_dat_woUtrechtTUM), size = 0.7*nrow(gam_dat_woUtrechtTUM), replace = FALSE)
+TrainSet <- gam_dat_woUtrechtTUM[train,]
+ValidSet <- gam_dat_woUtrechtTUM[-train,]
 ```
 
 
@@ -1102,29 +1091,29 @@ ValidSet <- gam_dat_woUtrecht[-train,]
 
 # Starting with a simple model
 # covariates left untransformed and uncorrelated random effects for the study_source means
-glmer_model_woUtrecht <- lme4::glmer(IAruptured ~ gender+age_diag+positive_famillial_history+hpt_aware+smoking_current_former_no+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), family = "binomial", data=TrainSet) # random group intercept
+glmer_model_woUtrechtTUM <- lme4::glmer(IAruptured ~ gender+age_diag+positive_famillial_history+hpt_aware+smoking_current_former_no+multipleIAs+ IAlocation_group+IAsize_diag_log + (1|study_source), family = "binomial", data=TrainSet) # random group intercept
 
 # equatiomatic::extract_eq(glmer_model, wrap=T, use_coefs = F, terms_per_line = 3)
 
-print(glmer_model_woUtrecht)
-print(summary(glmer_model_woUtrecht))
-plot(glmer_model_woUtrecht)
+print(glmer_model_woUtrechtTUM)
+print(summary(glmer_model_woUtrechtTUM))
+plot(glmer_model_woUtrechtTUM)
 ```
 
 ```{r}
 # remove labels for correct variable names
-attributes(glmer_model_woUtrecht@frame$IAruptured)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$gender)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$positive_famillial_history)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$hpt_aware)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$smoking_current_former_no)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$multipleIAs)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$IAlocation_group)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$study_source)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$age_diag)$label <- NULL
-attributes(glmer_model_woUtrecht@frame$IAsize_diag_log)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$IAruptured)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$gender)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$positive_famillial_history)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$hpt_aware)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$smoking_current_former_no)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$multipleIAs)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$IAlocation_group)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$study_source)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$age_diag)$label <- NULL
+attributes(glmer_model_woUtrechtTUM@frame$IAsize_diag_log)$label <- NULL
 
-gtplt <- glmer_model_woUtrecht %>%
+gtplt <- glmer_model_woUtrechtTUM %>%
   gtsummary::tbl_regression(intercept = T) %>%
   gtsummary::add_global_p() %>%
   gtsummary::bold_p(t = 0.10) %>%
@@ -1132,7 +1121,7 @@ gtplt <- glmer_model_woUtrecht %>%
   gtsummary::italicize_levels()  
 
 if (SAVEPLOTS){
-  FILE <- "glmer_model_woUtrecht"
+  FILE <- "glmer_model_woUtrechtTUM"
   FILENAME <- paste0(FILE, ".", PLOTFORMAT)
 
   gtplt %>%
