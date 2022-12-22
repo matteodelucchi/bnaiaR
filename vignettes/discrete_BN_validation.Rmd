@@ -273,7 +273,7 @@ if (SAVEPLOTS) {
      main = "Classification Error of Rupture Status")
   dev.off()
 } else {
-  plot(xval.rupture.bic.part,
+  plot(xval.rupture,
      xlab = c("BIC.signTH"),
      main = "Classification Error of Rupture Status")
 }
@@ -286,10 +286,10 @@ Average predictive accuracy over all nodes.
 
 ```{r}
 xval.list.bic <- list()
-for (node in nodes(avg)) {
+for (node in nodes(avg_mod)) {
   xval <- bn.cv(
-    data = data,
-    bn = avg,
+    data = data_mod,
+    bn = avg_mod,
     method = "hold-out",
     runs = 50,
     fit = "mle",
@@ -318,8 +318,8 @@ Posterior Classification Error (pred-lw and pred-lw-cg): similar to the above, b
 So, we can use a Bayesian predictions that use a random set of available nodes for the prediction.
 
 ```{r}
-xval.bic.bayes <- bn.cv(data = data, 
-              bn = avg,
+xval.bic.bayes <- bn.cv(data = data_mod, 
+              bn = avg_mod,
               method = "hold-out",
               runs = 50,
               fit = "mle",
