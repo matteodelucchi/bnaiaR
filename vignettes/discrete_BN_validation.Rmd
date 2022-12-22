@@ -39,6 +39,8 @@ library(dplyr)
 library(ggplot2)
 library(bnlearn)
 
+set.seed(100)
+
 # Save plots as files? 
 SAVEPLOTS <- F
 PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
@@ -46,6 +48,26 @@ PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 ```
+
+
+# Thoughts:
+For rupture as outcome. (but theoretically, different outcome variables possible)
+In cross-validation: include SL as well or given the structure, evaluate prediction performance?
+ROC curve: https://www.graphpad.com/guides/prism/latest/curve-fitting/reg_logistic_roc_curves.htm
+    Goal: Choose the optimal value (cut-off) for the predicted rupture probability to be accepted as predicted rupture.
+    Algo:
+    On the training data, 
+    For different rupture probability values: 
+        calculate true positive rate (sensitivity)
+        calculate true negative rate (1-specificity)
+
+    Plot for each cut-off value on the x-axis 1-specificity and on the y-axis sensitivity.
+
+    Choose the value with the highest sensitivity and smallest value for 1-specifity as the final cutoff.
+
+with the final cut-off, calculate the performance on a test data set (does this make sense? What information does it add? There is no model development...) and performance on an unseen validation set. -> consider to take here a set of one study center. This would validate performance on a new, potentially biased data set.
+
+To keep the training set as large as possible, leaveone-out cross-validation (LOOCV) iterates over the whole data set and trains the model on all but one observation, which becomes the holdout set, and averages the performance of all iterations. The posterior classification error was estimated on a set of arbitrary nodes based on likelihood weighting, from �� = 50 runs of hold-out cross-validation for each of the three networks. - bnaiaR publication
 
 # Load discrete additive mixed-effects BN
 
