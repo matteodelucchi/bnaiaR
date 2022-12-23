@@ -39,6 +39,8 @@ library(dplyr)
 library(ggplot2)
 library(bnlearn)
 
+set.seed(100)
+
 # Save plots as files? 
 SAVEPLOTS <- F
 PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
@@ -46,6 +48,26 @@ PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 ```
+
+
+# Thoughts:
+For rupture as outcome. (but theoretically, different outcome variables possible)
+In cross-validation: include SL as well or given the structure, evaluate prediction performance?
+ROC curve: https://www.graphpad.com/guides/prism/latest/curve-fitting/reg_logistic_roc_curves.htm
+    Goal: Choose the optimal value (cut-off) for the predicted rupture probability to be accepted as predicted rupture.
+    Algo:
+    On the training data, 
+    For different rupture probability values: 
+        calculate true positive rate (sensitivity)
+        calculate true negative rate (1-specificity)
+
+    Plot for each cut-off value on the x-axis 1-specificity and on the y-axis sensitivity.
+
+    Choose the value with the highest sensitivity and smallest value for 1-specifity as the final cutoff.
+
+with the final cut-off, calculate the performance on a test data set (does this make sense? What information does it add? There is no model development...) and performance on an unseen validation set. -> consider to take here a set of one study center. This would validate performance on a new, potentially biased data set.
+
+To keep the training set as large as possible, leaveone-out cross-validation (LOOCV) iterates over the whole data set and trains the model on all but one observation, which becomes the holdout set, and averages the performance of all iterations. The posterior classification error was estimated on a set of arbitrary nodes based on likelihood weighting, from �� = 50 runs of hold-out cross-validation for each of the three networks. - bnaiaR publication
 
 # Load discrete additive mixed-effects BN
 
@@ -70,13 +92,169 @@ strength.plot(avg,
               shape = "rectangle")
 ```
 
-# Cross-validation for predictive accuracy
+
+```{r}
+madbn_fit <- bn.fit(data = data, x = avg)
+```
+
+```{r}
+# remove study_source
+avg_mod <- bnlearn::remove.node(avg, "study_source")
+bb_mod <-  bb %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_mod, "nodes") <- attr(bb_mod, "nodes")[-10]
+data_mod <- data %>%
+  select(-c("study_source"))
+
+strength.plot(avg_mod,
+              bb_mod,
+              main = "discrete additive mixed-effects BN",
+              sub = "Fitting w/o study_source",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "admeBN_fitting_wo_studysource"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
+```
+
+# Cross-validation for rupture prediction under a mixed-effects model
+
+## Data preparation
+10% validation data
+90% development data split up again in
+  20% test
+  80% train
+  
+```{r}
+val_idx <- sample.int(n = nrow(data_mod), size = 0.1*nrow(data_mod), replace = FALSE)
+val_dat <- data_mod[val_idx, ]
+dev_dat <- data_mod[-val_idx, ]
+
+train_idx <- sample.int(n = nrow(dev_dat), size = 0.8*nrow(dev_dat), replace = FALSE)
+train_dat <- dev_dat[train_idx, ]
+test_dat <- dev_dat[-train_idx, ]
+```
+
+## Trying own prediction implementation with study as mixed effect
+
+```{r}
+# TODO: Split train test data with study source
+
+node <- "IAruptured"
+mixed_effect <- "study_source"
+parents <- madbn_fit_mod[[node]]$parents
+model <- as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+mod_glmer <- lme4::glmer(model, data = data, family = "binomial")
+
+mod_glmer
+summary(mod_glmer)
+
+y_predProb <- predict(mod_glmer, data[1:10,], type = "response")
+
+# TODO: adapt the code below 
+
+```
+
+
+## ROC curve
+
+Find optimal classification threshold.
+on training data
+
+```{r}
+train_mod <- bn.fit(x=avg_mod, data = train_dat)
+pred <- predict(object = train_mod, data = test_dat, node = "IAruptured", prob = TRUE, method = "bayes-lw")
+y_predProb <- as.data.frame(cbind(as.character(pred), t(attr(pred, "prob")))) %>%
+  mutate(across(!(V1), as.numeric)) %>%
+  rename(IArupture_pred = V1,
+         no_prob = no,
+         yes_prob = yes)
+```
+
+
+```{r}
+y_test <- ifelse(test_dat[["IAruptured"]] == "yes", 1, 0)
+thresholds <- seq(0,1,0.01)
+rocdf <- data.frame(probthr = thresholds, tp = rep(NA, length(thresholds)), tn = rep(NA, length(thresholds)), fp = rep(NA, length(thresholds)),
+                   fn = rep(NA, length(thresholds)))
+# t <- 0.5
+for (t_idx in seq(1:length(rocdf$probthr))){
+  t <- rocdf$probthr[t_idx]
+  y_pred <- ifelse(y_predProb["yes_prob"] > t, 1, 0)
+  tp <- ifelse((y_pred == y_test) & (y_pred == 1), 1, 0) # correct predicted rupture
+  tn <- ifelse((y_pred == y_test) & (y_pred == 0), 1, 0) # correct predicted no rupture
+  fp <- ifelse((y_pred != y_test) & (y_pred == 1), 1, 0) # wrong predicted rupture
+  fn <- ifelse((y_pred != y_test) & (y_pred == 0), 1, 0) # wrong predicted no rupture
+  
+  rocdf$tp[t_idx] <- sum(tp, na.rm = TRUE)
+  rocdf$tn[t_idx] <- sum(tn, na.rm = TRUE)
+  rocdf$fp[t_idx] <- sum(fp, na.rm = TRUE)
+  rocdf$fn[t_idx] <- sum(fn, na.rm = TRUE)
+}
+
+rocdf <- rocdf %>%
+  mutate(tpr = tp/(tp+fn),
+         fpr = fp/(fp+tn),
+         fnr = fn/(fn+tp),
+         fpr = fp/(fp+tn),
+         tnr = tn/(tn+fp),
+         youdensJ = abs((tp/(tp+fn))+(fp/(fp+tn))-1)) %>%
+  mutate(lrpos = tpr/fpr,
+         lrneg = fnr/tnr) %>%
+  mutate(dor = lrpos/lrneg,
+         f1 = (2*tp)/(2*tp+fp+fn),
+         ba = (tpr+tnr)/2)
+
+ggplot(rocdf, aes(x=fpr, y=tpr)) +
+  geom_point() +
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1)
+
+rocdf
+```
+
+```{r}
+area <- NA
+for (i in seq(2, nrow(rocdf))){
+  area[i] <- abs(rocdf$fpr[i]-rocdf$fpr[i-1])*abs(rocdf$tpr[i]*rocdf$tpr[i-1])
+}
+auc <-sum(area, na.rm = T)
+print(paste("AUC: ", round(auc, 2)))
+```
+
+False negatives are worse than false positives, therefore the cutoff should be 
+choosen with a high sensitivity (TPR).
+The optimal cutoff value that balances tpr and fpr has the smallest youdens' J.
+```{r}
+print(round(t(rocdf[which.min(rocdf$youdensJ),]),2))
+```
+
+
+
+# Cross-validation for predictive accuracy with study-source as random-effect
+
+Provided with a `bn`, the procedure calculates the prediction performance on model
+inference without SL.
+
 
 ## Classification Error of rupture status.
 
 ```{r}
-xval.rupture <- bn.cv(data = data, 
-              bn = avg,
+xval.rupture <- bn.cv(data = data_mod, 
+              bn = avg_mod,
               method = "hold-out",
               runs = 50,
               fit = "mle",
@@ -117,7 +295,7 @@ if (SAVEPLOTS) {
      main = "Classification Error of Rupture Status")
   dev.off()
 } else {
-  plot(xval.rupture.bic.part,
+  plot(xval.rupture,
      xlab = c("BIC.signTH"),
      main = "Classification Error of Rupture Status")
 }
@@ -130,10 +308,10 @@ Average predictive accuracy over all nodes.
 
 ```{r}
 xval.list.bic <- list()
-for (node in nodes(avg)) {
+for (node in nodes(avg_mod)) {
   xval <- bn.cv(
-    data = data,
-    bn = avg,
+    data = data_mod,
+    bn = avg_mod,
     method = "hold-out",
     runs = 50,
     fit = "mle",
@@ -162,8 +340,8 @@ Posterior Classification Error (pred-lw and pred-lw-cg): similar to the above, b
 So, we can use a Bayesian predictions that use a random set of available nodes for the prediction.
 
 ```{r}
-xval.bic.bayes <- bn.cv(data = data, 
-              bn = avg,
+xval.bic.bayes <- bn.cv(data = data_mod, 
+              bn = avg_mod,
               method = "hold-out",
               runs = 50,
               fit = "mle",
