@@ -46,6 +46,8 @@ PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
+
+cores <- 60 
 ```
 
 # Structure Learning of discrete BN
@@ -68,7 +70,7 @@ Nothing can point to study source.
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(6)
+cl = makeCluster(cores)
 
 bb = boot.strength(data.dbn, 
                    algorithm = "tabu", 
@@ -105,7 +107,7 @@ We can of course increase the threshold a bit to prune borderline arcs and paper
 over the shortcomings of AIC.
 
 ```{r learn_with_aic_and_threshold, warning=FALSE}
-avg = averaged.network(bb, threshold = 0.6)
+avg = averaged.network(bb, threshold = 0.4)
 
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_aic_redTH", ".")
@@ -195,7 +197,7 @@ print(bl.dbn.nostudy)
 ```
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(6)
+cl = makeCluster(cores)
 
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
@@ -228,7 +230,7 @@ if (SAVEPLOTS) {
 ```
 
 ```{r, warning=FALSE}
-avg = averaged.network(bb, threshold = 0.3)
+avg = averaged.network(bb, threshold = 0.5)
 
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_aic_redTH", ".")
@@ -279,7 +281,7 @@ if (SAVEPLOTS) {
 ```
 
 ```{r, warning=FALSE}
-avg = averaged.network(bb, threshold = 0.2)
+avg = averaged.network(bb, threshold = 0.4)
 
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_nostudysource_bic_redTH", ".")
@@ -489,7 +491,7 @@ print(wl.dbn.allstudy)
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(6)
+cl = makeCluster(cores)
 
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
@@ -584,9 +586,7 @@ parallel::stopCluster(cl)
 ```{r}
 data("exp1_dat")
 data.dbn.nostudy <- exp1_dat$abndata %>%
-  select(-c(study_source)) %>%
-  filter(positive_famillial_history != "probably") %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+  select(-c(study_source)) 
 bl.dbn.nostudy <- exp1_dat$bl %>%
   filter(From != "study_source" & To != "study_source")
 
@@ -644,7 +644,7 @@ plot(bb)
 
 
 ```{r additive discrete BN w/o mixed effects}
-cl = makeCluster(6)
+cl = makeCluster(cores)
 
 glm.bic = function(node, parents, data, args) {
   dist = args$dist
@@ -705,10 +705,7 @@ parallel::stopCluster(cl)
 
 ```{r}
 data("exp1_dat")
-data.dbn.additive <- exp1_dat$abndata  %>%
-  # select(-c(study_source))
-  filter(positive_famillial_history != "probably") %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+data.dbn.additive <- exp1_dat$abndata  
 bl.dbn.additive <- exp1_dat$bl %>%
   filter((From != "study_source") & (To != "study_source")) %>%
   # Nothing can point to study source.
@@ -724,7 +721,7 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(10, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
+cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 ```
 
 
@@ -798,10 +795,7 @@ save(tobesaved,file = paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffect
 
 ```{r}
 data("exp1_dat")
-data.dbn.additive <- exp1_dat$abndata  %>%
-  # select(-c(study_source))
-  filter(positive_famillial_history != "probably") %>%
-  mutate(positive_famillial_history = factor(positive_famillial_history, levels = c("no", "yes")))
+data.dbn.additive <- exp1_dat$abndata  
 bl.dbn.additive.sizeloc <- exp1_dat$bl %>%
   filter((From != "study_source") & (To != "study_source")) %>%
   # Nothing can point to study source.
@@ -819,7 +813,7 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(25, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
 ```
 
 
