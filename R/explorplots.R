@@ -105,9 +105,11 @@ overview_plt_max <- function(df){
 #' @param disc.cont.ratio relative number of rows of discrete and continuous plots.
 #'
 #' @return ggplot2
+#' @importFrom ggsci pal_lancet
 #' @export
 overview_plt_max_grouped <- function(df, colorby="study_source", ignore.idx=T, cont.vars=c("age_diag", "IAsize_diag", "IAsize_diag_log"), disc.cont.ratio=c(4,1)){
-  paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+  # paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+  paint <- ggsci::pal_lancet()(9)
 
   if (ignore.idx){
     df_temp <- df %>%
@@ -199,9 +201,11 @@ overview_plt_max_grouped <- function(df, colorby="study_source", ignore.idx=T, c
 #' @param disc.cont.ratio relative number of rows of discrete and continuous plots.
 #'
 #' @return ggplot2
+#' @importFrom ggsci pal_lancet
 #' @export
 overview_plt_max_grouped_rupture <- function(df, colorby="IAruptured", ignore.idx=T, cont.vars=c("age_diag", "IAsize_diag", "IAsize_diag_log"), disc.cont.ratio=c(4,1)){
-  paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+  # paint <- c('#b4d2b1', '#568f8b', '#1d4a60', '#cd7e59', '#ddb247', '#d15252')
+  paint <- ggsci::pal_lancet()(9)
 
   if (ignore.idx){
     df_temp <- df %>%

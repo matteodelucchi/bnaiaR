@@ -48,7 +48,7 @@ str(adbisgc, give.attr=F)
 adbisgc_reg <- adbisgc %>%
   mutate(gender = fct_relevel(gender,c("male","female"))) %>%
   # mutate(age_diag_group = fct_relevel(age_diag_group, c(LETTERS[seq(8,1,-1)]))) %>% # keep them alphabetically.
-  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "probably", "yes"))) %>%
+  mutate(positive_famillial_history = fct_relevel(positive_famillial_history, c("no", "yes"))) %>%
   mutate(smoking_current_former_no = fct_relevel(smoking_current_former_no, c("no","former","current"))) %>%
   mutate(smoking_current_notcurrent = fct_relevel(smoking_current_notcurrent, c("not_current", "current"))) %>%
   mutate(multipleIAs = fct_relevel(multipleIAs, c("no", "yes"))) %>%
