@@ -26,7 +26,7 @@ library(doParallel)
 
 set.seed(100)
 
-SAVEPLOTS <- F
+SAVEPLOTS <- T
 PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
@@ -83,6 +83,8 @@ table1_grp <- df_bnaiar_compl  %>%
     centre_nantes = sum(study_source == "nantes"),
     centre_ucl = sum(study_source == "ucl"),
     centre_utrecht = sum(study_source == "utrecht"), 
+    centre_kssg = sum(study_source == "kssg"), 
+    centre_tum = sum(study_source == "tum"), 
     
     sex_m = sum(gender == "male"),
     sex_f = sum(gender == "female"),
@@ -170,6 +172,8 @@ table1_all <- df_bnaiar_compl  %>%
     centre_nantes = sum(study_source == "nantes"),
     centre_ucl = sum(study_source == "ucl"),
     centre_utrecht = sum(study_source == "utrecht"), 
+    centre_kssg = sum(study_source == "kssg"), 
+    centre_tum = sum(study_source == "tum"), 
     
     sex_m = sum(gender == "male"),
     sex_f = sum(gender == "female"),
@@ -223,6 +227,8 @@ table1 <- rbind(table1_grp, table1_all) %>%
          Nantes = centre_nantes,
          UCL = centre_ucl,
          Utrecht = centre_utrecht,
+         KSSG = centre_kssg,
+         Munich = centre_tum,
          male = sex_m,
          female = sex_f,
          "Median [Q1, Q3]" = age_medq1q3,
@@ -254,14 +260,14 @@ table1 <- rbind(table1_grp, table1_all) %>%
   tibble::rownames_to_column() %>%
   
   add_row(rowname = "Centre", no = "", yes="", .before = 1) %>%
-  add_row(rowname = "Sex", no = "", yes="", .after = 6) %>%
-  add_row(rowname = "Age at diagnosis", no = "", yes="", .after = 9) %>%
-  add_row(rowname = "Familial history", no = "", yes="", .after = 18) %>%
-  add_row(rowname = "Hypertension awareness", no = "", yes="", .after = 21) %>%
-  add_row(rowname = "Smoking", no = "", yes="", .after = 24) %>%
-  add_row(rowname = "IA Multiplicity", no = "", yes="", .after = 27) %>%
-  add_row(rowname = "IA Location", no = "", yes="", .after = 30) %>%
-  add_row(rowname = "IA Size", no = "", yes="", .after = 34) %>%
+  add_row(rowname = "Sex", no = "", yes="", .after = 8) %>%
+  add_row(rowname = "Age at diagnosis", no = "", yes="", .after = 11) %>%
+  add_row(rowname = "Familial history", no = "", yes="", .after = 20) %>%
+  add_row(rowname = "Hypertension awareness", no = "", yes="", .after = 23) %>%
+  add_row(rowname = "Smoking", no = "", yes="", .after = 26) %>%
+  add_row(rowname = "IA Multiplicity", no = "", yes="", .after = 29) %>%
+  add_row(rowname = "IA Location", no = "", yes="", .after = 32) %>%
+  add_row(rowname = "IA Size", no = "", yes="", .after = 36) %>%
   
   ###
   # Layouting
@@ -295,12 +301,14 @@ table1 <- rbind(table1_grp, table1_all) %>%
   
   
   flextable::hline_bottom(j = c(1:4), border = officer::fp_border(color = "black", width = 1.5)) %>%
-  flextable::hline(part = "body", i = c(1,6,7,9,10,18,19,21,22,24,25,27,28,30,31,34,35), border = officer::fp_border(color = "black", width = 1.5)) %>%
-  flextable::padding(part = "body", i = c(2:6, 8:9, 11:18, 20:21, 23:24, 26:27, 29:30, 32:34, 36:39), padding.left = 20) %>%
+  # flextable::hline(part = "body", i = c(1,6,7,9,10,18,19,21,22,24,25,27,28,30,31,34,35), border = officer::fp_border(color = "black", width = 1.5)) %>%
+  # flextable::padding(part = "body", i = c(2:6, 8:9, 11:18, 20:21, 23:24, 26:27, 29:30, 32:34, 36:39), padding.left = 20) %>%
+  flextable::hline(part = "body", i = c(1,8,9,11,12,20,21,23,24,26,27,29,30,32,33,36,37), border = officer::fp_border(color = "black", width = 1.5)) %>%
+  flextable::padding(part = "body", i = c(2:8, 10:11, 13:20, 22:23, 25:26, 28:29, 31:32, 34:36, 38:41), padding.left = 20) %>%
   
   flextable::autofit() %>%
   
-  flextable::footnote(i = c(32:34), j = c(1), 
+  flextable::footnote(i = c(34:36), j = c(1), 
                       value = flextable::as_paragraph(
                         c("Cavernous ICA, Ophtalmic ICA", # low risk
                           "MCA, ICA, Basilar, A1 segment ant, others", # medium risk
