@@ -45,8 +45,7 @@ PLOTHEIGHT = 9
 PLOTFORMAT <- "pdf" # "svg", "png"
 
 
-SAVESUMMARYPLT <- TRUE
-# printorsave_dfsummary(df=dfucl, FILENAME = "dfucl", SAVE = SAVESUMMARYPLT, PLOTPATH = PLOTPATH)
+SAVESUMMARYPLT <- F
 ```
 
 # Load and Prepare Data for Regression Modelling
@@ -99,7 +98,6 @@ df_bnaiar <- adbisgc_reg %>%
 
 ```{r}
 summarytools::dfSummary(df_bnaiar)
-# summarytools::view(dfSummary(df_bnaiar), method = "pander", file = "~/ZHAW/ExplorDataISGC/220623_HUG-ZHAW_Retreat/summary_adbisgc_bnaiaR.html")
 str(df_bnaiar, give.attr=F)
 ```
 
@@ -681,8 +679,7 @@ if (SAVEPLOTS){
   gtplt
 }
 ```
-- why is UCL (the only) significantly different source?
-- two outliers in the residual plots
+- few outliers in the residual plots
 - overall nice model...
 
 NIR: "This is the accuracy achievable by always predicting the majority class label." ->by just predicting the majority class we will have an accuracy o 51%
