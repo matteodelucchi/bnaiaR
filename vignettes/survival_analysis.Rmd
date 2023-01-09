@@ -28,7 +28,7 @@ library(survminer)
 
 set.seed(100)
 
-SAVEPLOTS <- T
+SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
@@ -209,7 +209,7 @@ cox.location
 surffit.location <- survfit(coxreg, data = surv_dat, newdata = cox.location)
 survplt.location <- ggsurvplot(surffit.location, conf.int = TRUE, 
            legend.labs=c("Low risk location", "Medium risk location", "High risk location"), xlab = "Age [years]",
-           ggtheme = theme_minimal())
+           palette = scales::hue_pal()(3)[c(2,3,1)], ggtheme = theme_minimal())
 if (SAVEPLOTS){
   ggsave(plot = survplt.location$plot, filename = "survival_location.png", path = PLOTPATH, dpi = 600)
 } else {

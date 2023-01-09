@@ -37,7 +37,7 @@ library(kableExtra)
 
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
-SAVEPLOTS <- T
+SAVEPLOTS <- F
 PLOTPATH <- Sys.getenv("PLOTPATH")
 ```
 
