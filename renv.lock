@@ -1269,6 +1269,22 @@
         "tidyr"
       ]
     },
+    "ggradar": {
+      "Package": "ggradar",
+      "Version": "0.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "ricardo-bion",
+      "RemoteRepo": "ggradar",
+      "RemoteRef": "master",
+      "RemoteSha": "53404a563e2629e034cc7dd21afda40d213d1c64",
+      "Hash": "db2f4329801c2edaed06320d9d53ce62",
+      "Requirements": [
+        "forcats",
+        "ggplot2"
+      ]
+    },
     "ggrepel": {
       "Package": "ggrepel",
       "Version": "0.9.3",
