@@ -16,9 +16,18 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(bnaiaR)
+# renv::install("url::https://git.math.uzh.ch/mdeluc/devel-abn/-/archive/v3.0.0.9000/devel-abn-v3.0.0.9000.tar.gz")
+# renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/-/releases/v3.0.0.9000")
+# renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/abn")
+renv::install("../../../rrr/devel-abn/abn_3.0.0.9000.tar.gz")
 library(abn)
 # renv::install("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"))
 ```
+
+```{r}
+SEED <- 123456789
+```
+
 
 # abn example 3
 ```{r}
@@ -61,24 +70,83 @@ str(df51)
 (banned51 <- exp4_dat$banned)
 (retain51 <- exp4_dat$retain)
 (dist51 <- exp4_dat$dist)
-
 ```
 
 # ABN with glmm
 
 ```{r}
-mycache <- buildScoreCache(data.df=df51,
+mycache <- buildScoreCache(method="mle",
+                           data.df=df51,
                            data.dists=dist51[-10], # all except study_source
                            group.var="study_source",
-                           cor.vars=names(df51)[-10], # all except study_source
-                           max.parents=9, 
-                           which.nodes=c(1))
+                           dag.banned = banned51[-10, -10], # all except study_source
+                           dag.retained = retain51[-10, -10], # all except study_source
+                           max.parents=9,
+                           control = build.control(catcov.mblogit = "diagonal",
+                                                   seed = SEED),
+                           verbose = F)
 ```
 
-Grouping method is implemented in "method = bayes". However, "bayes-method" does not support multinomial data. 
-In particular, [buildscorecache_bayes.R](https://git.math.uzh.ch/reinhard.furrer/abn/-/blob/master/R/build_score_cache_bayes.R#L57) checks if the distributions are one of "bin, gaus, pois".
-Method MLE does support multinomial data distributions but doesn't support random effects.
-In particular, [buildscorechache_mle.R calculates the network score with fitting a `nnet` model](https://git.math.uzh.ch/reinhard.furrer/abn/-/blob/master/R/build_score_cache_mle.R#L349) which does not support multinomial distributions. An alternative could be `mclogit::mblogit`.
+```{r}
+mp.dag <- mostProbable(mycache)
+```
 
-bayes: calculates individual node score (log marginal likelihoods) using `INLA`.
-mle: calculates information-theoretic node scores (maximum likelihood/marginal likelihood, AIC, BIC, Minimum distance Length (mdl)).
+```{r}
+myres <- fitAbn(method="mle", 
+                object = mp.dag, 
+                group.var = "study_source",
+                control = fit.control(catcov.mblogit = "diagonal",
+                                      seed = SEED))
+```
+
+```{r}
+plotAbn(myres)
+```
+
+```{r}
+dfsim <- simulateAbn(object = myres,
+                     verbose = TRUE,
+                     seed = SEED,
+                     run.simulation = TRUE,
+                     n.chains = 100,
+                     n.iter = 1e5,
+                     n.thin = 1e3,
+                     n.adapt = 1e2)
+# dfsim <- simulateAbn(object = myres, 
+#                      verbose = TRUE, 
+#                      seed = SEED, 
+#                      run.simulation = TRUE)
+```
+IAsize and age have been centered around zero and therefore can have negative values.
+
+
+No group.var from here on. Because we cannot simulate the grouping variable because we do not have meaningful predictors for it.
+
+```{r}
+dist51_sim <- dist51[-10]
+# dist51_sim["IAlocation_group"] <- "binomial"
+# tmp <- as.integer(dfsim$positive_famillial_history)
+# tmp[1] <- 2
+# dfsim$positive_famillial_history <- factor(tmp)
+mycache_sim <- buildScoreCache(method="mle",
+                           data.df=dfsim[, names(dist51[-10])], # reordered to match data.dists
+                           data.dists=dist51_sim, # all except study_source
+                           # group.var="study_source",
+                           dag.banned = banned51[-10, -10], # all except study_source
+                           dag.retained = retain51[-10, -10], # all except study_source
+                           max.parents=9,
+                           verbose = TRUE)
+```
+
+```{r}
+mp.dag_sim <- mostProbable(mycache_sim)
+```
+
+```{r}
+myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+```
+
+```{r}
+plotAbn(myres_sim)
+```
+
