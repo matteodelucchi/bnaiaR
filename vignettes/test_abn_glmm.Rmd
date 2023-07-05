@@ -19,7 +19,7 @@ library(bnaiaR)
 # renv::install("url::https://git.math.uzh.ch/mdeluc/devel-abn/-/archive/v3.0.0.9000/devel-abn-v3.0.0.9000.tar.gz")
 # renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/-/releases/v3.0.0.9000")
 # renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/abn")
-renv::install("../../../rrr/devel-abn/abn_3.0.0.9000.tar.gz")
+# renv::install("../../../rrr/devel-abn/abn_3.0.0.9000.tar.gz")
 library(abn)
 # renv::install("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"))
 ```
@@ -57,7 +57,7 @@ mycache <- buildScoreCache(method="mle",
                            max.parents=9,
                            control = build.control(catcov.mblogit = "diagonal",
                                                    seed = SEED),
-                           verbose = F)
+                           verbose = FALSE)
 ```
 
 ```{r}
@@ -108,7 +108,7 @@ mycache_sim <- buildScoreCache(method="mle",
                            dag.banned = banned51[-10, -10], # all except study_source
                            dag.retained = retain51[-10, -10], # all except study_source
                            max.parents=9,
-                           verbose = TRUE)
+                           verbose = FALSE)
 ```
 
 ```{r}
