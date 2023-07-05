@@ -28,33 +28,6 @@ library(abn)
 SEED <- 123456789
 ```
 
-
-# abn example 3
-```{r}
-mydat <- ex3.dag.data ## this data comes with abn see ?ex3.dag.data
-str(mydat)
-mydists <- list(b1="binomial", b2="binomial", b3="binomial",
-            b4="binomial", b5="binomial", b6="binomial", b7="binomial",
-            b8="binomial", b9="binomial", b10="binomial",b11="binomial",
-            b12="binomial", b13="binomial" )
-max.par <- 2
-
-## in this example INLA is used as default since these are glmm nodes
-## when running this at node-parent combination 71 the default accuracy check on the
-## INLA modes is exceeded (default is a max. of 10 percent difference from
-## modes estimated using internal code) and a message is given that internal code
-## will be used in place of INLA's results.
-
-mycache <- buildScoreCache(data.df=mydat, data.dists=mydists, group.var="group",
-                        cor.vars=c("b1","b2","b3","b4","b5","b6","b7",
-                                   "b8","b9","b10","b11","b12","b13"),
-                        max.parents=max.par, which.nodes=c(1))
-str(mycache)
-
-table(mycache$used.INLA, useNA = "always")
-```
-
-
 # Data preparation
 
 ```{r}
