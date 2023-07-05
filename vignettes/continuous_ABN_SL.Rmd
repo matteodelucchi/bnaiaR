@@ -27,21 +27,12 @@ library(bnaiaR)
 library(ggplot2)
 ```
 
-```{r settings}
+```{r parameters}
 DEBUG <- FALSE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
 FILENAMEbase <- Sys.getenv("PLOTPATH")
-#create and register cluster
-if (amilocal()) {
-  n.cores <- parallel::detectCores() - 1 # local
-} else{
-  n.cores <- 25 # on HPC
-}
-```
 
-
-```{r parameters}
 METHOD <- "mle"
 SCORE <- "bic"
 if (DEBUG) {
@@ -54,12 +45,23 @@ BURNIN.LEN <- 0
 # MCMC.SCHEME <- c(RETURN.DAGS, THINNING, BURNIN.LEN)
 MCMC.SCHEME <-
   c(RETURN.DAGS + BURNIN.LEN, 0, 0) # speed up computation if post-processed. Meaning: c(RETURN.DAGS, THINNING, BURNIN.LEN)
+SEED <- 123456789
 MCMC.SEEDS <- c(560505, 921213, 352629, 23146)
 PROB.REV = 0.03 # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
 PROB.MBR = 0.03
 MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
 
 THRESHOLD <- 0.5 # arcstrength
+```
+
+```{r settings}
+#create and register cluster
+if (amilocal()) {
+  n.cores <- parallel::detectCores() - 1 # local
+} else{
+  n.cores <- 25 # on HPC
+}
+set.seed(SEED)
 ```
 
 # Data Preparation
