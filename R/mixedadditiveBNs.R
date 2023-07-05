@@ -9,7 +9,10 @@
 #' @param filename character specifying the current set of runs.
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
+#' @param randomeffect name of grouping variable as character string.
+#' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
+#' @param rngSEED integer to use as seed.
 #'
 #' @return list of df, dist, retain, banned, net.score, net.score.dags.
 #' @export
@@ -24,10 +27,29 @@
 #'   filenamesuffix = "4.2"
 #' )
 #' }
-findOptNoParentNodes <- function(df, dist, banned, retain, filenamesuffix, filenamebase = FILENAMEbase, filename = FILENAME, method = METHOD, no.cores = n.cores, score=SCORE){
+findOptNoParentNodes <- function(df,
+                                 dist,
+                                 banned,
+                                 retain,
+                                 filenamesuffix,
+                                 filenamebase = FILENAMEbase,
+                                 filename = FILENAME,
+                                 method = METHOD,
+                                 no.cores = n.cores,
+                                 randomeffect = NULL,
+                                 catcov.restriction = "diagonal",
+                                 score = SCORE,
+                                 rngSEED = SEED){
   message(paste("\nRun the exact search across incremental parent limits with method:", METHOD))
 
-  novars <- ncol(df)
+  if(!is.null(randomeffect)){
+    novars <- ncol(df[,-which(colnames(df)==randomeffect)])
+  } else if (is.null(randomeffect)){
+    novars <- ncol(df)
+  } else {
+    stop("randomeffect must be NULL or corresponding to one of the column names of df.")
+  }
+
   tmpscores <- vector(length = novars)
   net.scores <-
     data.frame(npar = NULL,
@@ -43,21 +65,27 @@ findOptNoParentNodes <- function(df, dist, banned, retain, filenamesuffix, filen
     .packages = c("abn", "mcmcabn"),
     .inorder = TRUE
   ) %dopar% {
-      max.par <- i
-      mycache <- buildScoreCache(
-        data.df = as.data.frame(df),
-        data.dists = dist,
-        dag.banned = banned,
-        dag.retained = retain,
-        max.parents = max.par,
-        method = method
-      )
+    max.par <- i
+    mycache <- buildScoreCache(
+      data.df = as.data.frame(df),
+      data.dists = dist,
+      dag.banned = banned,
+      dag.retained = retain,
+      max.parents = max.par,
+      method = method,
+      group.var = randomeffect,
+      control = build.control(catcov.mblogit = catcov.restriction,
+                              seed = rngSEED)
+    )
 
     dag.mP <- mostProbable(score.cache = mycache,
                            score = score)
 
     tryCatch({fabn.mP <- fitAbn(object = dag.mP,
-                      method = method)},
+                                method = method,
+                                group.var = randomeffect,
+                                control = fit.control(catcov.mblogit = catcov.restriction,
+                                                      seed = rngSEED))},
              error = function(e){NULL})
 
     if(!exists("fabn.mP")){
@@ -127,6 +155,9 @@ findOptNoParentNodes <- function(df, dist, banned, retain, filenamesuffix, filen
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
+#' @param randomeffect name of grouping variable as character string.
+#' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
+#' @param rngSEED integer to use as seed.
 #'
 #' @return list of df, dist, retain, banned, mycache.maxpar, max.par, dag.maxpar, fabn.maxpar
 #' @export
@@ -153,7 +184,10 @@ abnwithmaxparents <-
            filename = FILENAME,
            method = METHOD,
            no.cores = n.cores,
-           score = SCORE) {
+           score = SCORE,
+           randomeffect = NULL,
+           catcov.restriction = "diagonal",
+           rngSEED = SEED) {
     cat("\nStart ABN with max.par...")
     starttime <- Sys.time()
 
@@ -173,13 +207,19 @@ abnwithmaxparents <-
       dag.banned = banned,
       dag.retained = retain,
       max.parents = max.par,
-      method = method
+      method = method,
+      group.var = randomeffect,
+      control = build.control(catcov.mblogit = catcov.restriction,
+                              seed = rngSEED)
     )
 
     dag.maxpar <- mostProbable(score.cache = mycache.maxpar,
                                score = score)
     fabn.maxpar <- fitAbn(object = dag.maxpar,
-                          method = method)
+                          method = method,
+                          group.var = randomeffect,
+                          control = fit.control(catcov.mblogit = catcov.restriction,
+                                                  seed = rngSEED))
 
     endtime <- Sys.time()
     cat(paste("\nEnd ABN with max.par. Time used [h]:", round(

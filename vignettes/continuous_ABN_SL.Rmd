@@ -541,11 +541,50 @@ mcmcabn(
 
 Implement study_source as random-effect
 
-PENDING
-
 ```{r}
-# df <- exp4_dat$abndata
+data("exp44_dat")
+
+df45 <- exp44_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+  
+str(df45)
+(banned45 <- exp44_dat$banned)
+(retain45 <- exp44_dat$retain)
+(dist45 <- exp44_dat$dist)
 ```
 
+## Find optimal no. of parent nodes
+```{r}
+optnoparents45 <-
+  findOptNoParentNodes(
+    df = df45,
+    dist = dist45[-10], # all except study_source 
+    randomeffect = "study_source", 
+    banned = banned45[-10, -10], # all except study_source
+    retain = retain45[-10, -10], # all except study_source
+    filenamesuffix = "4.5",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+```
 
+## ABN with max. parents
+```{r}
+abnwithmaxpar45 <-
+  abnwithmaxparents(
+    net.scores = optnoparents45$net.scores,
+    df = df45,
+    dist = dist45[-10], # all except study_source 
+    randomeffect = "study_source", 
+    banned = banned45[-10, -10], # all except study_source
+    retain = retain45[-10, -10], # all except study_source
+    filenamesuffix = "4.5",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+```
 
+TODO: simulateABN...
