@@ -123,3 +123,112 @@ myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
 plotAbn(myres_sim)
 ```
 
+## parametric bootstrapping
+
+Estimate initial best Graph $\mathcal{G_0}$ from the original, real-world data $\mathcal{D_0}$.
+Let $N$ the number of bootstrap samples.
+
+We simulate N data set $\mathcal{D_1}, \dots, \mathcal{D_n}$ from model $\mathcal{G_0}$
+and estimate N new models $\mathcal{G_1}, \dots, \mathcal{G_n}$ from the respective simulated data.
+
+For the final model $\mathcal{G_{sum}}$, we summarise over all $\mathcal{G_1}, \dots, \mathcal{G_n}$.
+
+The consensus model $\mathcal{G_{consensus}}$ is the trimmed $\mathcal{G_{sum}}$ based on accepting only significant edges.
+
+```{r}
+#' Parameteric Bootstrapping
+#'
+#' @param object of class abnFit 
+#' @param n.sim number of bootstrap iterations.
+#' @param dag.banned a matrix or a formula statement defining which arcs are not permitted - banned. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
+#' @param dag.retained a matrix or a formula statement defining which arcs are must be retained in any model search. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
+#' @param btseeds integer vector with individual seeds for each simulation. Requires one, unique seed for each iteration.
+#' @param verbose print more output.
+#'
+#' @return list of abn fit objects
+paramBootAbn <- function(object, 
+                         n.sim, 
+                         dag.banned,
+                         dag.retained,
+                         max.parents, 
+                         btseeds,
+                         verbose = FALSE){
+  ## Prepare inputs
+  # check if n.sim and btseeds are valid
+  if(!(is.null(n.sim) || is.integer(n.sim))){
+    if (!(is.null(btseeds) || all(is.integer(btseeds))) && (length(btseeds) == n.sim)){
+      if (verbose) message(paste("btseeds (", btseeds, ") and n.sim (", n.sim, ") are ok."))
+    } else {
+      stop("btseeds must be a vector of integers with length equal to the value of n.sim.")
+    }
+  } else {
+    stop("n.sim must be an integer >= 1.")
+  }
+  if(!inherits(object, "abnFit")){
+    stop("'object' must be of class 'abnFit'.")
+  } else {
+    dag <- object$abnDag$dag
+    data.df <- object$abnDag$data.df
+    data.dists <- object$abnDag$data.dists
+    group.var <- object$abnDag$group.var
+    group.ids <- object$abnDag$group.ids
+  }
+  
+  # Prepare output collection
+  out <- list()
+  
+  for (i in 1:n.sim){
+    dfsim <- simulateAbn(object = object, 
+                     n.iter = as.numeric(nrow(data.df)), # Sample set has equal size as original data
+                     verbose = verbose,
+                     seed = btseeds[i],
+                     run.simulation = TRUE)
+# TODO: catch if buildscorecache fails.
+    mycache_sim <- buildScoreCache(method="mle",
+                           data.df=dfsim[, names(data.dists)], # reordered to match data.dists
+                           data.dists=data.dists, # all except study_source
+                           # group.var="study_source",
+                           dag.banned = dag.banned, 
+                           dag.retained = dag.retained,
+                           max.parents=max.parents,
+                           verbose = verbose)
+    mp.dag_sim <- mostProbable(mycache_sim)
+    myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+    
+    # append to outputs
+    out[[i]] <- list("dfsim" = dfsim,
+                     "cache_sim" = mycache_sim,
+                     "mpdag_sim" = mp.dag_sim,
+                     "fit_sim" = myres_sim)
+  }
+  return(out)
+}
+# dags <- paramBootAbn(object = myres, n.sim = 2, btseeds = c(SEED))
+# dags <- paramBootAbn(object = myres, n.sim = 1, btseeds = c(SEED, SEED))
+# dags <- paramBootAbn(object = myres, n.sim = 1.2, btseeds = c(SEED))
+
+dags <- paramBootAbn(object = myres, 
+                     n.sim = 10, 
+                     dag.banned = banned51[-10, -10], # all except study_source
+                     dag.retained = retain51[-10, -10], # all except study_source
+                     max.parents = 1,
+                     btseeds = c(1:10)*SEED)
+```
+
+```{r}
+#' Consensus Model
+#' 
+#' Return the consensus model from a set of possible models.
+#'
+#' @param object list of abnFit objects.
+#' @param consensusMethod pruning strategy. "signEdge" calculates the consensus model based on accepting only significant edges.
+#'
+#' @return Consensus model as fitAbn object.
+consensusDAG <- function(object, consensusMethod = "signEdges"){
+  
+}
+```
+
+
+
+
