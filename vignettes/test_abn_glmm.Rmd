@@ -222,11 +222,11 @@ paramBootAbn <- function(object,
 # dags <- paramBootAbn(object = myres, n.sim = 1.2, btseeds = c(SEED))
 
 dags <- paramBootAbn(object = myres, 
-                     n.sim = 10, 
+                     n.sim = 100, 
                      dag.banned = banned51[-10, -10], # all except study_source
                      dag.retained = retain51[-10, -10], # all except study_source
-                     max.parents = 1,
-                     btseeds = c(1:10)*SEED)
+                     max.parents = 4,
+                     btseeds = c(1:100)*SEED)
 ```
 
 ```{r}
@@ -272,10 +272,15 @@ plotAbn(consDAGlist[["consDAG"]], data.dists = dist51)
 
 
 ```{r}
-dag1 <- dags[[1]]$mpdag_sim$dag
-dag2 <- dags[[2]]$mpdag_sim$dag
-
-Reduce("+", list(dag1, dag2, dag1))
+consfit <- fitAbn(dag = consDAGlist[["consDAG"]],
+                  data.dists = dist51[-10], 
+                  data.df = df51, 
+                  method = "mle",
+                  group.var = "study_source",
+                  control = fit.control(catcov.mblogit = "diagonal",
+                                        seed = SEED))
+plot(consfit)
+print(consfit)
 ```
 
 
