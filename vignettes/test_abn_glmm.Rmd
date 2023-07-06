@@ -174,32 +174,46 @@ paramBootAbn <- function(object,
     group.ids <- object$abnDag$group.ids
   }
   
-  # Prepare output collection
+  ## Prepare output collection
   out <- list()
   
-  for (i in 1:n.sim){
+  ## Actual bootstrapping
+  i <- 1
+  while (i <= n.sim) {
     dfsim <- simulateAbn(object = object, 
-                     n.iter = as.numeric(nrow(data.df)), # Sample set has equal size as original data
-                     verbose = verbose,
-                     seed = btseeds[i],
-                     run.simulation = TRUE)
-# TODO: catch if buildscorecache fails.
-    mycache_sim <- buildScoreCache(method="mle",
-                           data.df=dfsim[, names(data.dists)], # reordered to match data.dists
-                           data.dists=data.dists, # all except study_source
-                           # group.var="study_source",
-                           dag.banned = dag.banned, 
-                           dag.retained = dag.retained,
-                           max.parents=max.parents,
-                           verbose = verbose)
-    mp.dag_sim <- mostProbable(mycache_sim)
-    myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+                         n.iter = as.numeric(nrow(data.df)), # Sample set has equal size as original data
+                         verbose = verbose,
+                         seed = btseeds[i],
+                         run.simulation = TRUE)
+
+    buildCache_failed <- FALSE
+    tryCatch({
+      mycache_sim <- buildScoreCache(method="mle",
+                                     data.df=dfsim[, names(data.dists)], # reordered to match data.dists
+                                     data.dists=data.dists, # all except study_source
+                                     # group.var="study_source",
+                                     dag.banned = dag.banned, 
+                                     dag.retained = dag.retained,
+                                     max.parents=max.parents,
+                                     verbose = verbose)
+    }, error = function(e) {buildCache_failed <- TRUE})
     
-    # append to outputs
-    out[[i]] <- list("dfsim" = dfsim,
-                     "cache_sim" = mycache_sim,
-                     "mpdag_sim" = mp.dag_sim,
-                     "fit_sim" = myres_sim)
+    if (!buildCache_failed){
+      mp.dag_sim <- mostProbable(mycache_sim)
+      myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+      
+      # append to outputs
+      out[[i]] <- list("dfsim" = dfsim,
+                       "cache_sim" = mycache_sim,
+                       "mpdag_sim" = mp.dag_sim,
+                       "fit_sim" = myres_sim)
+      # increase iterator
+      i <- i+1
+    } else {
+      # do not update iterator but repeat this step
+      i <- i
+      if(verbose){message(paste("Simulation no. ", i, "failed and I am repeating it."))}
+    }
   }
   return(out)
 }
@@ -225,10 +239,43 @@ dags <- paramBootAbn(object = myres,
 #'
 #' @return Consensus model as fitAbn object.
 consensusDAG <- function(object, consensusMethod = "signEdges"){
+  # create list of adjacency matrices (DAGs)
+  dags_list <- list()
+  for (i in 1:length(object)){
+    dags_list[[i]] <- object[[i]]$mpdag_sim$dag
+  }
   
+  # adj. matrix with edge frequency
+  cumdag <- Reduce("+", dags_list)
+  
+  # relative edge frequency aka. arc-strength
+  reldag <- cumdag / length(dags_list)
+  
+  if (consensusMethod == "signEdges"){
+    # calculate arc-strength threshold
+    arc.stren.thr <- bnaiaR::arc.stren.threshold(reldag)
+    
+    consDAG <- reldag
+    consDAG[consDAG<=arc.stren.thr] <- 0
+    consDAG[consDAG>arc.stren.thr] <- 1
+    
+    return(list("arcStrengthThreshold" = arc.stren.thr, 
+                "consDAG" = consDAG))
+  } else {
+    stop(paste("Consensus method", consensusMethod, "is not implemented."))
+  }
 }
+consDAGlist <- consensusDAG(object = dags,
+                             consensusMethod = "signEdges")
+plotAbn(consDAGlist[["consDAG"]], data.dists = dist51)
 ```
 
 
+```{r}
+dag1 <- dags[[1]]$mpdag_sim$dag
+dag2 <- dags[[2]]$mpdag_sim$dag
+
+Reduce("+", list(dag1, dag2, dag1))
+```
 
 
