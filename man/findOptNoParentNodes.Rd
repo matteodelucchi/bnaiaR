@@ -14,7 +14,10 @@ findOptNoParentNodes(
   filename = FILENAME,
   method = METHOD,
   no.cores = n.cores,
-  score = SCORE
+  randomeffect = NULL,
+  catcov.restriction = "diagonal",
+  score = SCORE,
+  rngSEED = SEED
 )
 }
 \arguments{
@@ -36,7 +39,13 @@ findOptNoParentNodes(
 
 \item{no.cores}{integer of number of cores to parallelise.}
 
+\item{randomeffect}{name of grouping variable as character string.}
+
+\item{catcov.restriction}{Passed on to \code{mclogit::mblogit} \code{CatCov} argument.}
+
 \item{score}{character of score that is used to score the network. Details in \code{?abn::mostprobable()}.}
+
+\item{rngSEED}{integer to use as seed.}
 }
 \value{
 list of df, dist, retain, banned, net.score, net.score.dags.

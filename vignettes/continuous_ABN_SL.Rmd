@@ -28,7 +28,7 @@ library(ggplot2)
 ```
 
 ```{r parameters}
-DEBUG <- FALSE
+DEBUG <- TRUE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
 FILENAMEbase <- Sys.getenv("PLOTPATH")
@@ -587,4 +587,36 @@ abnwithmaxpar45 <-
   )
 ```
 
-TODO: simulateABN...
+## parametric bootstrapping
+```{r}
+dags <- paramBootAbn(object = abnwithmaxpar45$fabn.maxpar, 
+                     n.sim = RETURN.DAGS, 
+                     dag.banned = abnwithmaxpar45$banned,
+                     dag.retained = abnwithmaxpar45$retain,
+                     btseeds = c(1:RETURN.DAGS)*SEED,
+                     max.parents = abnwithmaxpar45$max.par)
+                     # dag.banned = banned51[-10, -10], # all except study_source
+                     # dag.retained = retain51[-10, -10], # all except study_source
+                     # max.parents = 4,
+                     # btseeds = c(1:100)*SEED)
+```
+
+
+```{r}
+consDAGlist <- consensusDAG(object = dags,
+                             consensusMethod = "signEdges")
+plotAbn(consDAGlist[["consDAG"]], data.dists = dags[[1]][["fit_sim"]][["abnDag"]][["data.dists"]])
+```
+
+```{r}
+consfit <- fitAbn(dag = consDAGlist[["consDAG"]],
+                  data.dists = dist45[-10], 
+                  data.df = df45,
+                  method = METHOD,
+                  group.var = "study_source",
+                  control = fit.control(catcov.mblogit = "diagonal",
+                                        seed = SEED))
+plot(consfit)
+print(consfit)
+```
+

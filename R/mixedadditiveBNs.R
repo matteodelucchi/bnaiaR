@@ -233,7 +233,9 @@ abnwithmaxparents <-
       filenamesuffix,
       "_intermediateABNDAG.png"
     ))
-    abn2bnlearn.plot(df, dag.maxpar, title = "prelim. ABN DAG with max. parents.")
+    abn2bnlearn.plot(data = df[,which(colnames(df) %in% colnames(dag.maxpar$dag))],
+                     abndag = dag.maxpar,
+                     title = "prelim. ABN DAG with max. parents.")
     dev.off()
 
     return(
@@ -557,5 +559,155 @@ dagswithdiffparentsplt <- function(net.scores.dags,
       title(paste0("DAG with max.par=", parents))
       parents <- parents + 1
     }
+  }
+}
+
+#' Parameteric Bootstrapping
+#'
+#' Supply as \code{object} an estimate of an initial "best" Graph $\eqn{G_0}$ from the original, real-world data $\eqn{D_0}$.
+#' Let $N$ the number of bootstrap samples that are provided as \eqn{n.sim}.
+#' This function then simulates N data set $\eqn{D_1}, \dots, \eqn{D_n}$ from model $\eqn{G_0}$
+#' and estimates N new models $\eqn{G_1}, \dots, \eqn{G_n}$ from the respective simulated data.
+#'
+#' The output can be fed in \code{consensusDAG} which will estimate the final model $\eqn{G_{sum}}$, by summarising over all $\eqn{G_1}, \dots, \eqn{G_n}$.
+#' The consensus model $\eqn{G_{consensus}}$ is the trimmed $\eqn{G_{sum}}$ based on accepting only significant edges.
+#'
+#' @param object of class abnFit
+#' @param n.sim number of bootstrap iterations.
+#' @param dag.banned a matrix or a formula statement defining which arcs are not permitted - banned. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
+#' @param dag.retained a matrix or a formula statement defining which arcs are must be retained in any model search. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
+#' @param max.parents a constant or named list giving the maximum number of parents allowed.
+#' @param btseeds integer vector with individual seeds for each simulation. Requires one, unique seed for each iteration.
+#' @param verbose print more output.
+#'
+#' @examples
+#' dags <- paramBootAbn(object = myres,
+#'                      n.sim = 100,
+#'                      dag.banned = banned51[-10, -10], # all except study_source
+#'                      dag.retained = retain51[-10, -10], # all except study_source
+#'                      max.parents = 4,
+#'                      btseeds = c(1:100)*SEED)
+#'
+#' @export
+#'
+#' @return list of abn fit objects
+paramBootAbn <- function(object,
+                         n.sim,
+                         dag.banned,
+                         dag.retained,
+                         max.parents,
+                         btseeds,
+                         verbose = FALSE){
+  ## Prepare inputs
+  # check if n.sim and btseeds are valid
+  if(!(is.null(n.sim) || is.integer(n.sim))){
+    if (!(is.null(btseeds) || all(is.integer(btseeds))) && (length(btseeds) == n.sim)){
+      if (verbose) message(paste("btseeds (", btseeds, ") and n.sim (", n.sim, ") are ok."))
+    } else {
+      stop("btseeds must be a vector of integers with length equal to the value of n.sim.")
+    }
+  } else {
+    stop("n.sim must be an integer >= 1.")
+  }
+  if(!inherits(object, "abnFit")){
+    stop("'object' must be of class 'abnFit'.")
+  } else {
+    dag <- object$abnDag$dag
+    data.df <- object$abnDag$data.df
+    data.dists <- object$abnDag$data.dists
+    group.var <- object$abnDag$group.var
+    group.ids <- object$abnDag$group.ids
+  }
+
+  ## Prepare output collection
+  out <- list()
+
+  ## Actual bootstrapping
+  i <- 1
+  while (i <= n.sim) {
+    dfsim <- simulateAbn(object = object,
+                         n.iter = as.numeric(nrow(data.df)), # Sample set has equal size as original data
+                         verbose = verbose,
+                         seed = btseeds[i],
+                         run.simulation = TRUE)
+
+    buildCache_failed <- FALSE
+    tryCatch({
+      mycache_sim <- buildScoreCache(method="mle",
+                                     data.df=dfsim[, names(data.dists)], # reordered to match data.dists
+                                     data.dists=data.dists, # all except study_source
+                                     # group.var="study_source",
+                                     dag.banned = dag.banned,
+                                     dag.retained = dag.retained,
+                                     max.parents=max.parents,
+                                     verbose = verbose)
+    }, error = function(e) {buildCache_failed <- TRUE})
+
+    if (!buildCache_failed){
+      mp.dag_sim <- mostProbable(mycache_sim)
+      myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+
+      # append to outputs
+      out[[i]] <- list("dfsim" = dfsim,
+                       "cache_sim" = mycache_sim,
+                       "mpdag_sim" = mp.dag_sim,
+                       "fit_sim" = myres_sim)
+      # increase iterator
+      i <- i+1
+    } else {
+      # do not update iterator but repeat this step
+      i <- i
+      if(verbose){message(paste("Simulation no. ", i, "failed and I am repeating it."))}
+    }
+  }
+  return(out)
+}
+
+#' Consensus Model
+#'
+#' Supply as \code{object} an estimate of an initial "best" Graph $\eqn{G_0}$ from the original, real-world data $\eqn{D_0}$ to \code{paramBootAbn()}.
+#' Let $N$ the number of bootstrap samples that are provided as \code{n.sim}.
+#' \code{paramBootAbn()} then simulates N data set $\eqn{D_1}, \dots, \eqn{D_n}$ from model $\eqn{G_0}$
+#' and estimates N new models $\eqn{G_1}, \dots, \eqn{G_n}$ from the respective simulated data.
+#'
+#' The output from \code{paramBootAbn()} can be fed in \code{consensusDAG} which will estimate the final model $\eqn{G_{sum}}$, by summarising over all $\eqn{G_1}, \dots, \eqn{G_n}$.
+#' The consensus model $\eqn{G_{consensus}}$ is the trimmed $\eqn{G_{sum}}$ based on accepting only significant edges.
+#'
+#' @param object list of abnFit objects.
+#' @param consensusMethod pruning strategy. "signEdge" calculates the consensus model based on accepting only significant edges.
+#'
+#' @examples
+#' consDAGlist <- consensusDAG(object = dags,
+#'                             consensusMethod = "signEdges")
+#' plotAbn(consDAGlist[["consDAG"]], data.dists = dist51)
+#'
+#' @export
+#' @return Consensus model as fitAbn object.
+consensusDAG <- function(object,
+                         consensusMethod = "signEdges"){
+  # create list of adjacency matrices (DAGs)
+  dags_list <- list()
+  for (i in 1:length(object)){
+    dags_list[[i]] <- object[[i]]$mpdag_sim$dag
+  }
+
+  # adj. matrix with edge frequency
+  cumdag <- Reduce("+", dags_list)
+
+  # relative edge frequency aka. arc-strength
+  reldag <- cumdag / length(dags_list)
+
+  if (consensusMethod == "signEdges"){
+    # calculate arc-strength threshold
+    arc.stren.thr <- bnaiaR::arc.stren.threshold(reldag)
+
+    consDAG <- reldag
+    consDAG[consDAG<=arc.stren.thr] <- 0
+    consDAG[consDAG>arc.stren.thr] <- 1
+
+    return(list("arcStrengthThreshold" = arc.stren.thr,
+                "consDAG" = consDAG))
+  } else {
+    stop(paste("Consensus method", consensusMethod, "is not implemented."))
   }
 }

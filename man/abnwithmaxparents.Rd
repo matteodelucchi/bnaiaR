@@ -15,7 +15,10 @@ abnwithmaxparents(
   filename = FILENAME,
   method = METHOD,
   no.cores = n.cores,
-  score = SCORE
+  score = SCORE,
+  randomeffect = NULL,
+  catcov.restriction = "diagonal",
+  rngSEED = SEED
 )
 }
 \arguments{
@@ -40,6 +43,12 @@ abnwithmaxparents(
 \item{no.cores}{integer of number of cores to parallelise.}
 
 \item{score}{character of score that is used to score the network. Details in \code{?abn::mostprobable()}.}
+
+\item{randomeffect}{name of grouping variable as character string.}
+
+\item{catcov.restriction}{Passed on to \code{mclogit::mblogit} \code{CatCov} argument.}
+
+\item{rngSEED}{integer to use as seed.}
 }
 \value{
 list of df, dist, retain, banned, mycache.maxpar, max.par, dag.maxpar, fabn.maxpar
