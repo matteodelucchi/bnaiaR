@@ -16,10 +16,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(bnaiaR)
-# renv::install("url::https://git.math.uzh.ch/mdeluc/devel-abn/-/archive/v3.0.0.9000/devel-abn-v3.0.0.9000.tar.gz")
-# renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/-/releases/v3.0.0.9000")
-# renv::install("gitlab@git.math.uzh.ch::mdeluc/devel-abn/abn")
-# renv::install("../../../rrr/devel-abn/abn_3.0.0.9000.tar.gz")
+# renv::install("../abn_3.0.0.9000.tar.gz")
 library(abn)
 # renv::install("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"))
 ```
