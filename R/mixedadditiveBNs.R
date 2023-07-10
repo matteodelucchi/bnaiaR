@@ -419,15 +419,11 @@ maxparentsplot <- function(net.scores,
       scorevalue = as.numeric(scorevalue)
     ) %>%
 
-    group_by(scoretype) %>%
-    summarise(
+    reframe(
       scorevalue.norm = (1 - abs(1 - scorevalue / max(scorevalue))) * 100,
-      .groups = "keep",
       npar = npar,
-      scorevalue = scorevalue
-    ) %>%
-    ungroup()
-  # df
+      scorevalue = scorevalue,
+      .by = scoretype)
 
   # Plot Network score by increasing max parents
   plt.rel <-
