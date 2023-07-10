@@ -40,7 +40,7 @@ glmm.bic = function(node, parents, data, args) {
 
   if (length(parents) == 0)
     # no parent no random effect
-    model = as.formula(paste(node, "~ 1"))
+    model = as.formula(paste(node, "~ 1 + (1|", mixed_effect, ")"))
   else
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
 
@@ -48,16 +48,9 @@ glmm.bic = function(node, parents, data, args) {
 
   if (dist[[node]] == "gaussian"){
     # TODO: Proper Error-handling
-    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2}
+    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
 
-  else if (dist[[node]] == "binomial" & length(parents) == 0){
-    tryCatch({
-      mod_glm = glm(model, data = data, family = "binomial")
-    }, error=function(e) NULL)
-
-    return(-BIC(mod_glm)/2)
-    # }
-  } else if (dist[[node]] == "binomial" & length(parents) > 0){
+  } else if (dist[[node]] == "binomial"){
     tryCatch({
       mod_glmer = lme4::glmer(model, data = data, family = "binomial")
     }, error=function(e) NULL)
@@ -89,19 +82,15 @@ glmm.bic = function(node, parents, data, args) {
       return(-Inf)
     }
 
-  } else if ((dist[[node]] == "multinomial") && (length(parents) == 0)){
-    tryCatch({
-      mod_mblogit = mclogit::mblogit(formula = model, data = data)
-    }, error=function(e) NULL)
-
-    if (!is.null(mod_mblogit)){
-      return(-BIC(mod_mblogit) / 2)
+  } else if (dist[[node]] == "multinomial"){
+    if (length(parents) == 0){
+      model_basic <- as.formula(paste(node, "~ 1"))
+      model_random <- as.formula(paste("~ 1|", mixed_effect, sep = ""))
     } else {
-      return(-Inf) # return a very low score
+      model_basic <- as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
+      model_random <- as.formula(paste("~ 1|", mixed_effect, sep = ""))
     }
-  } else if ((dist[[node]] == "multinomial") & (length(parents) > 0)){
-    model_basic = as.formula(paste(node, "~ ", paste(parents, collapse = "+")))
-    model_random = as.formula(paste("~ 1|", mixed_effect, sep = ""))
+
     message(paste("using mblogit with fixed term:", deparse1(model_basic), "and random term:", deparse1(model_random)))
     tryCatch({
       mod_mblogit = mclogit::mblogit(formula = model_basic, random = model_random, data = data)
