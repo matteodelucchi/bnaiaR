@@ -109,26 +109,8 @@ bnlearn::write.net(file = paste0(PLOTPATH, "/adme_fitted_wo_studysource.net"), f
 plot(madbn_fit_mod$hpt_aware$prob)
 ```
 
-Males tend to have an IA more often at a high risk location but
-Females tend to develop an IA in high risk location more often if they suffer HBP than males who suffer HBP.
+Younger IA patients are less frequently aware of HBP. The older the more aware.
 
-
-```{r}
-plot(madbn_fit_mod$IAsize_diag_grouped_merged$prob)
-```
-
-Being aware of pos. fam. hist. reduces the porbability of developing larger IAs.
-
-```{r}
-plot(madbn_fit_mod$IAlocation_group$prob)
-```
-
-
-```{r}
-plot(madbn_fit_mod$IAruptured$prob)
-```
-
-Larger IAs tend to rupture more frequently.
 
 ```{r }
 par(mfrow = c(2,2))
@@ -190,6 +172,7 @@ if (SAVEPLOTS){
 } 
 ```
 
+Chronological age at IA diagnosis is higher for unruptured IAs than ruptured.
 
 ```{r}
 par(mfrow=c(2,2))
@@ -330,6 +313,8 @@ if (SAVEPLOTS){
   } 
 }
 ```
+
+Females have unruptured IAs more frequently detected in low risk locations than males.
 
 ```{r}
 par(mfrow=c(2,2))
@@ -648,6 +633,123 @@ if (SAVEPLOTS){
   } 
 }
 ```
+
+# Risk estimates relative to reference subpopulation
+
+The aim is a treatment decision support model. 
+Therefore the reference population is framed of all those patients (i.e. IA detected), 
+that are not treated but followed-up.
+Following Bijlenga et al., (Stroke, 2013) these are patients fulfilling the following criteria:
+1. No pos. familial history
+2. IA size < 4mm & IA at high risk location
+or 
+2. IA size between 4-7mm & IA at medium risk location
+3. IA is not ruptured.
+
+```{r}
+plot(cpdist(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), nodes = c("IAruptured")))
+
+prev_ref <- cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no"))
+prev_ref
+```
+
+The prevalence of patients fulfilling the above criteria in our study population is 43%.
+Most patients present with a ruptured IA at time of diagnosis.
+
+Why?
+- Hypothesis: Many unruptured IAs remain undiagnosed as they are frequently asymptomatic.
+This could be tested in a cohort study.
+
+The odds of no rupture at diagnosis are therefor smaller than 1, meaning that patients 
+have been rather unlikely to present with an unruptured IA in our study population.
+
+```{r}
+prev_ref / (1 - prev_ref)
+```
+
+## Rupture probability depending on smoking status
+
+```{r }
+par(mfrow = c(1,2))
+sim = cpdist(madbn_fit_mod, nodes = c("IAruptured"), n = 10^5, evidence = (smoking_current_notcurrent == "current"))
+plot(sim, col = "grey",
+     main = "smoking_CN == current")
+
+sim = cpdist(madbn_fit_mod, nodes = c("IAruptured"), n = 10^5, evidence = (smoking_current_notcurrent == "not_current"))
+plot(sim, col = "grey",
+     main = "smoking_CN == not_current")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "infquerry_rupture-age-hpt"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTWIDTH)
+    dev.off()
+  } 
+}
+
+# P(rupture | smoking == current)
+# cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = (IAruptured == "no"))
+cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = (IAruptured == "yes"))
+# P(rupture | smoking == not_current)
+# cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = (IAruptured == "no"))
+cpquery(madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = (IAruptured == "yes"))
+```
+
+
+```{r}
+oddsstatistics <- function(p_event_evidence, p_event_reference){
+  #P(event | evidence=e)
+  
+  # Odds = (event=true | evidence = e) / (event=false | evidence = e)
+  odds_event_evidence <- p_event_evidence / (1 - p_event_evidence)
+  
+  # Odds of event in reference population
+  odds_event_reference <- p_event_reference / (1 - p_event_reference)
+  
+  odds_ratio = odds_event_evidence / odds_event_reference
+  
+  # CAVE: se and CI are not guaranteed for small values (and we have percentages here...)
+  se = sqrt((1/p_event_evidence)+(1/(1-p_event_evidence))+(1/p_event_reference)+(1/(1-p_event_reference)))
+  cilower <- exp(log(odds_ratio)-1.96*se)
+  ciupper <- exp(log(odds_ratio)+1.96*se)
+  
+  return(list("odds_event_evidence" = odds_event_evidence, "odds_event_reference" = odds_event_reference, "OR" = odds_ratio, "se"=se, "95%-CI"=c(cilower, ciupper)))
+}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c((positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "high") | (positive_famillial_history == "no" & IAsize_diag_grouped_merged == "A" & IAlocation_group == "medium")), event = c(IAruptured == "no")))
+```
+
+The odds of IA rupture are increased in current smokers compared to the reference population.
+
+```{r}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = c(IAruptured == "yes")))
+```
+
+The odds of IA rupture are increased in current smokers compared to non-smokers.
+
+```{r}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(gender == "male" & positive_famillial_history == "yes" & age_diag_group == "A" & hpt_aware == "no" & smoking_current_notcurrent == "current"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = c(IAruptured == "yes")))
+```
+
+Young, smoking males with a pos. fam. history and no HBP awareness are recommended to follow up (OR: 0.96)
+
+```{r}
+oddsstatistics(p_event_evidence = cpquery(fitted = madbn_fit_mod, evidence = c(gender == "female" & age_diag_group == "G" & IAlocation_group == "low"), event = c(IAruptured == "yes")),
+               p_event_reference = cpquery(fitted = madbn_fit_mod, evidence = c(smoking_current_notcurrent == "not_current"), event = c(IAruptured == "yes")))
+```
+
+IAs in low risk locations in older women don't rupture independent of their size (P.B. in Bordeaux).
+This is also what the statistics show here.
+IAs at low risk location in older women do not rupture (OR: 0.05).
+
 
 ```{r}
 str(data)
