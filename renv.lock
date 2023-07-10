@@ -318,8 +318,8 @@
       "Version": "3.0.0.9000",
       "Source": "Local",
       "RemoteType": "local",
-      "RemoteUrl": "../../../rrr/devel-abn/abn_3.0.0.9000.tar.gz",
-      "Hash": "51c7676b6e1db1e98fe52fce237dcaf1",
+      "RemoteUrl": "../abn_3.0.0.9000.tar.gz",
+      "Hash": "fccdc5c89770c913f3f5027161e3ab17",
       "Requirements": [
         "Rcpp",
         "RcppArmadillo",
