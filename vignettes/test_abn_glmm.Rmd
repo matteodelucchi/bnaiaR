@@ -22,7 +22,7 @@ library(abn)
 ```
 
 ```{r}
-SEED <- 123456789
+SEED <- 123456789L
 ```
 
 # Data preparation
