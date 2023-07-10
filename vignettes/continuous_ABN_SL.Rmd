@@ -36,7 +36,7 @@ FILENAMEbase <- Sys.getenv("PLOTPATH")
 METHOD <- "mle"
 SCORE <- "bic"
 if (DEBUG) {
-  RETURN.DAGS <- 1
+  RETURN.DAGS <- 2
 } else {
   RETURN.DAGS <- 100000
 }
@@ -339,9 +339,9 @@ df43_group <- df43 %>%
   filter(study_source == "ucl") %>%
   # remove study_source variable
   select(-study_source) 
-  
-  # mutate(across(is.factor, as.integer)) %>%
-  # mutate(across(is.integer, as.factor))
+
+# mutate(across(is.factor, as.integer)) %>%
+# mutate(across(is.integer, as.factor))
 str(df43_group)
 summarytools::dfSummary(df43_group)
 
@@ -435,27 +435,27 @@ net.scores
 net.scores[,3] <- seq(1,8)
 
 abnwithmaxpar <-
-    abnwithmaxparents(
-      net.scores = net.scores,
-      df = df43_group,
-      dist = dist43,
-      banned = banned43,
-      retain = retain43,
-      filenamesuffix = filesuf
-    )
-  
+  abnwithmaxparents(
+    net.scores = net.scores,
+    df = df43_group,
+    dist = dist43,
+    banned = banned43,
+    retain = retain43,
+    filenamesuffix = filesuf
+  )
+
 mcmcabn <-
-    mcmcabn_bnaiar(
-      mycache.maxpar = abnwithmaxpar$mycache.maxpar,
-      max.par = abnwithmaxpar$max.par,
-      dag.maxpar = abnwithmaxpar$dag.maxpar,
-      fabn.maxpar = abnwithmaxpar$fabn.maxpar,
-      df = df43_group,
-      dist = dist43,
-      banned = banned43,
-      retain = retain43,
-      filenamesuffix = filesuf
-    )
+  mcmcabn_bnaiar(
+    mycache.maxpar = abnwithmaxpar$mycache.maxpar,
+    max.par = abnwithmaxpar$max.par,
+    dag.maxpar = abnwithmaxpar$dag.maxpar,
+    fabn.maxpar = abnwithmaxpar$fabn.maxpar,
+    df = df43_group,
+    dist = dist43,
+    banned = banned43,
+    retain = retain43,
+    filenamesuffix = filesuf
+  )
 ```
 
 # Exp. 4.4: maBN with study_source as parent of everything

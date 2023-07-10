@@ -34,10 +34,11 @@ PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 
-DEBUG <- FALSE
+DEBUG <- TRUE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
-FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+# FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"))
 ```
 
 # Exp. 4.1: maBN with study_source
@@ -89,10 +90,10 @@ dagswithdiffparentsplt(net.scores.dags, df, SAVEPLOTS, filenamesuffix)
 thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
 
 ```{r}
-# THINNING <- 2 # keep every second draw
-# BURNIN.LEN <- 2500 # remove the first n draws
-THINNING <- 7
-BURNIN.LEN <- 25000 # remove the first n draws
+THINNING <- 1 # keep every second draw
+BURNIN.LEN <- 1 # remove the first n draws
+# THINNING <- 7
+# BURNIN.LEN <- 25000 # remove the first n draws
 
 mcmc.out.list.burn <- postBURNin(mcmc.out.list = finalresults$mcmc.out.list, burnin.length = BURNIN.LEN)
 mcmc.out.list.thin <- postTHINN(mcmc.out.list = finalresults$mcmc.out.list, thinningsteps = THINNING)
@@ -517,8 +518,11 @@ with their interpretation and data support (computed with structural MCMC).
 Second table `spportdag` is the percentage of the individual arcs supported by the 
 MCMC sample. 
 
+
+TODO: CONTINUE HERE! Think about the results table with random
 ```{r eval=FALSE, include=FALSE}
 basicresulttable <- function(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot){
+  PREPROCESSEDDATA_df <- data("adbisgc", package = "bnaiaR")
   fabn.boot.th.mle <- FITABN
   dag.mcmc.boot <- SUPPORTDAG
   
@@ -534,7 +538,7 @@ basicresulttable <- function(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot){
       "log odds ratio"
     }
   })
-  
+browser()  
   # Extract each edge (cornames) and it's interpretation
   cornames <- c()
   interpret <- c()
@@ -608,10 +612,10 @@ basicresulttable <- function(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot){
     
     # Fill missing from and to levels
     if (is.na(fromlevels) & fromname != "intercept"){
-      fromlevels <- stringr::str_flatten(levels(abndata[,fromname]), collapse=", ")
+      fromlevels <- stringr::str_flatten(levels(PREPROCESSEDDATA_df[,fromname]), collapse=", ")
     }
     if (is.na(tolevels) & fromname != "intercept"){
-      tolevels <- stringr::str_flatten(levels(abndata[,toname]), collapse=", ")
+      tolevels <- stringr::str_flatten(levels(PREPROCESSEDDATA_df[,toname]), collapse=", ")
     }
     
     # Retrieve arc strength from supportdag
@@ -1211,3 +1215,15 @@ if (SAVEPLOTS){
 ```
 
 TODO: fix edge direction. They're all in the wrong direction...
+
+# Exp. 4.3: maBN for each study_source individually
+
+TODO
+
+# Exp. 4.4: maBN with study_source as parent of everything
+
+TODO
+
+# Exp. 4.5: maBN mixed-effect with study_source as random-effect
+
+TODO
