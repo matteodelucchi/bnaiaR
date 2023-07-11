@@ -38,11 +38,12 @@ glmm.bic = function(node, parents, data, args) {
   dist = args$dist
   mixed_effect = args$mixed_effect
 
-  if (length(parents) == 0)
+  if (length(parents) == 0){
     # no parent no random effect
     model = as.formula(paste(node, "~ 1 + (1|", mixed_effect, ")"))
-  else
+  } else {
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+  }
 
   message(paste("\n",deparse1(model), "\n"))
 
@@ -70,9 +71,15 @@ glmm.bic = function(node, parents, data, args) {
         # if mod_glmer is not singular and not null, return BIC of mod_glmer
       } else if (!lme4::isSingular(mod_glmer)){
         return(-BIC(mod_glmer)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
       }
     } else if (is.null(mod_glmer)){
       # return very low score
+      return(-Inf)
+    } else {
+      warning("unknown status of the model.")
       return(-Inf)
     }
 
@@ -102,9 +109,15 @@ glmm.bic = function(node, parents, data, args) {
         # if mod_glmer is not singular and not null, return BIC of mod_glmer
       } else if (!lme4::isSingular(mod_glmer)){
         return(-BIC(mod_glmer)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
       }
     } else if (is.null(mod_glmer)){
       # return very low score
+      return(-Inf)
+    } else {
+      warning("unknown status of the model.")
       return(-Inf)
     }
 
@@ -142,9 +155,17 @@ glmm.bic = function(node, parents, data, args) {
       } else if(mod_mblogit$converged == TRUE){
         # if not null and did converged, return BIC of mixed effects model
         return(-BIC(mod_mblogit)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
       }
     } else if(is.null(mod_mblogit)){
       return(-Inf) # return a very low score
+    } else {
+      warning("unknown status of the model.")
+      return(-Inf)
     }
+  } else {
+    stop("unknown distribution type.")
   }
 }#GLMM.BIC
