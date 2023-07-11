@@ -48,6 +48,7 @@ PLOTWIDTH = 16
 PLOTHEIGHT = 9
 
 cores <- 60 
+CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
 ```
 
 # Structure Learning of discrete BN
@@ -70,7 +71,8 @@ Nothing can point to study source.
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn, 
                    algorithm = "tabu", 
@@ -197,7 +199,8 @@ print(bl.dbn.nostudy)
 ```
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
@@ -320,7 +323,8 @@ print(bl.dbn.nostudy)
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = parallel::makeCluster(4)
+cl = parallel::makeCluster(cores/7, 
+                           type = CLTYPE)
 bb_studies_aic <- list()
 bb_studies_bic <- list()
 
@@ -507,7 +511,8 @@ print(wl.dbn.allstudy)
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
@@ -643,6 +648,8 @@ weighted.bic = function(node, parents, data, args) {
 
 }#WEIGHTED.BIC
 
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -653,6 +660,8 @@ bb = boot.strength(data.dbn.nostudy,
                                          args = list(weights = rep(1, nrow(data.dbn.nostudy))),
                                          # whitelist = wl.dbn.allstudy,
                                          tabu = 50))
+parallel::stopCluster(cl)
+
 avg = averaged.network(bb)
 strength.plot(avg, bb, shape = "rectangle")
 plot(bb)
@@ -660,7 +669,8 @@ plot(bb)
 
 
 ```{r additive discrete BN w/o mixed effects}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 glm.bic = function(node, parents, data, args) {
   dist = args$dist
@@ -737,7 +747,9 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
+cl = makeCluster(cores, 
+                 outfile = path.expand(paste0(getwd(), "/glmm.bic.out")), 
+                 type = CLTYPE)
 ```
 
 
@@ -758,23 +770,24 @@ cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 
 ```{r additive discrete BN w/ mixed effects}
 stime <- Sys.time()
-
-bb = boot.strength(data.dbn.additive, 
-                   algorithm = "tabu", 
-                   R = 500,
-                   cluster = cl,
-                   algorithm.args = list(score = "custom",
-                                         fun = glmm.bic,
-                                         blacklist = bl.dbn.additive,
-                                         # whitelist = wl.dbn.allstudy,
-                                         args = list(dist = dist.dbn.additive,
-                                                     mixed_effect = "study_source"),
-                                         tabu = 50),
-                   debug = TRUE)
-stopCluster(cl)
+# peakRAM::peakRAM(
+  bb = boot.strength(data.dbn.additive, 
+                     algorithm = "tabu", 
+                     R = 500,
+                     cluster = cl,
+                     algorithm.args = list(score = "custom",
+                                           fun = glmm.bic,
+                                           blacklist = bl.dbn.additive,
+                                           # whitelist = wl.dbn.allstudy,
+                                           args = list(dist = dist.dbn.additive,
+                                                       mixed_effect = "study_source"),
+                                           tabu = 50),
+                     debug = TRUE)
+# )
 etime <- Sys.time()
 running_time <- etime-stime
 print(paste("Running time: ", running_time))
+stopCluster(cl)
 ```
 
 
@@ -829,7 +842,9 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+cl = makeCluster(cores, 
+                 outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")), 
+                 type = CLTYPE)
 ```
 
 

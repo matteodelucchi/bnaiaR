@@ -18,6 +18,7 @@ mcmcabn_bnaiar(
   filename = FILENAME,
   method = METHOD,
   no.cores = n.cores,
+  CLTYPE = "FORK",
   score = SCORE,
   mcmcseeds = MCMC.SEEDS,
   mcmcscheme = MCMC.SCHEME,
@@ -52,6 +53,8 @@ mcmcabn_bnaiar(
 \item{method}{either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.}
 
 \item{no.cores}{integer of number of cores to parallelise.}
+
+\item{CLTYPE}{"FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.}
 
 \item{score}{character of score that is used to score the network. Details in \code{?abn::mostprobable()}.}
 

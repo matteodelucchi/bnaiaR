@@ -61,6 +61,7 @@ if (amilocal()) {
 } else{
   n.cores <- 25 # on HPC
 }
+CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
 set.seed(SEED)
 ```
 
@@ -362,7 +363,8 @@ clust <-
       FILENAME,
       "4.3_UCL",
       "_multicoreABNmaxpar.log"
-    )
+    ), 
+    type = CLTYPE
   )
 doParallel::registerDoParallel(cl = clust)
 net.scores <- foreach(

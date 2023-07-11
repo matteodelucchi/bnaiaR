@@ -9,6 +9,7 @@
 #' @param filename character specifying the current set of runs.
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
+#' @param CLTYPE "FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.
 #' @param randomeffect name of grouping variable as character string.
 #' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
@@ -36,6 +37,7 @@ findOptNoParentNodes <- function(df,
                                  filename = FILENAME,
                                  method = METHOD,
                                  no.cores = n.cores,
+                                 CLTYPE = "FORK",
                                  randomeffect = NULL,
                                  catcov.restriction = "diagonal",
                                  score = SCORE,
@@ -57,7 +59,9 @@ findOptNoParentNodes <- function(df,
                scorevalue = NULL)
 
   clust <-
-    parallel::makeCluster(no.cores, outfile = paste0(filenamebase, filename, filenamesuffix, "_multicoreABNmaxpar.log"))
+    parallel::makeCluster(no.cores,
+                          outfile = paste0(filenamebase, filename, filenamesuffix, "_multicoreABNmaxpar.log"),
+                          type = CLTYPE)
   doParallel::registerDoParallel(cl = clust)
   net.scores <- foreach(
     i = 1:novars,
@@ -272,6 +276,7 @@ abnwithmaxparents <-
 #' @param filename character specifying the current set of runs.
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
+#' @param CLTYPE "FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
 #' @param mcmcseeds vector of integers who set the seeds in each parallel run. Details in \code{?mcmcabn::mcmcabn()}.
 #' @param mcmcscheme vector of integers with the number of returned DAGs, the number of thinned steps and length of the burn-in phase. Details in \code{?mcmcabn::mcmcabn()}.
@@ -310,6 +315,7 @@ mcmcabn_bnaiar <-
            filename = FILENAME,
            method = METHOD,
            no.cores = n.cores,
+           CLTYPE = "FORK",
            score = SCORE,
            mcmcseeds = MCMC.SEEDS,
            mcmcscheme = MCMC.SCHEME,
@@ -327,7 +333,8 @@ mcmcabn_bnaiar <-
           filename,
           filenamesuffix,
           "_multicoreMCMCABN.log"
-        )
+        ),
+        type = CLTYPE
       )
     doParallel::registerDoParallel(cl = clust)
     mcmc.out.list <- foreach(
