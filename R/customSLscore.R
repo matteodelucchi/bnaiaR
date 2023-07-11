@@ -47,8 +47,34 @@ glmm.bic = function(node, parents, data, args) {
   message(paste("\n",deparse1(model), "\n"))
 
   if (dist[[node]] == "gaussian"){
-    # TODO: Proper Error-handling
-    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+    mod_glmer <- lme4::glmer(model, data = data, family = "gaussian")
+
+    # if mod_glmer is not null
+    if(!is.null(mod_glmer)){
+      # check if mod_glmer is singular and remove rand. effects if so
+      if(lme4::isSingular(mod_glmer)){
+        message(paste("Removing random effects due to singularity."))
+        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        tryCatch({
+          mod_glm_nore = glm(model_nore, data = data, family = "gaussian")
+        }, error=function(e) NULL)
+
+        # if fixed effect model is not null
+        if (!is.null(mod_glm_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(mod_glm_nore)/2)
+        } else {
+          # return very low score
+          return(-Inf)
+        }
+        # if mod_glmer is not singular and not null, return BIC of mod_glmer
+      } else if (!lme4::isSingular(mod_glmer)){
+        return(-BIC(mod_glmer)/2)
+      }
+    } else if (is.null(mod_glmer)){
+      # return very low score
+      return(-Inf)
+    }
 
   } else if (dist[[node]] == "binomial"){
     tryCatch({
