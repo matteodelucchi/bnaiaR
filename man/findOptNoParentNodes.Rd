@@ -14,6 +14,7 @@ findOptNoParentNodes(
   filename = FILENAME,
   method = METHOD,
   no.cores = n.cores,
+  CLTYPE = "FORK",
   randomeffect = NULL,
   catcov.restriction = "diagonal",
   score = SCORE,
@@ -38,6 +39,8 @@ findOptNoParentNodes(
 \item{method}{either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.}
 
 \item{no.cores}{integer of number of cores to parallelise.}
+
+\item{CLTYPE}{"FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.}
 
 \item{randomeffect}{name of grouping variable as character string.}
 

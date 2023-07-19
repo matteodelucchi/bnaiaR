@@ -22,9 +22,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r development, eval=FALSE, include=FALSE}
+```{r development, echo=TRUE}
 # devtools::document()
-# devtools::load_all()
+devtools::load_all()
 # renv::snapshot(prompt = F)
 ```
 
@@ -47,7 +47,8 @@ PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 
-cores <- 60 
+cores <- 25 
+CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
 ```
 
 # Structure Learning of discrete BN
@@ -70,7 +71,8 @@ Nothing can point to study source.
 
 
 ```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn, 
                    algorithm = "tabu", 
@@ -196,8 +198,9 @@ str(data.dbn.nostudy)
 print(bl.dbn.nostudy)
 ```
 
-```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+```{r learn_with_aic_nostudysource, warning=FALSE}
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
@@ -249,7 +252,7 @@ if (SAVEPLOTS) {
 
 
 
-```{r learn_with_bic, warning=FALSE}
+```{r learn_with_bic_nostudysource, warning=FALSE}
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -319,8 +322,9 @@ print(bl.dbn.nostudy)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
-cl = parallel::makeCluster(4)
+```{r learn_with_aic_per_studysource, warning=FALSE}
+cl = parallel::makeCluster(cores/7, 
+                           type = CLTYPE)
 bb_studies_aic <- list()
 bb_studies_bic <- list()
 
@@ -359,7 +363,7 @@ bb_studies <- list("aic" = bb_studies_aic, "bic" = bb_studies_bic)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
+```{r print_aic_per_studysource, warning=FALSE}
 avg_studies = list()
 # print all AIC BNs
 for (score in names(bb_studies)){
@@ -389,7 +393,7 @@ for (score in names(bb_studies)){
 }
 ```
 
-```{r compare_plot_aic, warning=FALSE}
+```{r compare_plot_aic_per_studysource, warning=FALSE}
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_aic_compareplt", ".")
   if (PLOTFORMAT == "svg") {
@@ -438,7 +442,7 @@ dev.off()
 ```
 
 
-```{r compare_plot_bic, warning=FALSE}
+```{r compare_plot_bic_per_studysource, warning=FALSE}
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_bic_compareplt", ".")
   if (PLOTFORMAT == "svg") {
@@ -506,8 +510,9 @@ print(wl.dbn.allstudy)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
-cl = makeCluster(cores)
+```{r learn_with_aic_studysourceASparent, warning=FALSE}
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
@@ -561,7 +566,7 @@ if (SAVEPLOTS) {
 
 
 
-```{r learn_with_bic, warning=FALSE}
+```{r learn_with_bic_studysourceASparent, warning=FALSE}
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -643,6 +648,8 @@ weighted.bic = function(node, parents, data, args) {
 
 }#WEIGHTED.BIC
 
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -653,6 +660,8 @@ bb = boot.strength(data.dbn.nostudy,
                                          args = list(weights = rep(1, nrow(data.dbn.nostudy))),
                                          # whitelist = wl.dbn.allstudy,
                                          tabu = 50))
+parallel::stopCluster(cl)
+
 avg = averaged.network(bb)
 strength.plot(avg, bb, shape = "rectangle")
 plot(bb)
@@ -660,7 +669,8 @@ plot(bb)
 
 
 ```{r additive discrete BN w/o mixed effects}
-cl = makeCluster(cores)
+cl = makeCluster(cores, 
+                 type = CLTYPE)
 
 glm.bic = function(node, parents, data, args) {
   dist = args$dist
@@ -737,7 +747,9 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
+cl = makeCluster(cores, 
+                 outfile = path.expand(paste0(getwd(), "/glmm.bic.out")), 
+                 type = CLTYPE)
 ```
 
 
@@ -756,29 +768,30 @@ cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.out")))
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r SL additive discrete BN w/ mixed effects}
 stime <- Sys.time()
-
-bb = boot.strength(data.dbn.additive, 
-                   algorithm = "tabu", 
-                   R = 500,
-                   cluster = cl,
-                   algorithm.args = list(score = "custom",
-                                         fun = glmm.bic,
-                                         blacklist = bl.dbn.additive,
-                                         # whitelist = wl.dbn.allstudy,
-                                         args = list(dist = dist.dbn.additive,
-                                                     mixed_effect = "study_source"),
-                                         tabu = 50),
-                   debug = TRUE)
-stopCluster(cl)
+# peakRAM::peakRAM(
+  bb = boot.strength(data.dbn.additive, 
+                     algorithm = "tabu", 
+                     R = 500,
+                     cluster = cl,
+                     algorithm.args = list(score = "custom",
+                                           fun = glmm.bic,
+                                           blacklist = bl.dbn.additive,
+                                           # whitelist = wl.dbn.allstudy,
+                                           args = list(dist = dist.dbn.additive,
+                                                       mixed_effect = "study_source"),
+                                           tabu = 50),
+                     debug = TRUE)
+# )
 etime <- Sys.time()
 running_time <- etime-stime
 print(paste("Running time: ", running_time))
+stopCluster(cl)
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r plots additive discrete BN w/ mixed effects}
 avg = averaged.network(bb)
 
 if (SAVEPLOTS) {
@@ -829,11 +842,13 @@ print(dist.dbn.additive)
 
 ```{r}
 # cl = makeCluster(6)
-cl = makeCluster(cores, outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")))
+cl = makeCluster(cores, 
+                 outfile = path.expand(paste0(getwd(), "/glmm.bic.1.7.out")), 
+                 type = CLTYPE)
 ```
 
 
-```{r additive discrete BN w/ mixed effects size-loc restricted}
+```{r SL additive discrete BN w/ mixed effects size-loc restricted}
 stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
@@ -854,7 +869,7 @@ print(paste("Running time: ", running_time))
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r plots additive discrete BN w/ mixed effects size-loc restricted}
 avg = averaged.network(bb)
 
 if (SAVEPLOTS) {

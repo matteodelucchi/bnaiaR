@@ -9,6 +9,7 @@
 #' @param filename character specifying the current set of runs.
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
+#' @param CLTYPE "FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.
 #' @param randomeffect name of grouping variable as character string.
 #' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
@@ -36,6 +37,7 @@ findOptNoParentNodes <- function(df,
                                  filename = FILENAME,
                                  method = METHOD,
                                  no.cores = n.cores,
+                                 CLTYPE = "FORK",
                                  randomeffect = NULL,
                                  catcov.restriction = "diagonal",
                                  score = SCORE,
@@ -57,7 +59,9 @@ findOptNoParentNodes <- function(df,
                scorevalue = NULL)
 
   clust <-
-    parallel::makeCluster(no.cores, outfile = paste0(filenamebase, filename, filenamesuffix, "_multicoreABNmaxpar.log"))
+    parallel::makeCluster(no.cores,
+                          outfile = paste0(filenamebase, filename, filenamesuffix, "_multicoreABNmaxpar.log"),
+                          type = CLTYPE)
   doParallel::registerDoParallel(cl = clust)
   net.scores <- foreach(
     i = 1:novars,
@@ -74,16 +78,19 @@ findOptNoParentNodes <- function(df,
       max.parents = max.par,
       method = method,
       group.var = randomeffect,
+      verbose = TRUE,
       control = build.control(catcov.mblogit = catcov.restriction,
                               seed = rngSEED)
     )
 
     dag.mP <- mostProbable(score.cache = mycache,
-                           score = score)
+                           score = score,
+                           verbose = TRUE)
 
     tryCatch({fabn.mP <- fitAbn(object = dag.mP,
                                 method = method,
                                 group.var = randomeffect,
+                                verbose = TRUE,
                                 control = fit.control(catcov.mblogit = catcov.restriction,
                                                       seed = rngSEED))},
              error = function(e){NULL})
@@ -209,6 +216,7 @@ abnwithmaxparents <-
       max.parents = max.par,
       method = method,
       group.var = randomeffect,
+      verbose = TRUE,
       control = build.control(catcov.mblogit = catcov.restriction,
                               seed = rngSEED)
     )
@@ -218,6 +226,7 @@ abnwithmaxparents <-
     fabn.maxpar <- fitAbn(object = dag.maxpar,
                           method = method,
                           group.var = randomeffect,
+                          verbose = TRUE,
                           control = fit.control(catcov.mblogit = catcov.restriction,
                                                   seed = rngSEED))
 
@@ -272,6 +281,7 @@ abnwithmaxparents <-
 #' @param filename character specifying the current set of runs.
 #' @param method either "Bayes" or "mle" approach. Details in \code{?abn::buildScoreCache()}.
 #' @param no.cores integer of number of cores to parallelise.
+#' @param CLTYPE "FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.
 #' @param score character of score that is used to score the network. Details in \code{?abn::mostprobable()}.
 #' @param mcmcseeds vector of integers who set the seeds in each parallel run. Details in \code{?mcmcabn::mcmcabn()}.
 #' @param mcmcscheme vector of integers with the number of returned DAGs, the number of thinned steps and length of the burn-in phase. Details in \code{?mcmcabn::mcmcabn()}.
@@ -310,6 +320,7 @@ mcmcabn_bnaiar <-
            filename = FILENAME,
            method = METHOD,
            no.cores = n.cores,
+           CLTYPE = "FORK",
            score = SCORE,
            mcmcseeds = MCMC.SEEDS,
            mcmcscheme = MCMC.SCHEME,
@@ -327,7 +338,8 @@ mcmcabn_bnaiar <-
           filename,
           filenamesuffix,
           "_multicoreMCMCABN.log"
-        )
+        ),
+        type = CLTYPE
       )
     doParallel::registerDoParallel(cl = clust)
     mcmc.out.list <- foreach(
@@ -573,6 +585,7 @@ dagswithdiffparentsplt <- function(net.scores.dags,
 #' @param dag.banned a matrix or a formula statement defining which arcs are not permitted - banned. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
 #' @param dag.retained a matrix or a formula statement defining which arcs are must be retained in any model search. Note that colnames and rownames must be set, otherwise same row/column names as data.df will be assumed. If set as NULL an empty matrix is assumed.
 #' @param max.parents a constant or named list giving the maximum number of parents allowed.
+#' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
 #' @param btseeds integer vector with individual seeds for each simulation. Requires one, unique seed for each iteration.
 #' @param verbose print more output.
 #'
@@ -582,6 +595,7 @@ dagswithdiffparentsplt <- function(net.scores.dags,
 #'                      dag.banned = banned51[-10, -10], # all except study_source
 #'                      dag.retained = retain51[-10, -10], # all except study_source
 #'                      max.parents = 4,
+#'                      catcov.restriction = "diagonal",
 #'                      btseeds = c(1:100)*SEED)
 #'
 #' @export
@@ -592,12 +606,13 @@ paramBootAbn <- function(object,
                          dag.banned,
                          dag.retained,
                          max.parents,
+                         catcov.restriction = "diagonal",
                          btseeds,
                          verbose = FALSE){
   ## Prepare inputs
   # check if n.sim and btseeds are valid
-  if(!(is.null(n.sim) || is.integer(n.sim))){
-    if (!(is.null(btseeds) || all(is.integer(btseeds))) && (length(btseeds) == n.sim)){
+  if(!(is.null(n.sim)) & is.integer(n.sim)){
+    if (!(is.null(btseeds)) & all(is.integer(btseeds)) & (length(btseeds) == n.sim)){
       if (verbose) message(paste("btseeds (", btseeds, ") and n.sim (", n.sim, ") are ok."))
     } else {
       stop("btseeds must be a vector of integers with length equal to the value of n.sim.")
@@ -621,13 +636,15 @@ paramBootAbn <- function(object,
   ## Actual bootstrapping
   i <- 1
   while (i <= n.sim) {
+    message(paste("Iteration ", i, "of total ", n.sim, "scheduled iterations. Progress: ", round(i/n.sim, 2)*100, "%."))
     dfsim <- simulateAbn(object = object,
-                         n.iter = as.numeric(nrow(data.df)), # Sample set has equal size as original data
+                         n.iter = as.integer(nrow(data.df)), # Sample set has equal size as original data
                          verbose = verbose,
-                         seed = btseeds[i],
+                         # seed = btseeds[i],
                          run.simulation = TRUE)
 
     buildCache_failed <- FALSE
+    mycache_sim <- NULL
     tryCatch({
       mycache_sim <- buildScoreCache(method="mle",
                                      data.df=dfsim[, names(data.dists)], # reordered to match data.dists
@@ -636,12 +653,17 @@ paramBootAbn <- function(object,
                                      dag.banned = dag.banned,
                                      dag.retained = dag.retained,
                                      max.parents=max.parents,
-                                     verbose = verbose)
+                                     verbose = verbose,
+                                     control = build.control(catcov.mblogit = catcov.restriction,
+                                                             seed = btseeds[i]))
     }, error = function(e) {buildCache_failed <- TRUE})
 
-    if (!buildCache_failed){
+    if (!buildCache_failed & !is.null(mycache_sim)){
       mp.dag_sim <- mostProbable(mycache_sim)
-      myres_sim <- fitAbn(method="mle", object = mp.dag_sim)
+      myres_sim <- fitAbn(method="mle",
+                          object = mp.dag_sim,
+                          control = fit.control(catcov.mblogit = catcov.restriction,
+                                                seed = btseeds[i]))
 
       # append to outputs
       out[[i]] <- list("dfsim" = dfsim,
@@ -653,7 +675,7 @@ paramBootAbn <- function(object,
     } else {
       # do not update iterator but repeat this step
       i <- i
-      if(verbose){message(paste("Simulation no. ", i, "failed and I am repeating it."))}
+      message(paste("Simulation no. ", i, "failed and I am repeating it."))
     }
   }
   return(out)

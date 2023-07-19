@@ -38,17 +38,55 @@ glmm.bic = function(node, parents, data, args) {
   dist = args$dist
   mixed_effect = args$mixed_effect
 
-  if (length(parents) == 0)
+  if (length(parents) == 0){
     # no parent no random effect
     model = as.formula(paste(node, "~ 1 + (1|", mixed_effect, ")"))
-  else
+  } else {
     model = as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+  }
 
   message(paste("\n",deparse1(model), "\n"))
 
   if (dist[[node]] == "gaussian"){
-    # TODO: Proper Error-handling
-    - BIC(lme4::glmer(model, data = data, family = "gaussian")) / 2
+    mod_glmer <- lme4::glmer(model, data = data, family = "gaussian")
+
+    # if mod_glmer is not null
+    if(!is.null(mod_glmer)){
+      # check if mod_glmer is singular and remove rand. effects if so
+      if(lme4::isSingular(mod_glmer)){
+        message(paste("Removing random effects due to singularity."))
+        if (length(parents) == 0){
+          model_nore = as.formula(paste(node, "~ 1"))
+        } else {
+          model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        }
+        message(paste("\n",deparse1(model_nore), "\n"))
+        tryCatch({
+          mod_glm_nore = glm(model_nore, data = data, family = "gaussian")
+        }, error=function(e) NULL)
+
+        # if fixed effect model is not null
+        if (!is.null(mod_glm_nore)){
+          # return BIC of fixed effects model
+          return(-BIC(mod_glm_nore)/2)
+        } else {
+          # return very low score
+          return(-Inf)
+        }
+        # if mod_glmer is not singular and not null, return BIC of mod_glmer
+      } else if (!lme4::isSingular(mod_glmer)){
+        return(-BIC(mod_glmer)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
+      }
+    } else if (is.null(mod_glmer)){
+      # return very low score
+      return(-Inf)
+    } else {
+      warning("unknown status of the model.")
+      return(-Inf)
+    }
 
   } else if (dist[[node]] == "binomial"){
     tryCatch({
@@ -60,7 +98,12 @@ glmm.bic = function(node, parents, data, args) {
       # check if mod_glmer is singular and remove rand. effects if so
       if(lme4::isSingular(mod_glmer)){
         message(paste("Removing random effects due to singularity."))
-        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        if (length(parents) == 0){
+          model_nore = as.formula(paste(node, "~ 1"))
+        } else {
+          model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        }
+        message(paste("\n",deparse1(model_nore), "\n"))
         tryCatch({
           mod_glm_nore = glm(model_nore, data = data, family = "binomial")
         }, error=function(e) NULL)
@@ -76,9 +119,15 @@ glmm.bic = function(node, parents, data, args) {
         # if mod_glmer is not singular and not null, return BIC of mod_glmer
       } else if (!lme4::isSingular(mod_glmer)){
         return(-BIC(mod_glmer)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
       }
     } else if (is.null(mod_glmer)){
       # return very low score
+      return(-Inf)
+    } else {
+      warning("unknown status of the model.")
       return(-Inf)
     }
 
@@ -101,6 +150,7 @@ glmm.bic = function(node, parents, data, args) {
       # check if mod_mblogit is singular and remove rand. effects if so
       if(mod_mblogit$converged == FALSE){
         message(paste("Removing random effects due to singularity/non-convergence."))
+        message(paste("\n",deparse1(model_basic), "\n"))
         tryCatch({
           model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
         }, error=function(e) NULL)
@@ -116,9 +166,17 @@ glmm.bic = function(node, parents, data, args) {
       } else if(mod_mblogit$converged == TRUE){
         # if not null and did converged, return BIC of mixed effects model
         return(-BIC(mod_mblogit)/2)
+      } else {
+        warning("unknown status of the model.")
+        return(-Inf)
       }
     } else if(is.null(mod_mblogit)){
       return(-Inf) # return a very low score
+    } else {
+      warning("unknown status of the model.")
+      return(-Inf)
     }
+  } else {
+    stop("unknown distribution type.")
   }
 }#GLMM.BIC
