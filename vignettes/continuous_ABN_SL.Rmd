@@ -592,17 +592,17 @@ abnwithmaxpar45 <-
 
 ## parametric bootstrapping
 ```{r}
+# DEBUG <- TRUE
+# load("../230707_workspace_continuous_ABN_SL_runToEnd.RData")
 dags <- paramBootAbn(object = abnwithmaxpar45$fabn.maxpar, 
                      n.sim = as.integer(RETURN.DAGS), 
                      dag.banned = abnwithmaxpar45$banned,
                      dag.retained = abnwithmaxpar45$retain,
                      btseeds = as.integer(c(1:as.integer(RETURN.DAGS))*(SEED/12345)),
                      max.parents = abnwithmaxpar45$max.par,
+                     filenamesuffix = "4.5",
+                     no.cores = 2,
                      verbose = FALSE)
-                     # dag.banned = banned51[-10, -10], # all except study_source
-                     # dag.retained = retain51[-10, -10], # all except study_source
-                     # max.parents = 4,
-                     # btseeds = c(1:100)*SEED)
 ```
 
 

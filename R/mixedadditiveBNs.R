@@ -587,6 +587,11 @@ dagswithdiffparentsplt <- function(net.scores.dags,
 #' @param max.parents a constant or named list giving the maximum number of parents allowed.
 #' @param catcov.restriction Passed on to \code{mclogit::mblogit} \code{CatCov} argument.
 #' @param btseeds integer vector with individual seeds for each simulation. Requires one, unique seed for each iteration.
+#' @param filenamesuffix character specifying the current run (e.g. experiment number).
+#' @param filenamebase character of path to location where results should be stored.
+#' @param filename character specifying the current set of runs.
+#' @param no.cores integer of number of cores to parallelise.
+#' @param CLTYPE "FORK" (default) or "PSOCK" if on windows. The later can cause memory issues.
 #' @param verbose print more output.
 #'
 #' @examples
@@ -596,7 +601,8 @@ dagswithdiffparentsplt <- function(net.scores.dags,
 #'                      dag.retained = retain51[-10, -10], # all except study_source
 #'                      max.parents = 4,
 #'                      catcov.restriction = "diagonal",
-#'                      btseeds = c(1:100)*SEED)
+#'                      btseeds = c(1:100)*SEED,
+#'                      filenamesuffix = "4.5")
 #'
 #' @export
 #'
@@ -608,6 +614,11 @@ paramBootAbn <- function(object,
                          max.parents,
                          catcov.restriction = "diagonal",
                          btseeds,
+                         filenamesuffix,
+                         filenamebase = FILENAMEbase,
+                         filename = FILENAME,
+                         no.cores = n.cores,
+                         CLTYPE = "FORK",
                          verbose = FALSE){
   ## Prepare inputs
   # check if n.sim and btseeds are valid
@@ -630,55 +641,109 @@ paramBootAbn <- function(object,
     group.ids <- object$abnDag$group.ids
   }
 
-  ## Prepare output collection
-  out <- list()
-
   ## Actual bootstrapping
-  i <- 1
-  while (i <= n.sim) {
-    message(paste("Iteration ", i, "of total ", n.sim, "scheduled iterations. Progress: ", round(i/n.sim, 2)*100, "%."))
+  cat("\nStart bootstrapping with abn()...")
+  starttime <- Sys.time()
+  if (no.cores >1){
+    clust <-parallel::makeCluster(no.cores,
+                                  outfile = paste0(
+                                    filenamebase,
+                                    filename,
+                                    filenamesuffix,
+                                    "_multicoreParamBootABN.log"
+                                  ),
+                                  type = CLTYPE)
+    doParallel::registerDoParallel(cl = clust)
+
+    out <- foreach(i = 1:n.sim,
+                   .packages = c("abn", "bnaiaR"),
+                   .export = "paramBootAbn_backend",
+                   .inorder = TRUE) %dopar% {
+      paramBootAbn_backend(i = i,
+                           object = object,
+                           data.df = data.df,
+                           data.dists = data.dists,
+                           dag.banned = dag.banned,
+                           dag.retained = dag.retained,
+                           max.parents = max.parents,
+                           catcov.restriction = catcov.restriction,
+                           btseeds = btseeds,
+                           verbose = verbose)
+    }
+    stopCluster(clust)
+  } else if (no.cores == 1){
+    out <- foreach(i = 1:n.sim,
+                   .packages = c("abn", "bnaiaR"),
+                   .export = "paramBootAbn_backend",
+                   .inorder = TRUE) %do% {
+      paramBootAbn_backend(i = i,
+                           object = object,
+                           data.df = data.df,
+                           data.dists = data.dists,
+                           dag.banned = dag.banned,
+                           dag.retained = dag.retained,
+                           max.parents = max.parents,
+                           catcov.restriction = catcov.restriction,
+                           btseeds = btseeds,
+                           verbose = verbose)
+    }
+  }
+  endtime <- Sys.time()
+  cat(paste("\nEnd Parametric Bootstrapping with ABN. Time used [h]:", round(
+    difftime(endtime, starttime, units = "hours"), 2
+  )))
+  return(out)
+}
+
+paramBootAbn_backend <- function(i,
+                                 object,
+                                 data.df,
+                                 data.dists,
+                                 dag.banned,
+                                 dag.retained,
+                                 max.parents,
+                                 catcov.restriction,
+                                 btseeds,
+                                 verbose){
+  buildCache_succeed <- FALSE
+  while(!buildCache_succeed){
     dfsim <- simulateAbn(object = object,
                          n.iter = as.integer(nrow(data.df)), # Sample set has equal size as original data
                          verbose = verbose,
-                         # seed = btseeds[i],
+                         # seed = btseeds[i], # no seed here to have variable data. i.e. When buildScoreChache fails with the sampled data, use different data in the repeat of the simulation.
                          run.simulation = TRUE)
 
-    buildCache_failed <- FALSE
     mycache_sim <- NULL
     tryCatch({
       mycache_sim <- buildScoreCache(method="mle",
                                      data.df=dfsim[, names(data.dists)], # reordered to match data.dists
                                      data.dists=data.dists, # all except study_source
-                                     # group.var="study_source",
+                                     # group.var="study_source", # We don't have grouping from the simulated data set.
                                      dag.banned = dag.banned,
                                      dag.retained = dag.retained,
                                      max.parents=max.parents,
                                      verbose = verbose,
                                      control = build.control(catcov.mblogit = catcov.restriction,
                                                              seed = btseeds[i]))
-    }, error = function(e) {buildCache_failed <- TRUE})
+    }, error = function(e) {buildCache_succeed <- FALSE})
 
-    if (!buildCache_failed & !is.null(mycache_sim)){
+    if (!is.null(mycache_sim)){
       mp.dag_sim <- mostProbable(mycache_sim)
       myres_sim <- fitAbn(method="mle",
                           object = mp.dag_sim,
                           control = fit.control(catcov.mblogit = catcov.restriction,
                                                 seed = btseeds[i]))
 
-      # append to outputs
-      out[[i]] <- list("dfsim" = dfsim,
-                       "cache_sim" = mycache_sim,
-                       "mpdag_sim" = mp.dag_sim,
-                       "fit_sim" = myres_sim)
-      # increase iterator
-      i <- i+1
+      # return to outputs
+      buildCache_succeed <- TRUE
+      return(list("dfsim" = dfsim,
+                  "cache_sim" = mycache_sim,
+                  "mpdag_sim" = mp.dag_sim,
+                  "fit_sim" = myres_sim))
     } else {
-      # do not update iterator but repeat this step
-      i <- i
       message(paste("Simulation no. ", i, "failed and I am repeating it."))
     }
-  }
-  return(out)
+  }#EOWHILE
 }
 
 #' Consensus Model
