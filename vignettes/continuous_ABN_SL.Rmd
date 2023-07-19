@@ -601,7 +601,7 @@ dags <- paramBootAbn(object = abnwithmaxpar45$fabn.maxpar,
                      btseeds = as.integer(c(1:as.integer(RETURN.DAGS))*(SEED/12345)),
                      max.parents = abnwithmaxpar45$max.par,
                      filenamesuffix = "4.5",
-                     no.cores = 2,
+                     no.cores = n.cores,
                      verbose = FALSE)
 ```
 
@@ -622,5 +622,13 @@ consfit <- fitAbn(dag = consDAGlist[["consDAG"]],
                                         seed = SEED))
 plot(consfit)
 print(consfit)
+```
+
+```{r}
+# Save paramBootAbn data
+save(list = list("dags" = dags,
+                 "consDAGlist" = consDAGlist,
+                 "consfit" = consfit),
+     file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbn.RData"))
 ```
 
