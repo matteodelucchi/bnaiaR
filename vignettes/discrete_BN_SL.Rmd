@@ -22,9 +22,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r development, eval=FALSE, include=FALSE}
+```{r development, echo=TRUE}
 # devtools::document()
-# devtools::load_all()
+devtools::load_all()
 # renv::snapshot(prompt = F)
 ```
 
@@ -47,7 +47,7 @@ PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 
-cores <- 60 
+cores <- 25 
 CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
 ```
 
@@ -198,7 +198,7 @@ str(data.dbn.nostudy)
 print(bl.dbn.nostudy)
 ```
 
-```{r learn_with_aic, warning=FALSE}
+```{r learn_with_aic_nostudysource, warning=FALSE}
 cl = makeCluster(cores, 
                  type = CLTYPE)
 
@@ -252,7 +252,7 @@ if (SAVEPLOTS) {
 
 
 
-```{r learn_with_bic, warning=FALSE}
+```{r learn_with_bic_nostudysource, warning=FALSE}
 bb = boot.strength(data.dbn.nostudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -322,7 +322,7 @@ print(bl.dbn.nostudy)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
+```{r learn_with_aic_per_studysource, warning=FALSE}
 cl = parallel::makeCluster(cores/7, 
                            type = CLTYPE)
 bb_studies_aic <- list()
@@ -363,7 +363,7 @@ bb_studies <- list("aic" = bb_studies_aic, "bic" = bb_studies_bic)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
+```{r print_aic_per_studysource, warning=FALSE}
 avg_studies = list()
 # print all AIC BNs
 for (score in names(bb_studies)){
@@ -393,7 +393,7 @@ for (score in names(bb_studies)){
 }
 ```
 
-```{r compare_plot_aic, warning=FALSE}
+```{r compare_plot_aic_per_studysource, warning=FALSE}
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_aic_compareplt", ".")
   if (PLOTFORMAT == "svg") {
@@ -442,7 +442,7 @@ dev.off()
 ```
 
 
-```{r compare_plot_bic, warning=FALSE}
+```{r compare_plot_bic_per_studysource, warning=FALSE}
 if (SAVEPLOTS) {
   FILE <- paste0(PLOTPATH, "/", "discrete_BN_SL_per_studysource_bic_compareplt", ".")
   if (PLOTFORMAT == "svg") {
@@ -510,7 +510,7 @@ print(wl.dbn.allstudy)
 ```
 
 
-```{r learn_with_aic, warning=FALSE}
+```{r learn_with_aic_studysourceASparent, warning=FALSE}
 cl = makeCluster(cores, 
                  type = CLTYPE)
 
@@ -566,7 +566,7 @@ if (SAVEPLOTS) {
 
 
 
-```{r learn_with_bic, warning=FALSE}
+```{r learn_with_bic_studysourceASparent, warning=FALSE}
 bb = boot.strength(data.dbn.allstudy, 
                    algorithm = "tabu", 
                    R = 500,
@@ -768,7 +768,7 @@ cl = makeCluster(cores,
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r SL additive discrete BN w/ mixed effects}
 stime <- Sys.time()
 # peakRAM::peakRAM(
   bb = boot.strength(data.dbn.additive, 
@@ -791,7 +791,7 @@ stopCluster(cl)
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r plots additive discrete BN w/ mixed effects}
 avg = averaged.network(bb)
 
 if (SAVEPLOTS) {
@@ -848,7 +848,7 @@ cl = makeCluster(cores,
 ```
 
 
-```{r additive discrete BN w/ mixed effects size-loc restricted}
+```{r SL additive discrete BN w/ mixed effects size-loc restricted}
 stime <- Sys.time()
 
 bb = boot.strength(data.dbn.additive, 
@@ -869,7 +869,7 @@ print(paste("Running time: ", running_time))
 ```
 
 
-```{r additive discrete BN w/ mixed effects}
+```{r plots additive discrete BN w/ mixed effects size-loc restricted}
 avg = averaged.network(bb)
 
 if (SAVEPLOTS) {
