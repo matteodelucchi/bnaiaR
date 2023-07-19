@@ -1,0 +1,581 @@
+## ---- include = FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+
+## ----setup------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+rm(list = ls())
+
+library(dplyr)
+library(tidyr)
+library(foreach)
+library(doParallel)
+library(abn)
+library(mcmcabn)
+library(bnaiaR)
+library(ggplot2)
+
+
+## ----parameters-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DEBUG <- FALSE
+EXPNO <- "ABNmultinomial"
+FILENAME <- paste0("/exp", EXPNO)
+FILENAMEbase <- Sys.getenv("PLOTPATH")
+
+METHOD <- "mle"
+SCORE <- "bic"
+if (DEBUG) {
+  RETURN.DAGS <- 2
+} else {
+  RETURN.DAGS <- 100000
+}
+THINNING <- 0
+BURNIN.LEN <- 0
+# MCMC.SCHEME <- c(RETURN.DAGS, THINNING, BURNIN.LEN)
+MCMC.SCHEME <-
+  c(RETURN.DAGS + BURNIN.LEN, 0, 0) # speed up computation if post-processed. Meaning: c(RETURN.DAGS, THINNING, BURNIN.LEN)
+SEED <- 123456789L
+MCMC.SEEDS <- c(560505, 921213, 352629, 23146)
+PROB.REV = 0.03 # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
+PROB.MBR = 0 # Turning off MBR due to error: Error in { : task 1 failed - "object 'new.parent.j' not found"
+# PROB.MBR = 0.03
+MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
+
+THRESHOLD <- 0.5 # arcstrength
+
+
+## ----settings---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#create and register cluster
+if (amilocal()) {
+  n.cores <- parallel::detectCores() - 1 # local
+} else{
+  n.cores <- 25L # on HPC
+}
+CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
+set.seed(SEED)
+
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# data("exp4_dat")
+# df4 <- exp4_dat$abndata
+# str(df4)
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# # check for outliers in continuous vars
+# d <- df4 %>%
+#   mutate(ID = seq(1,nrow(df4)))%>%
+#   reshape2::melt(id.vars=c("ID"),
+#                  measure.vars=c("age_diag", "IAsize_diag_log"))
+#
+# p.outliers <- ggplot(d, aes(x=value))+
+#   facet_wrap(~variable, scales = "free")+
+#   geom_boxplot(notch = TRUE) +
+#   coord_flip() +
+#   theme_bw() +
+#   ggtitle("Raw multinomial mixed data",
+#           subtitle = "Outliers in continuous variables")
+# p.outliers
+# ggsave(path = FILENAMEbase, filename = paste0(FILENAME, "_contvars_dist_raw.png"),
+#        p.outliers)
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# df4 <- df4 %>%
+#   filter(positive_famillial_history != "probably") %>%
+#   mutate(positive_famillial_history = factor(positive_famillial_history))
+#
+# str(df4)
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# df41 <- df4
+# str(df41)
+# (banned41 <- exp4_dat$banned)
+# (retain41 <- exp4_dat$retain)
+# (dist41 <- exp4_dat$dist)
+#
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# optnoparents41 <-
+#   findOptNoParentNodes(
+#     df = df41,
+#     dist = dist41,
+#     banned = banned41,
+#     retain = retain41,
+#     filenamesuffix = "4.1"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# abnwithmaxpar41 <-
+#   abnwithmaxparents(
+#     net.scores = optnoparents41$net.scores,
+#     df = df41,
+#     dist = dist41,
+#     banned = banned41,
+#     retain = retain41,
+#     filenamesuffix = "4.1"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# mcmcabn41 <-
+#   mcmcabn_bnaiar(
+#     mycache.maxpar = abnwithmaxpar41$mycache.maxpar,
+#     max.par = abnwithmaxpar41$max.par,
+#     dag.maxpar = abnwithmaxpar41$dag.maxpar,
+#     fabn.maxpar = abnwithmaxpar41$fabn.maxpar,
+#     df = df41,
+#     dist = dist41,
+#     banned = banned41,
+#     retain = retain41,
+#     filenamesuffix = "4.1"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# df42 <- df4 %>%
+#   # remove study_source
+#   select(-study_source)
+#
+# # remove study_source from bl and wl and dist
+# banned42 <- exp4_dat$banned[-10,-10]
+# banned42
+#
+# retain42 <- exp4_dat$retain[-10,-10]
+# retain42
+#
+# dist42 <- exp4_dat$dist[-10]
+# dist42
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# optnoparents42 <-
+#   findOptNoParentNodes(
+#     df = df42,
+#     dist = dist42,
+#     banned = banned42,
+#     retain = retain42,
+#     filenamesuffix = "4.2"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# abnwithmaxpar42 <-
+#   abnwithmaxparents(
+#     net.scores = optnoparents42$net.scores,
+#     df = df42,
+#     dist = dist42,
+#     banned = banned42,
+#     retain = retain42,
+#     filenamesuffix = "4.2"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# mcmcabn42 <-
+#   mcmcabn_bnaiar(
+#     mycache.maxpar = abnwithmaxpar42$mycache.maxpar,
+#     max.par = abnwithmaxpar42$max.par,
+#     dag.maxpar = abnwithmaxpar42$dag.maxpar,
+#     fabn.maxpar = abnwithmaxpar42$fabn.maxpar,
+#     df = df42,
+#     dist = dist42,
+#     banned = banned42,
+#     retain = retain42,
+#     filenamesuffix = "4.2"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# df43 <- df4
+#
+# # remove study_source from bl and wl and dist
+# # Remains the same for each study_source
+# (banned43 <- exp4_dat$banned[-10,-10])
+#
+# (retain43 <- exp4_dat$retain[-10,-10])
+#
+# (dist43 <- exp4_dat$dist[-10])
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# fixfactorlevels <- function(df, dist) {
+#   for (col in colnames(df)) {
+#     if (is.factor(df[[col]])) {
+#       # if(length(unique(df43_group[[col]])) != length(levels(df43_group[[col]]))){
+#       if (!(all(levels(df[[col]]) %in% unique(df[[col]])))) {
+#         # print(unique(df[[col]]))
+#         # print(levels(df[[col]]))
+#
+#         for (lev in levels(df[[col]])) {
+#           if (!(lev %in% unique(df[[col]]))) {
+#             # print(lev)
+#             df[[col]] <- factor(df[[col]])
+#
+#             if (length(levels(df[[col]])) == 2) {
+#               dist[[col]] <- "binomial"
+#               return(list(df, dist))
+#             } else if (length(levels(df[[col]])) > 2) {
+#               dist[[col]] <- "multinomial"
+#               return(list(df, dist))
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+#   # return(NULL)
+# }
+# # str(fixfactorlevels(df43_group, dist43))
+#
+#
+# ## ----eval=FALSE, include=FALSE----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# #> for (study in unique(df43$study_source)) {
+# #>   message(paste("\nProcessing ", study))
+# #>
+# #>   filesuf <- paste0("4.3.", study)
+# #>
+# #>   # Prepare data
+# #>   df43_group <- df43  %>%
+# #>   # filter(IAlocation_group != "low") %>%
+# #>   # mutate(IAlocation_group = factor(IAlocation_group)) %>%
+# #>     # filter for cases of current study
+# #>     filter(study_source == study) %>%
+# #>     # remove study_source variable
+# #>     select(-study_source)
+# #>
+# #>   temp <- fixfactorlevels(df43_group, dist43)
+# #>
+# #>   if(!is.null(temp)){
+# #>       df43_group <- temp[[1]]
+# #>       dist43_group <- temp[[2]]
+# #>   } else {
+# #>       df43_group <- df43_group
+# #>       dist43_group <- dist43
+# #>   }
+# #>
+# #>   # str(df43_group)
+# #>   # str(dist43_group)
+# #>
+# #>   # Structure Learning
+# #>   optnoparents <-
+# #>     findOptNoParentNodes(
+# #>       df = df43_group,
+# #>       dist = dist43_group,
+# #>       banned = banned43,
+# #>       retain = retain43,
+# #>       filenamesuffix = filesuf
+# #>     )
+# #>
+# #>   abnwithmaxpar <-
+# #>     abnwithmaxparents(
+# #>       net.scores = optnoparents$net.scores,
+# #>       df = df43_group,
+# #>       dist = dist43_group,
+# #>       banned = banned43,
+# #>       retain = retain43,
+# #>       filenamesuffix = filesuf
+# #>     )
+# #>
+# #>   mcmcabn <-
+# #>     mcmcabn_bnaiar(
+# #>       mycache.maxpar = abnwithmaxpar$mycache.maxpar,
+# #>       max.par = abnwithmaxpar$max.par,
+# #>       dag.maxpar = abnwithmaxpar$dag.maxpar,
+# #>       fabn.maxpar = abnwithmaxpar$fabn.maxpar,
+# #>       df = df43_group,
+# #>       dist = dist43_group,
+# #>       banned = banned43,
+# #>       retain = retain43,
+# #>       filenamesuffix = filesuf
+# #>     )
+# #> }
+#
+#
+# ## ----MRE UCL Error, eval=FALSE, include=FALSE-------------------------------------------------------------------------------------------------------------------------------------------------------------
+# #> # Prepare data
+# #> df43_group <- df43 %>%
+# #>   # filter(IAlocation_group != "low") %>%
+# #>   # mutate(IAlocation_group = factor(IAlocation_group)) %>%
+# #>   # filter for cases of current study
+# #>   filter(study_source == "ucl") %>%
+# #>   # remove study_source variable
+# #>   select(-study_source)
+# #>
+# #> # mutate(across(is.factor, as.integer)) %>%
+# #> # mutate(across(is.integer, as.factor))
+# #> str(df43_group)
+# #> summarytools::dfSummary(df43_group)
+# #>
+# #> dist43[["IAlocation_group"]] <- "binomial"
+# #>
+# #> novars <- ncol(df43_group)
+# #> tmpscores <- vector(length = novars)
+# #> net.scores <-
+# #>   data.frame(npar = NULL,
+# #>              scoretype = NULL,
+# #>              scorevalue = NULL)
+# #>
+# #> clust <-
+# #>   parallel::makeCluster(
+# #>     n.cores,
+# #>     outfile = paste0(
+# #>       FILENAMEbase,
+# #>       FILENAME,
+# #>       "4.3_UCL",
+# #>       "_multicoreABNmaxpar.log"
+# #>     ),
+# #>     type = CLTYPE
+# #>   )
+# #> doParallel::registerDoParallel(cl = clust)
+# #> net.scores <- foreach(
+# #>   i = 1:novars,
+# #>   # i = novars,
+# #>   .combine = 'rbind',
+# #>   .packages = c("abn", "mcmcabn"),
+# #>   .inorder = TRUE
+# #>   # ) %dopar% {
+# #> ) %do% {
+# #>   max.par <- i
+# #>   mycache <- buildScoreCache(
+# #>     data.df = as.data.frame(df43_group),
+# #>     data.dists = dist43,
+# #>     dag.banned = banned43,
+# #>     dag.retained = retain43,
+# #>     max.parents = max.par,
+# #>     method = METHOD
+# #>   )
+# #>
+# #>   dag.mP <- mostProbable(score.cache = mycache,
+# #>                          score = SCORE)
+# #>
+# #>   tryCatch({
+# #>     fabn.mP <- fitAbn(object = dag.mP,
+# #>                       method = METHOD)
+# #>   },
+# #>   error = function(e) {
+# #>     NULL
+# #>   })
+# #>
+# #>   if (!exists("fabn.mP")) {
+# #>     fabn.mP <- list("bic" = NA)
+# #>   }
+# #>   # browser()
+# #>
+# #>   return(list(i = list(dag.mP, c(i, SCORE, fabn.mP[[SCORE]]))))
+# #>
+# #>   cat(paste("\nnetwork score for", i, "parents =", fabn.mP[[SCORE]], "\n\n"))
+# #> }
+# #> stopCluster(clust)
+# #>
+# #>
+# #>
+# #>
+# #> net.scores.dags.prelim <- unlist(net.scores, recursive = F)
+# #> net.scores.dags <-
+# #>   net.scores.dags.prelim[seq(1, length(net.scores.dags.prelim), 2)]
+# #> net.scores <-
+# #>   net.scores.dags.prelim[seq(2, length(net.scores.dags.prelim), 2)]
+# #>
+# #> # format net.scores
+# #> net.scores <-
+# #>   data.frame(
+# #>     npar = unlist(net.scores)[seq(1, length(unlist(net.scores)), 3)],
+# #>     scoretype = unlist(net.scores)[seq(2, length(unlist(net.scores)), 3)],
+# #>     scorevalue = unlist(net.scores)[seq(3, length(unlist(net.scores)), 3)]
+# #>   )
+# #> rownames(net.scores) <- NULL
+# #> net.scores[, 1] <- as.integer(net.scores[, 1])
+# #> net.scores[, 3] <- as.numeric(net.scores[, 3])
+# #>
+# #> for (i in 1:nrow(net.scores)) {
+# #>   if (net.scores$scoretype[i] == "bic") {
+# #>     net.scores$scorevalue[i] <- -net.scores$scorevalue[i]
+# #>   }
+# #> }
+# #> net.scores
+# #>
+# #> net.scores[,3] <- seq(1,8)
+# #>
+# #> abnwithmaxpar <-
+# #>   abnwithmaxparents(
+# #>     net.scores = net.scores,
+# #>     df = df43_group,
+# #>     dist = dist43,
+# #>     banned = banned43,
+# #>     retain = retain43,
+# #>     filenamesuffix = filesuf
+# #>   )
+# #>
+# #> mcmcabn <-
+# #>   mcmcabn_bnaiar(
+# #>     mycache.maxpar = abnwithmaxpar$mycache.maxpar,
+# #>     max.par = abnwithmaxpar$max.par,
+# #>     dag.maxpar = abnwithmaxpar$dag.maxpar,
+# #>     fabn.maxpar = abnwithmaxpar$fabn.maxpar,
+# #>     df = df43_group,
+# #>     dist = dist43,
+# #>     banned = banned43,
+# #>     retain = retain43,
+# #>     filenamesuffix = filesuf
+# #>   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# data("exp44_dat")
+#
+# df44 <- exp44_dat$abndata %>%
+#   filter(positive_famillial_history != "probably") %>%
+#   mutate(positive_famillial_history = factor(positive_famillial_history))
+#
+# str(df44)
+# (banned44 <- exp44_dat$banned)
+# (retain44 <- exp44_dat$retain)
+# (dist44 <- exp44_dat$dist)
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# optnoparents44 <-
+#   findOptNoParentNodes(
+#     df = df44,
+#     dist = dist44,
+#     banned = banned44,
+#     retain = retain44,
+#     filenamesuffix = "4.4"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# abnwithmaxpar44 <-
+#   abnwithmaxparents(
+#     net.scores = optnoparents44$net.scores,
+#     df = df44,
+#     dist = dist44,
+#     banned = banned44,
+#     retain = retain44,
+#     filenamesuffix = "4.4"
+#   )
+#
+#
+# ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# mcmcabn44 <-
+#   mcmcabn_bnaiar(
+#     mycache.maxpar = abnwithmaxpar44$mycache.maxpar,
+#     max.par = abnwithmaxpar44$max.par,
+#     dag.maxpar = abnwithmaxpar44$dag.maxpar,
+#     fabn.maxpar = abnwithmaxpar44$fabn.maxpar,
+#     df = df44,
+#     dist = dist44,
+#     banned = banned44,
+#     retain = retain44,
+#     filenamesuffix = "4.4",
+#     prob.rev = 0
+#   )
+#
+#
+# ## ----MRE, eval=FALSE, include=FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# #> mcmcabn(
+# #>         score.cache = abnwithmaxpar44$mycache.maxpar,
+# #>         score = SCORE,
+# #>         data.dists = dist44,
+# #>         max.parents = abnwithmaxpar44$max.par,
+# #>         mcmc.scheme = MCMC.SCHEME,
+# #>         seed = MCMC.SEEDS,
+# #>         verbose = TRUE,
+# #>         start.dag = abnwithmaxpar44$dag.maxpar$dag,
+# #>         # prob.rev = PROB.REV,
+# #>         prob.rev = 0,
+# #>         # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
+# #>         prob.mbr = PROB.MBR,
+# #>         prior.choice = MCMC.PRIOR
+# #>       ) # Koivisto prior
+#
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+data("exp44_dat")
+
+df45 <- exp44_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+
+str(df45)
+(banned45 <- exp44_dat$banned)
+(retain45 <- exp44_dat$retain)
+(dist45 <- exp44_dat$dist)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+optnoparents45 <-
+  findOptNoParentNodes(
+    df = df45,
+    dist = dist45[-10], # all except study_source
+    randomeffect = "study_source",
+    banned = banned45[-10, -10], # all except study_source
+    retain = retain45[-10, -10], # all except study_source
+    filenamesuffix = "4.5",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+abnwithmaxpar45 <-
+  abnwithmaxparents(
+    net.scores = optnoparents45$net.scores,
+    df = df45,
+    dist = dist45[-10], # all except study_source
+    randomeffect = "study_source",
+    banned = banned45[-10, -10], # all except study_source
+    retain = retain45[-10, -10], # all except study_source
+    filenamesuffix = "4.5",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# DEBUG <- TRUE
+# load("../230707_workspace_continuous_ABN_SL_runToEnd.RData")
+dags <- paramBootAbn(object = abnwithmaxpar45$fabn.maxpar,
+                     n.sim = as.integer(RETURN.DAGS),
+                     dag.banned = abnwithmaxpar45$banned,
+                     dag.retained = abnwithmaxpar45$retain,
+                     btseeds = as.integer(c(1:as.integer(RETURN.DAGS))*(SEED/12345)),
+                     max.parents = abnwithmaxpar45$max.par,
+                     filenamesuffix = "4.5",
+                     no.cores = n.cores,
+                     verbose = FALSE)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+consDAGlist <- consensusDAG(object = dags,
+                             consensusMethod = "signEdges")
+plotAbn(consDAGlist[["consDAG"]], data.dists = dags[[1]][["fit_sim"]][["abnDag"]][["data.dists"]])
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+consfit <- fitAbn(dag = consDAGlist[["consDAG"]],
+                  data.dists = dist45[-10],
+                  data.df = df45,
+                  method = METHOD,
+                  group.var = "study_source",
+                  control = fit.control(catcov.mblogit = "diagonal",
+                                        seed = SEED))
+plot(consfit)
+print(consfit)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Save paramBootAbn data
+save(list = list("dags" = dags,
+                 "consDAGlist" = consDAGlist,
+                 "consfit" = consfit),
+     file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbn.RData"))
+
