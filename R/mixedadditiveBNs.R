@@ -669,6 +669,7 @@ paramBootAbn <- function(object,
                            catcov.restriction = catcov.restriction,
                            btseeds = btseeds,
                            verbose = verbose)
+                     gc()
     }
     stopCluster(clust)
   } else if (no.cores == 1){
@@ -686,6 +687,7 @@ paramBootAbn <- function(object,
                            catcov.restriction = catcov.restriction,
                            btseeds = btseeds,
                            verbose = verbose)
+                     gc()
     }
   }
   endtime <- Sys.time()
