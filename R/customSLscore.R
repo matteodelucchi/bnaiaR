@@ -55,7 +55,12 @@ glmm.bic = function(node, parents, data, args) {
       # check if mod_glmer is singular and remove rand. effects if so
       if(lme4::isSingular(mod_glmer)){
         message(paste("Removing random effects due to singularity."))
-        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        if (length(parents) == 0){
+          model_nore = as.formula(paste(node, "~ 1"))
+        } else {
+          model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        }
+        message(paste("\n",deparse1(model_nore), "\n"))
         tryCatch({
           mod_glm_nore = glm(model_nore, data = data, family = "gaussian")
         }, error=function(e) NULL)
@@ -93,7 +98,12 @@ glmm.bic = function(node, parents, data, args) {
       # check if mod_glmer is singular and remove rand. effects if so
       if(lme4::isSingular(mod_glmer)){
         message(paste("Removing random effects due to singularity."))
-        model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        if (length(parents) == 0){
+          model_nore = as.formula(paste(node, "~ 1"))
+        } else {
+          model_nore = as.formula(paste(node, "~", paste(parents, collapse = "+")))
+        }
+        message(paste("\n",deparse1(model_nore), "\n"))
         tryCatch({
           mod_glm_nore = glm(model_nore, data = data, family = "binomial")
         }, error=function(e) NULL)
@@ -140,6 +150,7 @@ glmm.bic = function(node, parents, data, args) {
       # check if mod_mblogit is singular and remove rand. effects if so
       if(mod_mblogit$converged == FALSE){
         message(paste("Removing random effects due to singularity/non-convergence."))
+        message(paste("\n",deparse1(model_basic), "\n"))
         tryCatch({
           model_nnet_nore = nnet::multinom(formula = model_basic, data = data)
         }, error=function(e) NULL)
