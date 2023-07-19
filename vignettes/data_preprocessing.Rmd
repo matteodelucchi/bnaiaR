@@ -40,6 +40,7 @@ library(ggplot2)
 library(lubridate)
 library(RMariaDB)
 library(forcats)
+library(magrittr)
 
 # Save plots as files? 
 # Warning: Bad layout with knitr. Works well if chunks are run without rendering.
@@ -83,7 +84,8 @@ plt <- adbisgc_tmp %>%
   
   t() %>%
   as.data.frame() %>%
-  mutate(names = rownames(.)) %>%
+  mutate(names = rownames(.)) %T>%
+  {data.frame(no_na = .$V1, name = .$names) ->> na_overview} %>%
 
   ggplot()+
   aes(y=V1, x=names)+
@@ -94,6 +96,9 @@ plt <- adbisgc_tmp %>%
   theme_bw()+
   coord_flip() 
 
+na_overview <- na_overview %>%
+  mutate(rel_no_na = round(no_na/nrow(adbisgc_tmp), 3))
+
 if (SAVEPLOTS) {
   ggsave(
     plot = plt,
@@ -101,11 +106,35 @@ if (SAVEPLOTS) {
     path = PLOTPATH,
     dpi = 300
   )
+  print(na_overview)
 } else {
-  plt
+  plot(plt)
+  print(na_overview)
 }
 ```
 
+### Which Study-center collected smoking in what level?
+```{r}
+adbisgc_tmp %>%
+  select(c(source, smoking_current_former_no, smoking_current_notcurrent)) %>%
+  group_by(source) %>%
+  count(smoking_current_former_no, smoking_current_notcurrent)
+```
+
+### Which Study-center collected IA number?
+```{r}
+adbisgc_tmp %>%
+  select(c(source, number_of_IAs, multipleIAs)) %>%
+  group_by(source) %>%
+  count(number_of_IAs, multipleIAs)
+```
+
+### Which Study-center collected IA size?
+```{r}
+adbisgc_tmp %>%
+  group_by(source) %>%
+  count(round(IAsize_at_diag))
+```
 
 ## Rename Variables
 
@@ -518,3 +547,4 @@ write.csv(adbisgc_ohe,
 # usethis::use_data(adbisgc_ohe, overwrite = TRUE)
 # devtools::document()
 ```
+

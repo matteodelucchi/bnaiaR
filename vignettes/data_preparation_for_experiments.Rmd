@@ -107,6 +107,30 @@ summarytools::dfSummary(df_bnaiar_compl)
 # usethis::use_data(df_bnaiar_compl, overwrite = TRUE)
 ```
 
+### How many former smoker are among "non-smoker"?
+```{r}
+smokid <- df_bnaiar_compl %>%
+  filter(smoking_current_notcurrent == "not_current") %>%
+  select(ID_1) 
+
+adbisgc_reg %>%
+  filter(ID_1 %in% smokid$ID_1) %>% 
+  select(smoking_current_former_no) %>% 
+  table(useNA = "always")
+```
+
+### How many former smoker are among "non-smoker"?
+```{r}
+smokid <- df_bnaiar_compl %>%
+  filter(smoking_current_notcurrent == "not_current") %>%
+  select(ID_1) 
+
+adbisgc_reg %>%
+  filter(ID_1 %in% smokid$ID_1) %>% 
+  select(smoking_current_former_no) %>% 
+  table(useNA = "always")
+```
+
 # Experiment 1: discrete data
 
 For discrete BNs we obviously use just discrete variables.
