@@ -28,7 +28,7 @@ library(ggplot2)
 ```
 
 ```{r parameters}
-DEBUG <- TRUE
+DEBUG <- FALSE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
 FILENAMEbase <- Sys.getenv("PLOTPATH")
@@ -45,10 +45,11 @@ BURNIN.LEN <- 0
 # MCMC.SCHEME <- c(RETURN.DAGS, THINNING, BURNIN.LEN)
 MCMC.SCHEME <-
   c(RETURN.DAGS + BURNIN.LEN, 0, 0) # speed up computation if post-processed. Meaning: c(RETURN.DAGS, THINNING, BURNIN.LEN)
-SEED <- 123456789
+SEED <- 123456789L
 MCMC.SEEDS <- c(560505, 921213, 352629, 23146)
 PROB.REV = 0.03 # REV and MBR are efficient in producing high scoring structure but computationally costly compared to classical MCMC jumps.
-PROB.MBR = 0.03
+PROB.MBR = 0 # Turning off MBR due to error: Error in { : task 1 failed - "object 'new.parent.j' not found"
+# PROB.MBR = 0.03
 MCMC.PRIOR = 2 # 2: Koivisto; 1: uninformative
 
 THRESHOLD <- 0.5 # arcstrength
@@ -59,7 +60,7 @@ THRESHOLD <- 0.5 # arcstrength
 if (amilocal()) {
   n.cores <- parallel::detectCores() - 1 # local
 } else{
-  n.cores <- 25 # on HPC
+  n.cores <- 25L # on HPC
 }
 CLTYPE <- "FORK" # Change to "PSOCK" on Windows (can cause memory issues)
 set.seed(SEED)
@@ -592,11 +593,12 @@ abnwithmaxpar45 <-
 ## parametric bootstrapping
 ```{r}
 dags <- paramBootAbn(object = abnwithmaxpar45$fabn.maxpar, 
-                     n.sim = RETURN.DAGS, 
+                     n.sim = as.integer(RETURN.DAGS), 
                      dag.banned = abnwithmaxpar45$banned,
                      dag.retained = abnwithmaxpar45$retain,
-                     btseeds = c(1:RETURN.DAGS)*SEED,
-                     max.parents = abnwithmaxpar45$max.par)
+                     btseeds = as.integer(c(1:as.integer(RETURN.DAGS))*(SEED/12345)),
+                     max.parents = abnwithmaxpar45$max.par,
+                     verbose = FALSE)
                      # dag.banned = banned51[-10, -10], # all except study_source
                      # dag.retained = retain51[-10, -10], # all except study_source
                      # max.parents = 4,
