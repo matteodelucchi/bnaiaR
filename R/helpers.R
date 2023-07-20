@@ -715,3 +715,101 @@ plotROCAUC <- function(roc, aucCI, FILENAME, PLOTPATH=NULL, SAVE=SAVEPLOTS){
 #'     }
 pipe_message <- function(.data, status) {
   cat(status, "\n--------------\n", str(ungroup(.data))); .data}
+
+#' Cross-validation for rupture prediction under a mixed-effects model
+#'
+#' Fits a GLMM with \code{node} as outcome based on \code{parents} with \code{mixed_effect} as random intercept.
+#'
+#' @param data data frame of complete data. This will be split into train, test and validation set.
+#' @param valset fraction of \code{data} used for validation.
+#' @param trainset fraction of \code{1-valset} used for training. The rest (1-\code{trainset}) specifies the size of the test set.
+#' @param node character string of outcome variable/node.
+#' @param mixed_effect character string of random intercept variable.
+#' @param parents vector of character strings of variables used as predictors.
+#'
+#' @return list of ROC data frame, ROC plot, AUC value, data frame with additional metrics.
+#' @export
+cv_ROCAUC <- function(data,
+                      valset = 0.1,
+                      trainset = 0.8,
+                      node = "IAruptured",
+                      mixed_effect = "study_source",
+                      parents # madbn_fit_mod[[node]]$parents
+){
+  ### Data preparation
+  data <- consfit$AbnDAG$data.df
+
+  # Split train test data with study source
+  val_idx <- sample.int(n = nrow(data), size = valset*nrow(data), replace = FALSE)
+  val_dat <- data[val_idx, ]
+  dev_dat <- data[-val_idx, ]
+
+  train_idx <- sample.int(n = nrow(dev_dat), size = trainset*nrow(dev_dat), replace = FALSE)
+  train_dat <- dev_dat[train_idx, ]
+  test_dat <- dev_dat[-train_idx, ]
+
+  ### Fit and prediction
+  # train model
+  parents <- madbn_fit_mod[[node]]$parents
+  model <- as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
+  mod_glmer <- lme4::glmer(model, data = train_dat, family = "binomial")
+
+  # mod_glmer
+  # summary(mod_glmer)
+
+  y_predProb <- predict(mod_glmer, test_dat, type = "response")
+
+  ### ROC curve
+  y_test <- ifelse(test_dat[[node]] == "yes", 1, 0)
+  thresholds <- seq(0,1,0.01)
+  rocdf_me <- data.frame(probthr = thresholds, tp = rep(NA, length(thresholds)), tn = rep(NA, length(thresholds)), fp = rep(NA, length(thresholds)),
+                         fn = rep(NA, length(thresholds)))
+  # t <- 0.5
+  for (t_idx in seq(1:length(rocdf_me$probthr))){
+    t <- rocdf_me$probthr[t_idx]
+    y_pred <- ifelse(y_predProb > t, 1, 0)
+    tp <- ifelse((y_pred == y_test) & (y_pred == 1), 1, 0) # correct predicted rupture
+    tn <- ifelse((y_pred == y_test) & (y_pred == 0), 1, 0) # correct predicted no rupture
+    fp <- ifelse((y_pred != y_test) & (y_pred == 1), 1, 0) # wrong predicted rupture
+    fn <- ifelse((y_pred != y_test) & (y_pred == 0), 1, 0) # wrong predicted no rupture
+
+    rocdf_me$tp[t_idx] <- sum(tp, na.rm = TRUE)
+    rocdf_me$tn[t_idx] <- sum(tn, na.rm = TRUE)
+    rocdf_me$fp[t_idx] <- sum(fp, na.rm = TRUE)
+    rocdf_me$fn[t_idx] <- sum(fn, na.rm = TRUE)
+  }
+
+  rocdf_me <- rocdf_me %>%
+    mutate(tpr = tp/(tp+fn),
+           fpr = fp/(fp+tn),
+           fnr = fn/(fn+tp),
+           fpr = fp/(fp+tn),
+           tnr = tn/(tn+fp),
+           youdensJ = abs((tp/(tp+fn))+(fp/(fp+tn))-1)) %>%
+    mutate(lrpos = tpr/fpr,
+           lrneg = fnr/tnr) %>%
+    mutate(dor = lrpos/lrneg,
+           f1 = (2*tp)/(2*tp+fp+fn),
+           ba = (tpr+tnr)/2)
+
+  rocplt <- ggplot(rocdf_me, aes(x=fpr, y=tpr)) +
+    geom_point() +
+    geom_line() +
+    geom_abline(intercept = 0, slope = 1)
+
+  ### AUC
+  area <- NA
+  for (i in seq(2, nrow(rocdf_me))){
+    area[i] <- abs(rocdf_me$fpr[i]-rocdf_me$fpr[i-1])*abs(rocdf_me$tpr[i]*rocdf_me$tpr[i-1])
+  }
+  auc <-sum(area, na.rm = T)
+  # print(paste("AUC: ", round(auc, 2)))
+
+  ### All metrics
+  allmetrics <- round(t(rocdf_me[which.min(rocdf_me$youdensJ),]),2)
+
+  return(list("rocdf" = rocdf_me,
+              "rocplt" = rocplt,
+              "auc" = auc,
+              "allmetrics" = allmetrics))
+}
