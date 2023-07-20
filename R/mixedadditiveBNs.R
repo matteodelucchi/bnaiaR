@@ -694,7 +694,7 @@ paramBootAbn <- function(object,
   )))
 
   # Save paramBoot output
-  save(dags,
+  save(out,
     file = paste0(filenamebase, filename, filenamesuffix, "_paramBootAbnOut.RData")
   )
   cat("\nParamBootAbn() output saved.")
