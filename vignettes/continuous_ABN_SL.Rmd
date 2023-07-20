@@ -632,3 +632,9 @@ save(dags,
      file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbnConsDAG.RData"))
 ```
 
+```{r}
+# knitr::purl("./continuous_ABN_SL.Rmd", output = "./continuous_ABN_SL_script.R")
+# Run with this command:
+##R CMD BATCH ./vignettes/continuous_ABN_SL_exp4.5_script.R ./vignettes/continuous_ABN_SL_exp4.5_script.Rout &>/dev/null &
+```
+
