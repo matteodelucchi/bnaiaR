@@ -619,16 +619,16 @@ consfit <- fitAbn(dag = consDAGlist[["consDAG"]],
                   method = METHOD,
                   group.var = "study_source",
                   control = fit.control(catcov.mblogit = "diagonal",
-                                        seed = SEED))
+                                        seed = as.integer(SEED)))
 plot(consfit)
 print(consfit)
 ```
 
 ```{r}
 # Save paramBootAbn data
-save(list = list("dags" = dags,
-                 "consDAGlist" = consDAGlist,
-                 "consfit" = consfit),
-     file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbn.RData"))
+save(dags,
+     consDAGlist,
+     consfit,
+     file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbnConsDAG.RData"))
 ```
 
