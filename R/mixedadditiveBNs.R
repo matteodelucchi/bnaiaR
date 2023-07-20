@@ -669,7 +669,6 @@ paramBootAbn <- function(object,
                            catcov.restriction = catcov.restriction,
                            btseeds = btseeds,
                            verbose = verbose)
-                     gc()
     }
     stopCluster(clust)
   } else if (no.cores == 1){
@@ -687,13 +686,19 @@ paramBootAbn <- function(object,
                            catcov.restriction = catcov.restriction,
                            btseeds = btseeds,
                            verbose = verbose)
-                     gc()
     }
   }
   endtime <- Sys.time()
   cat(paste("\nEnd Parametric Bootstrapping with ABN. Time used [h]:", round(
     difftime(endtime, starttime, units = "hours"), 2
   )))
+
+  # Save paramBoot output
+  save(dags,
+    file = paste0(filenamebase, filename, filenamesuffix, "_paramBootAbnOut.RData")
+  )
+  cat("\nParamBootAbn() output saved.")
+
   return(out)
 }
 
@@ -738,12 +743,14 @@ paramBootAbn_backend <- function(i,
 
       # return to outputs
       buildCache_succeed <- TRUE
+      gc()
       return(list("dfsim" = dfsim,
                   "cache_sim" = mycache_sim,
                   "mpdag_sim" = mp.dag_sim,
                   "fit_sim" = myres_sim))
     } else {
       message(paste("Simulation no. ", i, "failed and I am repeating it."))
+      gc()
     }
   }#EOWHILE
 }
