@@ -743,14 +743,12 @@ paramBootAbn_backend <- function(i,
 
       # return to outputs
       buildCache_succeed <- TRUE
-      gc()
       return(list("dfsim" = dfsim,
                   "cache_sim" = mycache_sim,
                   "mpdag_sim" = mp.dag_sim,
                   "fit_sim" = myres_sim))
     } else {
       message(paste("Simulation no. ", i, "failed and I am repeating it."))
-      gc()
     }
   }#EOWHILE
 }
