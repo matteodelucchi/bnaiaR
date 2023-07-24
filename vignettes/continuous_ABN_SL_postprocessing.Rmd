@@ -2103,7 +2103,6 @@ if (SAVEPLOTS){
 ```{r message=FALSE, warning=FALSE}
 filenamesuffix <- "TEST4.5"
 load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate.RData"))
-load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_final.RData"))
 load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG.RData"))
 ```
 ## Max. parents plot 
@@ -2122,7 +2121,30 @@ print(consfit)
 
 ## Arc strength significance threshold
 
-TODO
+```{r}
+cons.dag.stren <- apply(consDAGlist$consDAG, 1:2, mean)
+cons.dag.threshold <- arc.stren.threshold(cons.dag.freq)
+
+
+# relative arc strength
+plot(ecdf(cons.dag.stren))
+abline(v = cons.dag.threshold, lty=2)
+abline(v=0.5)
+
+# # absolute arc strength
+# plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_cdf_arcstrength"
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+}
+```
 
 ## Cross-validation for rupture prediction under a mixed-effects model
 
