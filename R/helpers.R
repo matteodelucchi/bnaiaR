@@ -737,8 +737,6 @@ cv_ROCAUC <- function(data,
                       parents # madbn_fit_mod[[node]]$parents
 ){
   ### Data preparation
-  data <- consfit$AbnDAG$data.df
-
   # Split train test data with study source
   val_idx <- sample.int(n = nrow(data), size = valset*nrow(data), replace = FALSE)
   val_dat <- data[val_idx, ]
@@ -750,7 +748,6 @@ cv_ROCAUC <- function(data,
 
   ### Fit and prediction
   # train model
-  parents <- madbn_fit_mod[[node]]$parents
   model <- as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+")))
   mod_glmer <- lme4::glmer(model, data = train_dat, family = "binomial")
 

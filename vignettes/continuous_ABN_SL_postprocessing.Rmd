@@ -2129,6 +2129,6 @@ TODO
 Study source as mixed-effect (discrete-mixed effect BN)
 
 ```{r}
-cv_ROCAUC(data = data, node = "IAruptured", parents = c("A", "B")) # TODO: parents
+(df_cv4_5 <- cv_ROCAUC(data = df, node = "IAruptured", parents = names(consfit$abnDag$dag["IAruptured",][which(consfit$abnDag$dag["IAruptured",] == 1)]))) 
 ```
 
