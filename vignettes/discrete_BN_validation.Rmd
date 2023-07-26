@@ -50,28 +50,20 @@ PLOTHEIGHT = 9
 ```
 
 
-# Thoughts:
-For rupture as outcome. (but theoretically, different outcome variables possible)
-In cross-validation: include SL as well or given the structure, evaluate prediction performance?
-ROC curve: https://www.graphpad.com/guides/prism/latest/curve-fitting/reg_logistic_roc_curves.htm
-    Goal: Choose the optimal value (cut-off) for the predicted rupture probability to be accepted as predicted rupture.
-    Algo:
-    On the training data, 
-    For different rupture probability values: 
-        calculate true positive rate (sensitivity)
-        calculate true negative rate (1-specificity)
+# discrete BN
 
-    Plot for each cut-off value on the x-axis 1-specificity and on the y-axis sensitivity.
+# discrete BN w/o study source
 
-    Choose the value with the highest sensitivity and smallest value for 1-specifity as the final cutoff.
+# discrete BN w/o study_source for each source individually
 
-with the final cut-off, calculate the performance on a test data set (does this make sense? What information does it add? There is no model development...) and performance on an unseen validation set. -> consider to take here a set of one study center. This would validate performance on a new, potentially biased data set.
+# discrete BN with study_source as parent of everything
 
-To keep the training set as large as possible, leaveone-out cross-validation (LOOCV) iterates over the whole data set and trains the model on all but one observation, which becomes the holdout set, and averages the performance of all iterations. The posterior classification error was estimated on a set of arbitrary nodes based on likelihood weighting, from �� = 50 runs of hold-out cross-validation for each of the three networks. - bnaiaR publication
+# additive discrete BN
 
-# Discrete mixed-effects BN (exp1_dat)
+# additive discrete BN with study source as mixed effect
 
 ## load data
+
 ```{r message=FALSE, warning=FALSE}
 load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects.RData"))
 ```
@@ -86,7 +78,7 @@ bb <- tobesaved$madbn_boot
 
 Plot DAG with study source of averaged bootstrap network and  unrestricted bootstrapped structure-
 ```{r}
-strength.plot(avg,
+strength.plot(avg, # with increased threshold: averaged.network(bb, threshold = 0.7)
               bb,
               main = "discrete additive mixed-effects BN",
               # sub = "SL: tabu\nth.=0.3\nScore=BIC",
@@ -132,106 +124,14 @@ if (SAVEPLOTS){
 madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
 ```
 
-# Cross-validation for rupture prediction under a mixed-effects model
-
-## Study source as mixed-effect (discrete-mixed effect BN)
+## Cross-validation for rupture prediction under a mixed-effects model
 
 Trying own prediction implementation with study as mixed effect
 
 ```{r}
-dmeBN_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[[node]]$parents)
+dmeBN_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents)
+dmeBN_eval
 ```
-
-<!-- ### Data preparation -->
-<!-- 10% validation data -->
-<!-- 90% development data split up again in -->
-<!--   20% test -->
-<!--   80% train -->
-<!-- ```{r} -->
-<!-- # Split train test data with study source -->
-<!-- val_idx <- sample.int(n = nrow(data), size = 0.1*nrow(data), replace = FALSE) -->
-<!-- val_dat <- data[val_idx, ] -->
-<!-- dev_dat <- data[-val_idx, ] -->
-
-<!-- train_idx <- sample.int(n = nrow(dev_dat), size = 0.8*nrow(dev_dat), replace = FALSE) -->
-<!-- train_dat <- dev_dat[train_idx, ] -->
-<!-- test_dat <- dev_dat[-train_idx, ] -->
-<!-- ``` -->
-
-<!-- ### Fit and prediction -->
-<!-- ```{r} -->
-<!-- # train model -->
-<!-- node <- "IAruptured" -->
-<!-- mixed_effect <- "study_source" -->
-<!-- parents <- madbn_fit_mod[[node]]$parents -->
-<!-- model <- as.formula(paste(node, "~ (1|", mixed_effect ,")+", paste(parents, collapse = "+"))) -->
-<!-- mod_glmer <- lme4::glmer(model, data = train_dat, family = "binomial") -->
-
-<!-- mod_glmer -->
-<!-- summary(mod_glmer) -->
-
-<!-- y_predProb <- predict(mod_glmer, test_dat, type = "response") -->
-<!-- ``` -->
-
-<!-- ### ROC curve -->
-
-<!-- Find optimal classification threshold. -->
-<!-- on training data -->
-<!-- ```{r} -->
-<!-- y_test <- ifelse(test_dat[["IAruptured"]] == "yes", 1, 0) -->
-<!-- thresholds <- seq(0,1,0.01) -->
-<!-- rocdf_me <- data.frame(probthr = thresholds, tp = rep(NA, length(thresholds)), tn = rep(NA, length(thresholds)), fp = rep(NA, length(thresholds)), -->
-<!--                    fn = rep(NA, length(thresholds))) -->
-<!-- # t <- 0.5 -->
-<!-- for (t_idx in seq(1:length(rocdf_me$probthr))){ -->
-<!--   t <- rocdf_me$probthr[t_idx] -->
-<!--   y_pred <- ifelse(y_predProb > t, 1, 0) -->
-<!--   tp <- ifelse((y_pred == y_test) & (y_pred == 1), 1, 0) # correct predicted rupture -->
-<!--   tn <- ifelse((y_pred == y_test) & (y_pred == 0), 1, 0) # correct predicted no rupture -->
-<!--   fp <- ifelse((y_pred != y_test) & (y_pred == 1), 1, 0) # wrong predicted rupture -->
-<!--   fn <- ifelse((y_pred != y_test) & (y_pred == 0), 1, 0) # wrong predicted no rupture -->
-
-<!--   rocdf_me$tp[t_idx] <- sum(tp, na.rm = TRUE) -->
-<!--   rocdf_me$tn[t_idx] <- sum(tn, na.rm = TRUE) -->
-<!--   rocdf_me$fp[t_idx] <- sum(fp, na.rm = TRUE) -->
-<!--   rocdf_me$fn[t_idx] <- sum(fn, na.rm = TRUE) -->
-<!-- } -->
-
-<!-- rocdf_me <- rocdf_me %>% -->
-<!--   mutate(tpr = tp/(tp+fn), -->
-<!--          fpr = fp/(fp+tn), -->
-<!--          fnr = fn/(fn+tp), -->
-<!--          fpr = fp/(fp+tn), -->
-<!--          tnr = tn/(tn+fp), -->
-<!--          youdensJ = abs((tp/(tp+fn))+(fp/(fp+tn))-1)) %>% -->
-<!--   mutate(lrpos = tpr/fpr, -->
-<!--          lrneg = fnr/tnr) %>% -->
-<!--   mutate(dor = lrpos/lrneg, -->
-<!--          f1 = (2*tp)/(2*tp+fp+fn), -->
-<!--          ba = (tpr+tnr)/2) -->
-
-<!-- ggplot(rocdf_me, aes(x=fpr, y=tpr)) + -->
-<!--   geom_point() + -->
-<!--   geom_line() + -->
-<!--   geom_abline(intercept = 0, slope = 1) -->
-
-<!-- rocdf_me -->
-<!-- ``` -->
-
-<!-- ### AUC -->
-<!-- ```{r} -->
-<!-- area <- NA -->
-<!-- for (i in seq(2, nrow(rocdf_me))){ -->
-<!--   area[i] <- abs(rocdf_me$fpr[i]-rocdf_me$fpr[i-1])*abs(rocdf_me$tpr[i]*rocdf_me$tpr[i-1]) -->
-<!-- } -->
-<!-- auc <-sum(area, na.rm = T) -->
-<!-- print(paste("AUC: ", round(auc, 2))) -->
-<!-- ``` -->
-
-<!-- ### All metrics -->
-<!-- ```{r} -->
-<!-- print(round(t(rocdf_me[which.min(rocdf_me$youdensJ),]),2)) -->
-<!-- ``` -->
 
 ## Same DAG but only fixed-effects (bn.fit)
 ### Data preparation
@@ -306,6 +206,7 @@ ggplot(rocdf, aes(x=fpr, y=tpr)) +
 
 rocdf
 ```
+
 ### AUC
 
 ```{r}
@@ -342,6 +243,118 @@ rbind(rocdf, rocdf_me) %>%
   geom_abline(intercept = 0, slope = 1) +
   labs(title = "ROC")
 ```
+
+# additive discrete BN with study source as mixed effect. Size -> location restricted
+
+## load data
+
+```{r message=FALSE, warning=FALSE}
+load(paste0(PLOTPATH, "/discrete_BN_SL_additive_bic_mixedeffects_restrictedSizeLoc.RData"))
+```
+
+
+```{r}
+data <- tobesaved$madbn_data
+bl <- tobesaved$madbn_bl
+avg <- tobesaved$madbn_avg
+bb <- tobesaved$madbn_boot
+```
+
+Plot DAG with study source of averaged bootstrap network and  unrestricted bootstrapped structure-
+```{r}
+strength.plot(avg, # with increased threshold: averaged.network(bb, threshold = 0.7)
+              bb,
+              main = "discrete additive mixed-effects BN",
+              # sub = "SL: tabu\nth.=0.3\nScore=BIC",
+              sub = "IA Size -> IA Location restricted",
+              shape = "rectangle")
+```
+
+Fit the averaged DAG.
+```{r}
+madbn_fit <- bn.fit(data = data, x = avg)
+```
+
+Remove study source
+```{r}
+# remove study_source
+avg_mod <- bnlearn::remove.node(avg, "study_source")
+bb_mod <-  bb %>%
+  filter(from != "study_source") %>%
+    filter(to != "study_source")
+attr(bb_mod, "nodes") <- attr(bb_mod, "nodes")[-10]
+data_mod <- data %>%
+  select(-c("study_source"))
+
+strength.plot(avg_mod,
+              bb_mod,
+              main = "discrete additive mixed-effects BN\nIA Size -> IA Location restricted",
+              sub = "Fitting w/o study_source",
+              shape = "rectangle")
+
+if (SAVEPLOTS){
+  PLOTNAME <- "admeBN_fitting_wo_studysource"  
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "png"){
+    dev.print(png, filename = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(PLOTPATH, "/", PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } 
+} 
+
+madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
+```
+
+## Cross-validation for rupture prediction under a mixed-effects model
+
+```{r}
+dmeBNsizelocrestricted_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents)
+dmeBNsizelocrestricted_eval
+```
+
+## Combine all mixed-effect ROC curves
+
+```{r}
+rocdf$type = "no study source"
+
+rocdf_me <- dmeBN_eval$rocdf
+rocdf_me$type = "mixed effects"
+
+rocdf_meSizeLocRest <- dmeBNsizelocrestricted_eval$rocdf
+rocdf_meSizeLocRest$type <- "Size -> Loc Restricted"
+
+rbind(rocdf, rocdf_me, rocdf_meSizeLocRest) %>%
+  
+  ggplot(aes(x=fpr, y=tpr, color = type)) +
+  geom_point() +
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(title = "ROC")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Old stuff down here
 
 
 
