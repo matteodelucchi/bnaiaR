@@ -37,8 +37,8 @@ PLOTHEIGHT = 9
 DEBUG <- TRUE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
-# FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
-FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"))
+FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+# FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"))
 ```
 
 # Exp. 4.1: maBN with study_source
@@ -90,10 +90,10 @@ dagswithdiffparentsplt(net.scores.dags, df, SAVEPLOTS, filenamesuffix)
 thinning: mcmc.scheme = c(number of returned DAGS, thinned steps, length of burn-in phase)
 
 ```{r}
-THINNING <- 1 # keep every second draw
-BURNIN.LEN <- 1 # remove the first n draws
-# THINNING <- 7
-# BURNIN.LEN <- 25000 # remove the first n draws
+# THINNING <- 1 # keep every second draw
+# BURNIN.LEN <- 1 # remove the first n draws
+THINNING <- 7
+BURNIN.LEN <- 25000 # remove the first n draws
 
 mcmc.out.list.burn <- postBURNin(mcmc.out.list = finalresults$mcmc.out.list, burnin.length = BURNIN.LEN)
 mcmc.out.list.thin <- postTHINN(mcmc.out.list = finalresults$mcmc.out.list, thinningsteps = THINNING)
@@ -458,16 +458,16 @@ edgestren[edgestren<=THRESHOLD]<-0
 cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
         data.dists = dist,
         # fitted.values = fitvals,
+        node.fontsize = 24,
         digits = 2,
-        # edge.strength = edgestren,
-        # edge.arrowsize = "undirected",
-        node.shape = c("box", "box", "box", "box"),
+        edge.strength = edgestren,
+        # edge.arrowsize = 0.5,
+        # node.shape = c("box", "box", "box", "box"),
         plot = F)
 
-attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
 if (SAVEPLOTS){
   PLOTNAME <- "_consensus_dag_edgestrength"
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
   if(PLOTFORMAT == "svg"){
     dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
@@ -476,12 +476,9 @@ if (SAVEPLOTS){
     dev.off()
   }
 } else {
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
 }
 ```
-
-TODO: fix edge direction. They're all in the wrong direction...
-
 
 ## Inference
 
@@ -493,12 +490,12 @@ fabn.boot.th.mle <-fitAbn(dag = dag.mcmc.boot.th,
               method = "mle",
               compute.fixed = T,
               create.graph = T)
-
-# out.bayes <- unlist(fabn.boot.th.bayes$modes)
-out.mle <- unlist(fabn.boot.th.mle$coef, use.names = T)
+print(fabn.boot.th.mle)
 ```
-TODO: keep the names. Unlist manually...
+
 ```{r}
+out.mle <- unlist(fabn.boot.th.mle$coef, use.names = T) # TODO: keep the names. Unlist manually...
+
 ##numeric
 df.mle <- as.data.frame(out.mle) %>%
   tibble::rownames_to_column()%>%
@@ -538,7 +535,7 @@ basicresulttable <- function(FITABN=fabn.boot.th.mle, SUPPORTDAG=dag.mcmc.boot){
       "log odds ratio"
     }
   })
-browser()  
+browser()
   # Extract each edge (cornames) and it's interpretation
   cornames <- c()
   interpret <- c()
@@ -1192,16 +1189,16 @@ edgestren[edgestren<=THRESHOLD]<-0
 cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
         data.dists = dist,
         # fitted.values = fitvals,
+        node.fontsize = 24,
         digits = 2,
-        # edge.strength = edgestren,
-        # edge.arrowsize = "undirected",
-        node.shape = c("box", "box", "box", "box"),
+        edge.strength = edgestren,
+        # edge.arrowsize = 0.5,
+        # node.shape = c("box", "box", "box", "box"),
         plot = F)
 
-attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
 if (SAVEPLOTS){
   PLOTNAME <- "_consensus_dag_edgestrength"
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength, attrs=attrs)
   if(PLOTFORMAT == "svg"){
     dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
@@ -1210,11 +1207,10 @@ if (SAVEPLOTS){
     dev.off()
   }
 } else {
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength, attrs=attrs)
 }
 ```
 
-TODO: fix edge direction. They're all in the wrong direction...
 
 # Exp. 4.3: maBN for each study_source individually
 
@@ -1634,16 +1630,16 @@ edgestren[edgestren<=THRESHOLD]<-0
 cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
         data.dists = dist,
         # fitted.values = fitvals,
+        node.fontsize = 24,
         digits = 2,
-        # edge.strength = edgestren,
-        # edge.arrowsize = "undirected",
-        node.shape = c("box", "box", "box", "box"),
+        edge.strength = edgestren,
+        # edge.arrowsize = 0.5,
+        # node.shape = c("box", "box", "box", "box"),
         plot = F)
 
-attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
 if (SAVEPLOTS){
   PLOTNAME <- "_consensus_dag_edgestrength"
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength, attrs=attrs)
   if(PLOTFORMAT == "svg"){
     dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
@@ -1652,7 +1648,7 @@ if (SAVEPLOTS){
     dev.off()
   }
 } else {
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength, attrs=attrs)
 }
 ```
 
@@ -2074,16 +2070,16 @@ edgestren[edgestren<=THRESHOLD]<-0
 cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
         data.dists = dist,
         # fitted.values = fitvals,
+        node.fontsize = 24,
         digits = 2,
-        # edge.strength = edgestren,
-        # edge.arrowsize = "undirected",
-        node.shape = c("box", "box", "box", "box"),
+        edge.strength = edgestren,
+        # edge.arrowsize = 0.5,
+        # node.shape = c("box", "box", "box", "box"),
         plot = F)
 
-attrs <- list(node=list(shape="rectangle", fixedsize=FALSE))
 if (SAVEPLOTS){
   PLOTNAME <- "_consensus_dag_edgestrength"
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
   if(PLOTFORMAT == "svg"){
     dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
@@ -2092,7 +2088,7 @@ if (SAVEPLOTS){
     dev.off()
   }
 } else {
-  Rgraphviz::plot(cons.dag.plt.edgestrength, attrs=attrs)
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
 }
 ```
 
@@ -2101,9 +2097,18 @@ if (SAVEPLOTS){
 
 ## load data
 ```{r message=FALSE, warning=FALSE}
-filenamesuffix <- "TEST4.5"
-load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate.RData"))
-load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG.RData"))
+filenamesuffix <- "4.5"
+# load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate.RData"))
+# load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG.RData"))
+
+# convert .RData -> .rdb/.rdx
+e1 = local({load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate.RData")); environment()})
+tools:::makeLazyLoadDB(e1, paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate"))
+lazyLoad(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate"))
+
+e2 = local({load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG.RData")); environment()})
+tools:::makeLazyLoadDB(e2, paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG"))
+lazyLoad(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG"))
 ```
 ## Max. parents plot 
 
