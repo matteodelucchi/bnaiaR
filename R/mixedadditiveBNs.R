@@ -717,7 +717,7 @@ paramBootAbn_backend <- function(i,
     dfsim <- simulateAbn(object = object,
                          n.iter = as.integer(nrow(data.df)), # Sample set has equal size as original data
                          verbose = verbose,
-                         # seed = btseeds[i], # no seed here to have variable data. i.e. When buildScoreChache fails with the sampled data, use different data in the repeat of the simulation.
+                         seed = as.integer(btseeds[i]), # no seed here to have variable data. i.e. When buildScoreChache fails with the sampled data, use different data in the repeat of the simulation.
                          run.simulation = TRUE)
 
     mycache_sim <- NULL
@@ -748,7 +748,10 @@ paramBootAbn_backend <- function(i,
                   "mpdag_sim" = mp.dag_sim,
                   "fit_sim" = myres_sim))
     } else {
-      message(paste("Simulation no. ", i, "failed and I am repeating it."))
+      message(paste("Simulation no. ", i, "failed and I am repeating it with a new RNG seed."))
+      message(paste("Old seed:", btseeds[i]))
+      btseeds[i] <- abs(sample(.Random.seed, size = 1))
+      message(paste("New seed:", btseeds[i]))
     }
   }#EOWHILE
 }
@@ -795,7 +798,8 @@ consensusDAG <- function(object,
     consDAG[consDAG<=arc.stren.thr] <- 0
     consDAG[consDAG>arc.stren.thr] <- 1
 
-    return(list("arcStrengthThreshold" = arc.stren.thr,
+    return(list("strenDAG" = reldag,
+                "arcStrengthThreshold" = arc.stren.thr,
                 "consDAG" = consDAG))
   } else {
     stop(paste("Consensus method", consensusMethod, "is not implemented."))
