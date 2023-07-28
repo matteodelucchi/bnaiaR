@@ -4155,9 +4155,8 @@ print(consfit)
 ## Arc strength significance threshold
 
 ```{r}
-cons.dag.stren <- apply(consDAGlist$consDAG, 1:2, mean)
-cons.dag.threshold <- arc.stren.threshold(cons.dag.freq)
-
+cons.dag.stren <- consDAGlist$strenDAG
+cons.dag.threshold <- consDAGlist$arcStrengthThreshold
 
 # relative arc strength
 plot(ecdf(cons.dag.stren))
@@ -4165,7 +4164,7 @@ abline(v = cons.dag.threshold, lty=2)
 abline(v=0.5)
 
 # # absolute arc strength
-# plot(ecdf(apply(list.mc.out.burn.thin.dag, 1:2, sum)))
+# plot(ecdf(consDAGlist$strenDAG * length(dags)))
 
 if (SAVEPLOTS){
   PLOTNAME <- "_cdf_arcstrength"
@@ -4176,6 +4175,48 @@ if (SAVEPLOTS){
     dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
     dev.off()
   }
+}
+```
+
+```{r}
+THRESHOLD <- 0.5
+
+# plot with arc strength
+plotdag <- consDAGlist$strenDAG
+plotdag[plotdag>THRESHOLD]<-1
+plotdag[plotdag<=THRESHOLD]<-0
+
+# fitvals <- fabn.boot.th.mle$coef
+# 
+# for (i in 1:length(fitvals)){
+#   names(fitvals[[i]]) <- colnames(fitvals[[i]])
+# }
+
+edgestren <- round(consDAGlist$strenDAG, 2)
+edgestren[edgestren<=THRESHOLD]<-0
+
+cons.dag.plt.edgestrength <- plotAbn(dag = plotdag,
+        data.dists = dist,
+        # fitted.values = fitvals,
+        node.fontsize = 24,
+        digits = 2,
+        edge.strength = edgestren,
+        # edge.arrowsize = 0.5,
+        # node.shape = c("box", "box", "box", "box"),
+        plot = F)
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_consensus_dag_edgestrength"
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
+  if(PLOTFORMAT == "svg"){
+    dev.print(svg, filename = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  } else if(PLOTFORMAT == "pdf"){
+    dev.print(pdf, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".", PLOTFORMAT), width = PLOTWIDTH, height = PLOTHEIGHT)
+    dev.off()
+  }
+} else {
+  Rgraphviz::renderGraph(cons.dag.plt.edgestrength)
 }
 ```
 
