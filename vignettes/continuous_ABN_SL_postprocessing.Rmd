@@ -34,11 +34,10 @@ PLOTFORMAT <- "pdf" # "svg", "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
 
-DEBUG <- TRUE
 EXPNO <- "ABNmultinomial"
 FILENAME <- paste0("/exp", EXPNO)
-FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
-# FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"))
+# FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+FILENAMEbase <- paste0(Sys.getenv("PLOTPATH"))
 ```
 
 # Exp. 4.1: maBN with study_source
