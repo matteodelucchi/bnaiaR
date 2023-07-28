@@ -4133,9 +4133,11 @@ tools:::makeLazyLoadDB(e1, paste0(FILENAMEbase, FILENAME, filenamesuffix, "_inte
 lazyLoad(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_intermediate"))
 
 e2 = local({load(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG.RData")); environment()})
-tools:::makeLazyLoadDB(e2, paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG"))
-lazyLoad(paste0(FILENAMEbase, FILENAME, filenamesuffix, "_paramBootAbnConsDAG"))
+consDAGlist <- get("consDAGlist", envir = e2)
+consfit <- get("consfit", envir = e2)
+dags <- get("dags", envir = e2) # WARNING: This is huge (34.1GB)!!!
 ```
+
 ## Max. parents plot 
 
 ```{r}
