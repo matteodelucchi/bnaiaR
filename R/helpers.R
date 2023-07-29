@@ -782,7 +782,7 @@ cv_ROCAUC <- function(data,
            fnr = fn/(fn+tp),
            fpr = fp/(fp+tn),
            tnr = tn/(tn+fp),
-           youdensJ = abs((tp/(tp+fn))+(fp/(fp+tn))-1)) %>%
+           youdensJ = abs((tp/(tp+fn))+(tn/(fp+tn))-1)) %>%
     mutate(lrpos = tpr/fpr,
            lrneg = fnr/tnr) %>%
     mutate(dor = lrpos/lrneg,
@@ -803,7 +803,7 @@ cv_ROCAUC <- function(data,
   # print(paste("AUC: ", round(auc, 2)))
 
   ### All metrics
-  allmetrics <- round(t(rocdf_me[which.min(rocdf_me$youdensJ),]),2)
+  allmetrics <- round(t(rocdf_me[which.max(rocdf_me$youdensJ),]),2)
 
   return(list("rocdf" = rocdf_me,
               "rocplt" = rocplt,
