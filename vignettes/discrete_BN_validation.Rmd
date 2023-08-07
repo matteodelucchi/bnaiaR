@@ -43,7 +43,8 @@ set.seed(100)
 
 # Save plots as files? 
 SAVEPLOTS <- F
-PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+# PLOTPATH <- paste0(Sys.getenv("PLOTPATH"), "/fourierplots")
+PLOTPATH <- paste0(Sys.getenv("PLOTPATH"))
 PLOTFORMAT <- "pdf" # "pdf", "svg" or "png"
 PLOTWIDTH = 16
 PLOTHEIGHT = 9
@@ -327,15 +328,19 @@ if (SAVEPLOTS){
 ## Combine all mixed-effect ROC curves
 
 ```{r}
-rocdf$type = "no study source"
+rocdf_4.5 <- readRDS(file = paste0(PLOTPATH, "/expABNmultinomial4.5_cvROCAUC.rds")) # generated in 'continuous_ABN_SL_postprocessing.Rmd'
+rocdf_4.5 <- rocdf_4.5$rocdf
+rocdf_4.5$type <- "additive mixed-efffects"
+  
+rocdf$type = "discrete no study source"
 
 rocdf_me <- dmeBN_eval$rocdf
-rocdf_me$type = "mixed effects"
+rocdf_me$type = "discrete mixed-effects"
 
 rocdf_meSizeLocRest <- dmeBNsizelocrestricted_eval$rocdf
-rocdf_meSizeLocRest$type <- "Size -> Loc Restricted"
+rocdf_meSizeLocRest$type <- "discrete mixed-effects Size -> Loc Restricted"
 
-rbind(rocdf, rocdf_me, rocdf_meSizeLocRest) %>%
+rbind(rocdf_4.5, rocdf, rocdf_me, rocdf_meSizeLocRest) %>%
   
   ggplot(aes(x=fpr, y=tpr, color = type)) +
   geom_point() +
