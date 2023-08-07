@@ -4225,5 +4225,10 @@ Study source as mixed-effect (discrete-mixed effect BN)
 
 ```{r}
 (df_cv4_5 <- cv_ROCAUC(data = df, node = "IAruptured", parents = names(consfit$abnDag$dag["IAruptured",][which(consfit$abnDag$dag["IAruptured",] == 1)]))) 
+
+if (SAVEPLOTS){
+  PLOTNAME <- "_cvROCAUC"
+  saveRDS(object = df_cv4_5, file = paste0(FILENAMEbase, FILENAME, filenamesuffix, PLOTNAME, ".rds"))
+}
 ```
 

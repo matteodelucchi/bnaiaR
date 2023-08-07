@@ -129,8 +129,12 @@ madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
 Trying own prediction implementation with study as mixed effect
 
 ```{r}
-dmeBN_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents)
-dmeBN_eval
+(dmeBN_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents))
+
+if (SAVEPLOTS){
+  PLOTSUFFIX <- "_cvROCAUC"
+  saveRDS(object = dmeBN_eval, file = paste0(PLOTPATH, "/", PLOTNAME, PLOTSUFFIX, ".rds"))
+}
 ```
 
 ## Same DAG but only fixed-effects (bn.fit)
@@ -312,8 +316,12 @@ madbn_fit_mod <- bn.fit(data = data_mod, x = avg_mod)
 ## Cross-validation for rupture prediction under a mixed-effects model
 
 ```{r}
-dmeBNsizelocrestricted_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents)
-dmeBNsizelocrestricted_eval
+(dmeBNsizelocrestricted_eval <- cv_ROCAUC(data = data, node = "IAruptured", parents = madbn_fit_mod[["IAruptured"]]$parents))
+
+if (SAVEPLOTS){
+  PLOTSUFFIX <- "_cvROCAUC"
+  saveRDS(object = dmeBNsizelocrestricted_eval, file = paste0(PLOTPATH, "/", PLOTNAME, PLOTSUFFIX, ".rds"))
+}
 ```
 
 ## Combine all mixed-effect ROC curves
