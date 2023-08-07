@@ -777,11 +777,11 @@ cv_ROCAUC <- function(data,
   }
 
   rocdf_me <- rocdf_me %>%
-    mutate(tpr = tp/(tp+fn),
+    mutate(tpr = tp/(tp+fn), # sensitivity = recall = hit rate
            fpr = fp/(fp+tn),
            fnr = fn/(fn+tp),
            fpr = fp/(fp+tn),
-           tnr = tn/(tn+fp),
+           tnr = tn/(tn+fp), # specificity = selectivity
            youdensJ = abs((tp/(tp+fn))+(tn/(fp+tn))-1)) %>%
     mutate(lrpos = tpr/fpr,
            lrneg = fnr/tnr) %>%
@@ -802,11 +802,32 @@ cv_ROCAUC <- function(data,
   auc <-sum(area, na.rm = T)
   # print(paste("AUC: ", round(auc, 2)))
 
+  ### Decision Curve Analysis
+  df_dca <- rocdf_me %>%
+    mutate(netBenefit = (tp/(tp+tn+fp+fn)) - (fp/(tp+tn+fp+fn)) * (probthr/(1-probthr)),
+           allNeg = (0/(0+tn+0+fn)) - (0/(0+tn+0+fn)) * (probthr/(1-probthr)), # consider all patients negative (all unruptured IA)
+           allPos = (sum(y_test)/(tp+tn+fp+fn)) - ((length(y_test)-sum(y_test))/(tp+tn+fp+fn)) * (probthr/(1-probthr))) %>% # consider all patients positive (all ruptured IA)
+    pivot_longer(cols = c("netBenefit", "allNeg", "allPos")) %>%
+    select(c("probthr", "name", "value"))
+
+  dca_plt <- ggplot(df_dca, aes(x = probthr, y = value, color = name)) +
+    # geom_point() +
+    geom_line() +
+    scale_y_continuous(limits = c(-0.1, 1.0)) +
+    scale_color_discrete(labels = c("all Negative", "all Positive", "Model Net Benefit")) +
+    theme_bw()+
+    labs(x = "Threshold Probability in %",
+         y = "Net Benefit",
+         title = "Decision Curve")
+
+
   ### All metrics
   allmetrics <- round(t(rocdf_me[which.max(rocdf_me$youdensJ),]),2)
 
   return(list("rocdf" = rocdf_me,
               "rocplt" = rocplt,
               "auc" = auc,
-              "allmetrics" = allmetrics))
+              "allmetrics" = allmetrics,
+              "dca" = df_dca,
+              "dcaplt" = dca_plt))
 }

@@ -328,8 +328,8 @@ if (SAVEPLOTS){
 ## Combine all mixed-effect ROC curves
 
 ```{r}
-rocdf_4.5 <- readRDS(file = paste0(PLOTPATH, "/expABNmultinomial4.5_cvROCAUC.rds")) # generated in 'continuous_ABN_SL_postprocessing.Rmd'
-rocdf_4.5 <- rocdf_4.5$rocdf
+cv_4.5 <- readRDS(file = paste0(PLOTPATH, "/expABNmultinomial4.5_cvROCAUC.rds")) # generated in 'continuous_ABN_SL_postprocessing.Rmd'
+rocdf_4.5 <- cv_4.5$rocdf
 rocdf_4.5$type <- "additive mixed-efffects"
   
 rocdf$type = "discrete no study source"
@@ -340,16 +340,62 @@ rocdf_me$type = "discrete mixed-effects"
 rocdf_meSizeLocRest <- dmeBNsizelocrestricted_eval$rocdf
 rocdf_meSizeLocRest$type <- "discrete mixed-effects Size -> Loc Restricted"
 
-rbind(rocdf_4.5, rocdf, rocdf_me, rocdf_meSizeLocRest) %>%
+rocplot_all <- rbind(rocdf_4.5, rocdf, rocdf_me, rocdf_meSizeLocRest) %>%
   
   ggplot(aes(x=fpr, y=tpr, color = type)) +
   geom_point() +
   geom_line() +
   geom_abline(intercept = 0, slope = 1) +
   labs(title = "ROC")
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = rocplot_all,
+    filename = "rocplot_all.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH*1.2, height = PLOTHEIGHT
+  )
+} else {
+  rocplot_all
+}
 ```
 
+# Decision Curve Analysis
 
+```{r}
+dcadf_4.5 <- cv_4.5$dca
+dcadf_4.5$type <- "additive mixed-efffects"
+  
+# rocdf$type = "discrete no study source"
+
+dcadf_me <- dmeBN_eval$dca
+dcadf_me$type = "discrete mixed-effects"
+
+dcadf_meSizeLocRest <- dmeBNsizelocrestricted_eval$dca
+dcadf_meSizeLocRest$type <- "discrete mixed-effects Size -> Loc Restricted"
+
+dcaplt_all <- rbind(dcadf_4.5, dcadf_me, dcadf_meSizeLocRest) %>%
+  ggplot(aes(x=probthr, y=value, linetype = name, color= type)) +
+  # geom_point() +
+  geom_line() +
+  scale_y_continuous(limits = c(-0.1, 1.0)) +
+  # scale_color_discrete(labels = c("all Negative", "all Positive", "Model Net Benefit")) +
+  theme_bw()+
+  labs(x = "Threshold Probability in %",
+       y = "Net Benefit",
+       title = "Decision Curve")
+
+if (SAVEPLOTS) {
+  ggsave(
+    plot = dcaplt_all,
+    filename = "dcaplt_all.pdf",
+    path = PLOTPATH,
+    dpi = 600, width = PLOTWIDTH*1.2, height = PLOTHEIGHT
+  )
+} else {
+  dcaplt_all
+}
+```
 
 
 
