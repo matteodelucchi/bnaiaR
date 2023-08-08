@@ -632,6 +632,97 @@ save(dags,
      file = paste0(FILENAMEbase, FILENAME, "4.5", "_paramBootAbnConsDAG.RData"))
 ```
 
+# Exp. 4.6: maBN mixed-effect with study_source as random-effect and 3-level smoking
+
+Implement study_source as random-effect as in exp4.5 and use smoking as three level. 
+NOTE: Without TUM and Utrecht!
+
+```{r}
+data("exp45_dat")
+
+df46 <- exp45_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history))
+  
+str(df46)
+(banned46 <- exp45_dat$banned)
+(retain46 <- exp45_dat$retain)
+(dist46 <- exp45_dat$dist)
+```
+
+## Find optimal no. of parent nodes
+```{r}
+optnoparents46 <-
+  findOptNoParentNodes(
+    df = df46,
+    dist = dist46[-10], # all except study_source 
+    randomeffect = "study_source", 
+    banned = banned46[-10, -10], # all except study_source
+    retain = retain46[-10, -10], # all except study_source
+    filenamesuffix = "4.6",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+```
+
+## ABN with max. parents
+```{r}
+abnwithmaxpar46 <-
+  abnwithmaxparents(
+    net.scores = optnoparents45$net.scores,
+    df = df46,
+    dist = dist46[-10], # all except study_source 
+    randomeffect = "study_source", 
+    banned = banned46[-10, -10], # all except study_source
+    retain = retain46[-10, -10], # all except study_source
+    filenamesuffix = "4.6",
+    catcov.restriction = "diagonal",
+    score = SCORE,
+    rngSEED = SEED
+  )
+```
+
+## parametric bootstrapping
+```{r}
+dags46 <- paramBootAbn(object = abnwithmaxpar46$fabn.maxpar, 
+                     n.sim = as.integer(RETURN.DAGS), 
+                     dag.banned = abnwithmaxpar46$banned,
+                     dag.retained = abnwithmaxpar46$retain,
+                     btseeds = as.integer(c(1:as.integer(RETURN.DAGS))*(SEED/12345)),
+                     max.parents = abnwithmaxpar46$max.par,
+                     filenamesuffix = "4.6",
+                     no.cores = n.cores,
+                     verbose = FALSE)
+```
+
+
+```{r}
+consDAGlist46 <- consensusDAG(object = dags46,
+                             consensusMethod = "signEdges")
+plotAbn(consDAGlist46[["consDAG"]], data.dists = dags46[[1]][["fit_sim"]][["abnDag"]][["data.dists"]])
+```
+
+```{r}
+consfit46 <- fitAbn(dag = consDAGlist46[["consDAG"]],
+                  data.dists = dist46[-10], 
+                  data.df = df46,
+                  method = METHOD,
+                  group.var = "study_source",
+                  control = fit.control(catcov.mblogit = "diagonal",
+                                        seed = as.integer(SEED)))
+plot(consfit46)
+print(consfit46)
+```
+
+```{r}
+# Save paramBootAbn data
+save(dags46,
+     consDAGlist46,
+     consfit46,
+     file = paste0(FILENAMEbase, FILENAME, "4.6", "_paramBootAbnConsDAG.RData"))
+```
+
 ```{r}
 # knitr::purl("./continuous_ABN_SL.Rmd", output = "./continuous_ABN_SL_script.R")
 # Run with this command:
