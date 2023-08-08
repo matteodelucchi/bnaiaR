@@ -77,7 +77,7 @@ bnaiar_vars <- c("ID_1",
            "age_diag", "age_diag_group", 
            "positive_famillial_history", 
            "hpt_aware", 
-           "smoking_current_notcurrent", 
+           "smoking_current_notcurrent",
            "multipleIAs", 
            "IAlocation", "IAlocation_group", 
            "IAsize_diag", "IAsize_diag_log", "IAsize_diag_grouped", "IAsize_diag_grouped_merged",
@@ -104,7 +104,7 @@ summarytools::dfSummary(df_bnaiar_compl)
 ```
 
 ```{r}
-# usethis::use_data(df_bnaiar_compl, overwrite = TRUE)
+usethis::use_data(df_bnaiar_compl, overwrite = TRUE)
 ```
 
 ### How many former smoker are among "non-smoker"?
@@ -311,6 +311,33 @@ str(exp44_dat$wl)
 
 ```{r}
 usethis::use_data(exp44_dat, overwrite = TRUE)
+```
+
+## Exp4.5: 3 level smoking
+
+```{r}
+exp45_dat <- prep_exp_data(
+  dat = df_bnaiar_compl_smokCFN,
+  EXPNO = 45, 
+  age = "cont",
+  location = "byRisk-multinomial",
+  size = "log",
+  smoking = "mult",
+  studysource.restriction = "unrestricted",
+  SAVE = F)
+```
+
+```{r}
+str(exp45_dat$abndata)
+str(exp45_dat$dist)
+str(exp45_dat$banned)
+str(exp45_dat$bl)
+str(exp45_dat$retain)
+str(exp45_dat$wl)
+```
+
+```{r}
+usethis::use_data(exp45_dat, overwrite = TRUE)
 ```
 
 
