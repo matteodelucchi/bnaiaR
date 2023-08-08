@@ -804,9 +804,9 @@ cv_ROCAUC <- function(data,
 
   ### Decision Curve Analysis
   df_dca <- rocdf_me %>%
-    mutate(netBenefit = (tp/(tp+tn+fp+fn)) - (fp/(tp+tn+fp+fn)) * (probthr/(1-probthr)),
-           allNeg = (0/(0+tn+0+fn)) - (0/(0+tn+0+fn)) * (probthr/(1-probthr)), # consider all patients negative (all unruptured IA)
-           allPos = (sum(y_test)/(tp+tn+fp+fn)) - ((length(y_test)-sum(y_test))/(tp+tn+fp+fn)) * (probthr/(1-probthr))) %>% # consider all patients positive (all ruptured IA)
+    mutate(netBenefit = (sum(tp)/sum(tp+tn+fp+fn)) - (sum(fp)/sum(tp+tn+fp+fn)) * (probthr/(1-probthr)),
+           allNeg = (0/sum(0+tn+0+fn)) - (0/sum(0+tn+0+fn)) * (probthr/(1-probthr)), # consider all patients negative (all unruptured IA)
+           allPos = (sum(y_test)/sum(tp+tn+fp+fn)) - ((length(y_test)-sum(y_test))/sum(tp+tn+fp+fn)) * (probthr/(1-probthr))) %>% # consider all patients positive (all ruptured IA)
     pivot_longer(cols = c("netBenefit", "allNeg", "allPos")) %>%
     select(c("probthr", "name", "value"))
 
