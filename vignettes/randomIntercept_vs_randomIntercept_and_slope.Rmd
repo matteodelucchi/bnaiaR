@@ -1,0 +1,612 @@
+---
+title: "Random Intercept vs. Random Slope and Intercept"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Random Intercept vs. Random Slope and Intercept}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+header-includes:
+   - \usepackage{amsmath}
+   - \usepackage[makeroom]{cancel}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(bnaiaR)
+# renv::install("../abn_3.0.0.9000.tar.gz")
+library(abn)
+library(lme4)
+library(dplyr)
+
+SEED <- 123456789L
+```
+
+# Data preparation
+
+```{r}
+data("exp4_dat")
+df45 <- exp4_dat$abndata
+str(df45)
+
+df45_scaled <- df45 %>%
+  mutate(age_diag_scaled = scale(age_diag)) %>%
+  mutate(IAsize_diag_log_scaled = scale(IAsize_diag_log))
+
+data("exp45_dat")
+df46_scaled <- exp45_dat$abndata %>%
+  filter(positive_famillial_history != "probably") %>%
+  mutate(positive_famillial_history = factor(positive_famillial_history)) %>%
+  mutate(age_diag_scaled = scale(age_diag)) %>%
+  mutate(IAsize_diag_log_scaled = scale(IAsize_diag_log))
+str(df46_scaled)
+```
+
+# Correlation in Data Set
+
+Mixed-effect models can help to understand how things change by looking at how different things might affect the results, how these things interact with each other, and how they are related.
+
+We have likely correlation in the data set coming from the different
+study sources.
+
+Therefore, complete pooling of the data set and neglecting the fact that
+the data comes from different study sources will possibly bias the
+estimates of the coefficients as well as introducing spurious arcs in
+the DAG [Scutari et al.,
+2022](https://proceedings.mlr.press/v186/scutari22a.html).
+
+Alternatively, we could enforce 'study_source' as parent of every other
+node. Then, however, we have no pooling of information across the
+related data set which can become an issue for BN analysis in the case
+of sparse data and unbalanced sample sizes [Scutari et al.,
+2022](https://proceedings.mlr.press/v186/scutari22a.html).
+
+Partial pooling is a compromise, that can outperform the above. As in
+the case of no pooling, we define 'study_source' as a parent of all
+other nodes, but model the local distributions as linear mixed-effects
+models. These are hierarchical model and incorporate the grouping
+structure of the data in a second level (i.e. multilevel model).
+
+This second second-level coefficients are often referred to as
+random-effects because they can vary between the 'study_source'
+(grouping level). This is opposed to fixed-effects which are assumed to
+be constant accross the 'study_source's. Mixed-effect models include
+both, coefficients that can vary across study-sources (random-effects)
+and such that can not vary (fixed-effects).
+
+[Scutari et al.,
+2022](https://proceedings.mlr.press/v186/scutari22a.html) proposed a
+framework on how to learn Bayesian networks with mixed-effect models to
+account for grouping structure in related data sets. Each node in the
+directed acyclic graph (DAG) $\mathcal{G}$ corresponds to $X_i$ from the
+set of random variables $\mathbf{X} = \{ X_1, \dots, X_N \}$.
+
+$$
+X_i = \mu_i + \mathbf{\Pi}_{X_i} \mathbf{\beta}_i + \mathbf{Z}_i \mathbf{b}_i + \epsilon_i, \quad 
+\mathbf{b}_i \sim N(\mathbf{0}, \mathbf{\Sigma}_i), \quad
+\epsilon_i \sim N(\mathbf{0}, \sigma^2_i \mathbf{I}_n)
+$$
+
+Grouping is represented by an additional variable $F: \mathbf{X} \cup F$
+with $j = 1, \dots, \vert F \vert$ different groups. The authors assume,
+that 1) the $\vert F \vert$ related data sets are independent, 2) that
+each parent $\mathbf{\Pi}_{X_i}$ has a random effect and 3) that each
+intercept $\mu_i$ has a random effect. $\mathbf{Z}_i$ is a block matrix
+of size $n \times (\vert\mathbf{\Pi}_{X_i}\vert + 1)|F|$.
+
+To illustrate this, let's assume we have a data set of size $n = 100$
+from $\vert F \vert = 7$ different sources and two variables
+$\mathbf{X}: [Y, X]$ where $Y$ has one parent node $X$
+$\vert\mathbf{\Pi}_{Y}\vert = 1$. 
+We can rewrite the equation of the model above which becomes for this example
+$$
+Y = \mu_Y + \mathbf{X} \mathbf{\beta}_Y + \mathbf{Z}_Y \mathbf{b}_Y + \epsilon_Y, \quad 
+\mathbf{b}_Y \sim N(\mathbf{0}, \mathbf{\Sigma}_Y), \quad
+\epsilon_i \sim N(\mathbf{0}, \sigma^2_Y \mathbf{I}_{n=100})
+$$.
+
+Let's have a closer look at the random-effects part first. The design matrix
+$$
+\mathbf{Z}_i = \mathbf{Z}_Y = \left[ \begin{array}{cccccccccccccc}
+1 & z_{X, i=y_1, j=j[y_1]} & 0 & 0 & \cdots & 0 & 0\\
+0 & 0 & 1 & z_{X, i=y_2, j=j[y_2]} & \cdots & 0 & 0\\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & 1 & z_{X, i=y_{100}, j=j[y_{100}]}
+\end{array} \right]
+$$ 
+is of size $100 \times 14$.
+$\mathbf{Z}_i$ is closely related to the identity matrix of the fixed-effects
+part of the model. In fact, $\mathbf{Z}_i$ is the block-identity matrix for the
+random-effects where the block refers to the group. 
+Note, when we have a maximal mixed-effect model [Barr, Levy, Scheepers, and Tily 2013]
+where all explanatory variables are correlated with the group indicator
+[Gellman and Hill, 2006]. 
+Then each block of $\mathbf{Z}_i$ looks like a fixed-effects model and 
+$\mathbf{Z}_i$ is identical to $\mathbf{X}$.
+
+Further, we have the vector for the random effect coefficients 
+$$
+\mathbf{b}_i = \mathbf{b}_Y = 
+\left[ \begin{array}{c}
+b_{0, j=1} \\
+b_{\Pi_{X_i}, j=1} \\[0.2cm]
+b_{0, j=2} \\
+b_{\Pi_{X_i}, j=2} \\
+\vdots \\
+b_{0, j=7} \\
+b_{\Pi_{X_i}, j=7} \\ 
+\end{array} \right]
+=
+\left[ \begin{array}{c}
+b_{0, j=1} \\
+b_{X, j=1} \\[0.2cm]
+b_{0, j=2} \\
+b_{X, j=2} \\
+\vdots \\
+b_{0, j=7} \\
+b_{X, j=7} \\ 
+\end{array} \right]
+$$
+of size $(\vert\mathbf{\Pi}_{X_i}\vert + 1)|F| \times 1 = 14 \times 1$.
+This "corrects" for the grouped structure of the data.
+
+The second level of the model can then be rewritten in matrix notation as
+$$
+\mathbf{Z}_i \mathbf{b}_i
+=
+\left[ \begin{array}{cccccccccccccc}
+1 & z_{X,i=1,j=1} & 0 & 0 & \cdots & 0 & 0\\
+0 & 0 & 1 & z_{X, i=2, j=2} & \cdots & 0 & 0\\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & 1 & z_{X, i=100, j=7}
+\end{array} \right]
+\left[ \begin{array}{c}
+b_{0, j=1} \\
+b_{X, j=1} \\[0.2cm]
+b_{0, X, j=2} \\
+b_{X, j=2} \\
+\vdots \\
+b_{X, j=7} \\ 
+\end{array} \right]
+=
+\left[ \begin{array}{c}
+b_{0, X, j=1} + z_{X, i=1, j=1}b_{X, j=1} \\[0.2cm]
+b_{0, X, j=2} + z_{X,i=2, j=2}b_{X, j=2} \\
+\vdots \\
+b_{0, X, j=7} + z_{X, i=100, j=7}b_{X, j=7} \\ 
+\end{array} \right] 
+$$.
+
+Similarly, we can rewrite the fixed-effects part in matrix notation by including
+the intercept $\mu_Y$ in $\mathbf{X}$ resulting in 
+$$
+\mu_Y + \mathbf{X} \mathbf{\beta}_Y = 
+\left[ \begin{array}{c}
+\mu_{y_1} \\
+\mu_{y_2} \\
+\vdots \\
+\mu_{y_{100}} \\
+\end{array} \right]
++
+\left[ \begin{array}{c}
+x_{1} \\
+x_{2} \\
+\vdots \\
+x_{100} \\
+\end{array} \right]
+\left[ \begin{array}{c}
+\beta_{X} \\
+\end{array} \right] 
+=
+\left[ \begin{array}{c}
+1 & x_{1} \\
+1 & x_{2} \\
+\vdots & \vdots \\
+1 & x_{100} \\
+\end{array} \right]
+\left[ \begin{array}{c}
+\mu_y \\
+\beta_{X} \\
+\end{array} \right] 
+=
+\left[ \begin{array}{c}
+1 & x_{1} \\
+1 & x_{2} \\
+\vdots & \vdots \\
+1 & x_{100} \\
+\end{array} \right]
+\left[ \begin{array}{c}
+\beta_{0,X} \\
+\beta_{X} \\
+\end{array} \right] 
+=
+\mathbf{\tilde X}
+\mathbf{\tilde \beta}_Y
+$$
+We denote the identity matrix and coefficients of the fixed-effects with a tilde
+when they include the intercept.
+
+Plugging this into the equation above results in
+$$
+\mathbf{Y} = \mathbf{\tilde X}\mathbf{\tilde \beta}_Y + \mathbf{Z}_Y \mathbf{b}_Y + \mathbf{\epsilon}_Y = \\
+\left[ \begin{array}{c}
+\beta_{0,X} + \beta_{X}x_{1} \\
+\beta_{0,X} + \beta_{X}x_{2} \\
+\vdots & \vdots \\
+\beta_{0,X} + \beta_{X}x_{100} \\
+\end{array} \right]
++
+\left[ \begin{array}{c}
+b_{0, X, j=1} + z_{X, i=1, j=1}b_{X, j=1} \\[0.2cm]
+b_{0, X, j=2} + z_{X,i=2, j=2}b_{X, j=2} \\
+\vdots \\
+b_{0, X, j=7} + z_{X, i=100, j=7}b_{X, j=7} \\ 
+\end{array} \right]
++
+\left[ \begin{array}{c}
+\epsilon_{1} \\
+\epsilon_{2} \\
+\vdots \\
+\epsilon_{100} \\
+\end{array} \right]
+$$
+In this special case of a maximal random-effect model and as mentioned above 
+for $\mathbf{Z}_i$, we can see that $\mathbf{Z}_Y$ basically partitions 
+$\mathbf{\tilde X}$ in a block-matrix where the columns represent the
+group-relationship.
+```{r eval=FALSE, include=TRUE}
+# compare Z and X below
+randint_mod_size <- lmer(IAsize_diag_log ~ age_diag_scaled + (1+age_diag_scaled|study_source), data = df45_scaled)
+randint_mod_size
+# getME(randint_mod_size, "X")
+dim(getME(randint_mod_size, "X"))
+# getME(randint_mod_size, "Z")
+dim(getME(randint_mod_size, "Z"))
+# getME(randint_mod_size, "b")
+dim(getME(randint_mod_size, "b"))
+getME(randint_mod_size, "fixef")
+getME(randint_mod_size, "beta")
+getME(randint_mod_size, "theta")
+```
+
+From here we can easily see that this can be rewritten as in equation 6 in [Scutari et al., 2022](https://proceedings.mlr.press/v186/scutari22a.html).
+$$
+X_{ij} = (\mu_{ij} + b_{ij0}) + \mathbf{\Pi}_{X_i} (\mathbf{\beta}_i + \mathbf{b}_{ij}) + \epsilon_{ij}, \quad 
+\left( \begin{array}{cc} b_{ij0} \\ \mathbf{b}_{ij} \end{array}\right) \sim N(\mathbf{0}, \mathbf{\tilde\Sigma}_i), \quad
+\epsilon_{ij} \sim N(\mathbf{0}, \sigma^2_i \mathbf{I}_{n_j})
+$$
+Which formulates a random intercept and random slope model for each local
+distribution according the assumptions mentioned above.
+
+## Goodness of Fit - BIC
+
+To understand the influence of the additional complexity introduced by the varying part in the model of the local distribution, we need to recap briefly score-based structure learning.
+
+In score based structure learning we try to find the DAG $\mathcal{G}$ that best 
+encodes the dependence structure of the data $\mathcal{D}$ by maximizing the posterior probability distribution of the structure that is proportional to the prior probability of the structure $\mathcal{G}$ times the likelihood $P(\mathcal{D} \vert \mathcal{G})$ observing the data $\mathcal{D}$ given the structure $\mathcal{G}$
+$$
+P(\mathcal{G} \vert \mathcal{D}) \propto P(\mathcal{G}) P(\mathcal{D} \vert \mathcal{G})
+$$
+[Scutari et al. 2019](http://arxiv.org/abs/1805.11908). 
+As a side note for completeness I would like to briefly mention that in the second step of BN learning (parameter learning $P(\mathcal{\theta} \vert \mathcal{G}, \mathcal{D})$), we estimate the parameters $\Theta$ given the $\mathcal{G}$ that was obtained from structure learning and the data $\mathcal{D}$.
+
+The marginal likelihood of the structure can be decomposed into the local distribution for each variable
+$$
+P(\mathcal{D} \vert \mathcal{G}) = 
+\int P(\mathcal{D} \vert \mathcal{G}, \mathcal{\Theta}) P(\mathcal{\Theta} \vert \mathcal{G}) d\Theta =
+\prod_{i=1}^{N}\int P(X_i \vert \Pi_{X_i}, \Theta_{X_i}) P(\Theta_{X_i} \vert \Pi_{X_i}) d\Theta_{X_i}
+$$
+[Scutari et al. 2019](http://arxiv.org/abs/1805.11908). 
+The marginal likelihood $P(\mathcal{D} \vert \mathcal{G}, \mathcal{\Theta})$ is the probability of observing the data $\mathcal{D}$ given the graph structure $\mathcal{G}$ and the parameters $\mathcal{\Theta}$ of a Bayesian network.
+The marginal likelihood is used in Bayesian model selection to compare different models (graph structures) and determine which one is most likely to have generated the data.
+It is computed by integrating over all possible values of the parameters $\mathcal{\Theta}$, weighted by their prior probabilities $P(\mathcal{\Theta} \vert \mathcal{G})$.
+In other words, it is the probability (distribution) of the observed data $\mathcal{D}$ occur under a specific model $\mathcal{G}$ given only our prior beliefs about the parameters $\mathcal{\Theta}$.
+
+On the other hand, the likelihood $P(X_i \vert \Pi_{X_i}, \Theta_{X_i})$ is the chance of observing a particular variable $X_i$ given its parents $\Pi_{X_i}$ and the values of its parameters $\Theta_{X_i}$.
+In other words, it is the chance of observing the data $\mathcal{D}$ occur under a specific model $\mathcal{G}$ with specific parameters $\mathcal{\Theta}$.
+We can write the likelihood also as a function of the model $(\mathcal{G}$ and its parameters $\mathcal{\Theta}))$
+$$
+\mathcal{L}(\mathcal{G}, \mathcal{\Theta}) = P(\mathcal{D} \vert \mathcal{G}, \mathcal{\Theta})
+$$
+.
+
+The likelihood function is used to estimate the values of the model's parameters that best explain the data, by finding the values that maximize the likelihood.
+The maximized value of the likelihood is denoted as $\mathcal{\widehat L}(\mathcal{G}, \mathcal{\hat \Theta}) = P(\mathcal{D} \vert \mathcal{G}, \mathcal{\hat \Theta})$ 
+
+The relationship between the marginal likelihood and the likelihood is that the marginal likelihood is computed by integrating over all possible values of the parameters, while the likelihood is computed for a specific set of parameter values. 
+In other words, the marginal likelihood takes into account the uncertainty in the values of the parameters, while the likelihood assumes that the parameter values are known.
+
+<!-- Suppose we have a coin with an unknown probability `p` of landing heads. We want to estimate the value of `p` based on a sample of data `D` consisting of `n` coin tosses. The likelihood function for this model is given by the binomial distribution: `P(D | p) = (n choose k) * p^k * (1-p)^(n-k)`, where `k` is the number of heads observed in the data. -->
+<!-- The marginal likelihood is the probability of observing the data given only our prior beliefs about the value of `p`, marginalized over all possible values of `p`. If we assume a uniform prior distribution for `p`, then the marginal likelihood is given by: `P(D) = ∫ P(D | p) * P(p) dp = ∫ (n choose k) * p^k * (1-p)^(n-k) dp`. -->
+<!-- As you can see from this example, the likelihood is computed for a specific value of the parameter `p`, while the marginal likelihood takes into account our uncertainty about the value of `p` by integrating over all possible values.  -->
+
+Score-based structure learning applies general-purpose optimization techniques to determine the most likely DAG.
+This can be done by either maximizing the posterior $P(\mathcal{G} \vert \mathcal{D})$ (e.g. with BGe score) directly or via a goodness-of-fit measure that is assessed for each candidate DAG.
+There exist different possibilities for such a network score and the choice mainly depends on the distribution of $\mathbf{X}$.
+A common choice that can be applied to both, discrete and continuous BNs is the Bayesian Information criterion, defined as
+$$
+BIC(\mathcal{G}, \Theta \vert \mathcal{D}) = 
+\log \left( \mathcal{\widehat L} \right) - \frac{\log(n)}{2} \kappa = 
+\sum_{i=1}^{N} \left[ \log \left( P \left( X_i \vert \Pi_{X_i}, \Theta_{X_i} \right) \right) - \frac{\log(n)}{2} \vert \Theta_{X_i}\vert \right]
+$$
+[Scutari et al. 2019](http://arxiv.org/abs/1805.11908) where the natural logarithm of the maximized likelihood function $\mathcal{\widehat L}$ is "pruned" by the natural logarithm of the number of observations (sample size) $n$ and the number of parameters that are estimated by the model. 
+In classical multiple linear regression, $\kappa$ is the sum of the number of estimated slope parameters, the intercept and the constant variance of error terms.
+In a continuous, gaussian BN $\vert \Theta_{X_i} \vert = \vert \Pi_{X_i} \vert + 1 + 1$.
+The number of parameters that are estimated for a local distribution of a continuous, gaussian node with both continuous and discrete parents 
+$$
+\vert \Theta_{X_i} \vert = \left( \vert \Pi_{X_i} \vert + 1 + 1 \right) \vert \Delta_{X_i} \vert
+$$
+where $\vert \Delta_{X_i} \vert$ represent the number of possible configurations of discrete parents (e.g. for a single binary parent of $X$ $\vert \Delta_{X} \vert = 2$).
+For mixed, continuous and discrete BNs, where also discrete nodes can have continuous and discrete parents, this must be multiplied by the number of possible configurations of $X_i$ minus one.
+
+In the case of a maximal random effects model formulation, the overall number of free parameters increases not only by the number of random effects, but also by the paramters required to estimate their covariance structure $\mathbf{\Sigma}_i$.
+For a maximal random effects model with $\vert \Pi_{X_i} \vert + 1$ random effects, $\mathbf{\Sigma}_i$ has $\vert \Pi_{X_i} \vert + 1$ variances and $\left( \begin{array}{c} \vert \Pi_{X_i} \vert + 1 \\ 2 \end{array} \right)$ covariances.
+
+$$
+\begin{equation}
+\vert\Theta_{X_i} \vert = 
+\underbrace{\vert \Pi_{X_i}\vert + 1}_{\text{fixed effects}} +
+\underbrace{\vert \Pi_{X_i}\vert + 1 + \left( \begin{array}{c} \vert \Pi_{X_i}\vert + 1 \\ 2 \end{array} \right)}_{\text{random effects}} + 
+\underbrace{1}_{\text{residuals}} = 
+\frac{\vert \Pi_{X_i}\vert ^2 + 5\vert \Pi_{X_i}\vert + 6}{2}
+\end{equation}
+$$
+
+## Challenges
+
+The estimation of such maximal models is difficult. 
+[Bates et al. 2018] have shown, that the data is often not sufficient to fit such models. 
+In other words, the "model is too complex to be properly supported by the data" [Bates et al. 2018].
+And what is even more important is, that they also could show that even under 
+convergence, it is extremely difficult to interpret such a complex models.
+
+Linear mixed-effect models account for variations between subjects and items in the mean of the dependent variable (random intercept), all main effects and interactions (random slopes), as well as correlations between intercepts and slopes [Bates et al. 2018].
+It is very difficult to estimate intercept, fixed effects, variances and covariances in linear mixed effect models (LMMs) and it is even more difficult for generalised linear mixed effect models (GLMMs).
+Overparameterized models then often converge at the boundary with singular variance-covariance matrices for random-effects [Bates et al. 2018].
+They suggest parsimonious mixed models over maximal mixed models in the sense that
+we should be aware of the data and have realistic expectations of the model complexity.
+
+## Generalized mixed models
+
+The package \code{abn} under a frequentist framework with \code{method = "mle"} allows to deliberately mix continuous and discrete variables being responses and predictors.
+In other words, we relax the assumption from CGBN [Lauritzen and Wermuth, 1989] where only continuous nodes are allowed to have both (continuous and discrete) parents but discrete nodes are restricted to having only discrete parents but no continuous.
+
+Because of this, we need to discuss in the following each possible distribution type as response also in a multilevel setting.
+In \code{abn} we can model nodes that follow a Gaussian, Binomial, Poisson or Multinomial distribution.
+
+Above we discussed the case of a Gaussian response and we continue here with Binomial, Poisson and Multinomial responses ending with a general formulation for a additive, hierarchical BN. 
+
+### Logistic mixed model
+
+A logistic mixed model is an extension of a linear mixed model to allow for binary or categorical response variables. 
+In a logistic mixed model in \code{abn}, the response variable $X_{ij}$ follows the special case of a Binomial distribution $\text{Bin}(n=1, p)$ namely the Bernoulli distribution $X_{ij} \sim \text{Bern} (p_{X_{ij}})$.
+The probability of success $p_{X_{ij}} = p_{ij}$ is modeled using a logistic function that maps the linear predictor to the probability scale, ensuring that the predicted probabilities are between $0$ and $1$.
+
+The general form of a logistic mixed model can be written as:
+$$
+\text{logit}(p_{ij}) = \left( \mu_{ij} + b_{ij0} \right) + \mathbf{\Pi}_{X_i} \left( \mathbf{\beta}_i + \mathbf{b}_{ij} \right), \quad 
+\left( \begin{array}{cc} b_{ij0} \\ \mathbf{b}_{ij} \end{array}\right) \sim N(\mathbf{0}, \mathbf{\tilde\Sigma}_i)
+$$
+where $p_{ij}$ is the probability of success for the $i^{th}$ subject in the $j^{th}$ group and $\text{logit}(p_{ij}) = \log\left(\frac{p_{ij}}{1-p_{ij}}\right)$ is the logit link function that maps the probability $p_{ij}$ to the linear predictor. 
+
+In a logistic mixed model, the error term from the linear mixed model is not explicitly included in the model equation.
+This is because the logit function maps the linear predictor to the probability scale $\text{logit}(p_{ij}) \in [0,1]$. In other words, for each value of the predictor there are only two unique "errors" possible: $1-p_{i,j}$ and $0-p_{i,j}$. This is different for each observation $i$, and there is no common error distribution independent of the predictor values.
+
+### Poisson mixed model
+
+In a Poisson mixed model, the response variable is a count variable and follows a Poisson distribution. 
+The link function in Poisson regression is the log function, which transforms the expected count $\lambda$ on the log scale: 
+
+$$
+\log(\lambda_{ij}) = (\mu_{ij} + b_{ij0}) + \mathbf{\Pi}_{X_i} (\mathbf{\beta}_i + \mathbf{b}_{ij}), \quad 
+\left( \begin{array}{cc} b_{ij0} \\ \mathbf{b}_{ij} \end{array}\right) \sim N(\mathbf{0}, \mathbf{\tilde\Sigma}_i)
+$$
+
+Here, $\lambda_{ij}$ is the expected count for the $i^{th}$ subject in the $j^{th}$ group. The rest of the terms are as in the linear mixed model, but there is no error term $\epsilon_{ij}$ as in the linear model. The variability in the response is already accounted for by the Poisson distribution of the response variable.
+
+### Multinomial mixed model
+
+In a multinomial mixed model, the response variable is assumed to follow a multinomial distribution with $n$ draws and $k$ categories.
+In a multinomial mixed model in \code{abn}, the response variable $X_{ij}$ follows the special case of a multinomial distribution of a single draw $\text{Multinomial}(n=1, p_{ijk})$ which is a Categorical distribution $X_{ij} \sim \text{Cat} (p_{ijk})$. 
+Let $p_{ijk}$ denote the probability that observation $i$ in group $j$ belongs to category $k$. Then, we have
+$$
+X_{ij} \sim \text{Multinomial}(1, p_{ij1}, p_{ij2}, \dots, p_{ijk}) = \text{Cat} (p_{ijk})
+$$
+
+The categorical distribution is a generalisation of the Bernoulli distribution for discrete a variable with multiple possible outcomes.
+
+Let's generalise from a simple log-linear model to the Categorical distribution with $k$ categories. 
+To avoid overly complex equations, we show this first without the random-effect part to discuss it specifically at the end. 
+
+We have a log-linear model with the response variable $Y \sim \mathcal{Cat}(\pi_k)$ corresponding to one of the possible categories $K = [1,2,3, \dots, k]$ and a single predictor $X_{i=1} \sim \mathcal{N}(\mu, \sigma^2)$:
+$$
+\ln \left( P(Y=k) \right) = \beta_k X_i - \ln(Z), \quad k\leq K \quad \text{eq. (I)}
+$$
+
+Here, $Z$ is the partition function and is required for normalization, because we want that all probabilities sum to one
+$$
+\sum_{k=1}^{K} \left( P(Y=k) \right) = 1 \quad \text{eq. (II)}
+$$.
+With this normalising term, exponentiating both sides of eq. I gives 
+$$
+P(Y=k) = e^{ \beta_k X_i - \ln(Z)} = \frac{e^{\beta_k X_i}}{Z}
+$$.
+If we apply constraint II we get for $Z$
+$$
+\begin{array}{rl}
+1 &= \sum_{k=1}^{K} \left( P(Y=k) \right) \\
+1 &= \sum_{k=1}^{K} \frac{e^{\beta_k X_i}}{Z} \\
+1 &= \frac{1}{Z} \sum_{k=1}^{K} e^{\beta_k X_i} \\
+Z &= \sum_{k=1}^{K} e^{\beta_k X_i} \\
+\end{array}
+$$.
+
+Knowing $Z$ we can rewrite our log-linear model from I
+$$
+\begin{array}{rl}
+\ln \left( P(Y=k) \right) &= \beta_k X_i - \ln \left( \sum_{k=1}^{K} e^{\beta_k X_i} \right) \\
+P(Y=k) &= \frac{e^{\beta_k X_i}}{\sum_{k=1}^{K} e^{\beta_k X_i}} \\
+\end{array}
+$$
+and we see that it can be written as what is known as **softmax** function
+$$
+\begin{array}{rll}
+& \text{softmax}\left( k, x_i, \dots, x_n \right) &= \frac{e^{x_k}}{\sum_{i=1}^{n} e^{x_i}} \\
+P(Y=k) =& \text{softmax}\left( k, \beta_k X_i \right) &= \frac{e^{\beta_k X_i}}{\sum_{k=1}^{K} e^{\beta_k X_i}} \\
+\end{array}
+$$.
+
+There are only $k-1$ seperately identifieable vectors of coefficients/probabilites. 
+We can see this when we add a constant to all coefficient vectors:
+$$
+\require{cancel}
+\begin{align}
+P(Y=k) &= \frac{e^{\beta_k X_i}}{\sum_{k=1}^{K} e^{\beta_k X_i}} \\
+&= \frac{e^{(\beta_k +C ) X_i}}{\sum_{k=1}^{K} e^{(\beta_k +C) X_i}}= \frac{e^{\beta_k X_i + C X_i}}{\sum_{k=1}^{K} e^{\beta_k X_i + C X_i}} \\
+&= \frac{e^{\beta_k X_i} \cdot \cancel{e^{C X_i}}}{\cancel{e^{C X_i}} \sum_{k=1}^{K} e^{\beta_k X_i}}
+\end{align}
+$$.
+
+We now set the constant $C$ such that one of the coefficient vectors becomes zero.
+All the other coefficient vectors are transformed to the difference between the original coefficient vector and the one we set to zero.
+Usually, the first category is used as the reference level $C \overset{!}{=} -\beta_1$. 
+Rewriting the above accordingly,
+$$
+P(Y=k) = \frac{e^{(\beta_k - \beta_1) X_i}}{\sum_{k=1}^{K} e^{(\beta_k - \beta_1) X_i}}
+$$
+and explicitly formulating the probabilities for each of the $K$ categories
+$$
+\begin{align}
+P(Y=1) &= \frac{\cancelto{1}{e^{(\beta_1 - \beta_1) X_i}}}{\cancelto{1}{e^{(\beta_1 - \beta_1) X_i}} + e^{(\beta_2 - \beta_1) X_i} + e^{(\beta_3 - \beta_1) X_i}} 
+= \frac{1}{1 + \sum_{k=\mathbin{\color{red}2}}^{K} e^{(\beta_k - \beta_1) X_i}} 
+= \frac{1}{1 + \sum_{k=2}^{K} e^{\underbrace{(\beta_{0_k} - \beta_{0_1})}_{\text{intercept}} + \underbrace{(\beta_{1_k} - \beta_{1_1})}_{\text{1st coefficient}} X_i}} \\
+P(Y=2) &= \frac{e^{(\beta_2 - \beta_1) X_i}}{\cancelto{1}{e^{(\beta_1 - \beta_1) X_i}} + e^{(\beta_2 - \beta_1) X_i} + e^{(\beta_3 - \beta_1) X_i}}
+= \frac{e^{(\beta_2 - \beta_1) X_i}}{1 + \sum_{k=2}^{K}e^{(\beta_k - \beta_1) X_i}} \\
+P(Y=3) &= \frac{e^{(\beta_3 - \beta_1) X_i}}{\cancelto{1}{e^{(\beta_1 - \beta_1) X_i}} + e^{(\beta_2 - \beta_1) X_i} + e^{(\beta_3 - \beta_1) X_i}}
+= \frac{e^{(\beta_3 - \beta_1) X_i}}{1 + \sum_{k=2}^{K}e^{(\beta_k - \beta_1) X_i}} \\
+\end{align}
+$$
+facilitates to see the connection to the standard logistic function.
+For simplicity we show this here only for $P(Y=1)$ because it is the same for the other categories.
+We rewrite the above in the form of the standard logistic function. 
+$$
+P(Y=1) = \frac{1}{1 + \sum_{k=\color{red}1}^{\color{red}{K-1}} e^{ - \left( (\beta_{0_k} - \beta_{0_1}) + (\beta_{1_k} - \beta_{1_1}) X_i \right)}} 
+$$
+
+Which corresponds to the log of the odds (logit) of $P(Y=k)$:
+
+$$
+\begin{align}
+\frac{P(Y=1)}{1-P(Y=1)} &= \left. \frac{\frac{1}{1+e^{-m}}}{1 - \frac{1}{1+e^{-m}}} \quad \right| m = \left(\beta_{0_k} - \beta_{0_1}\right) + \left(\beta_{1_k} - \beta_{1_1}\right) X_i \\
+&= \frac{\frac{1}{1+e^{-m}}}{\frac{1+e^{-m}-1}{1+e^{-m}}} 
+= \frac{1}{1+e^{-m}} \cdot \frac{1+e^{-m}}{1+e^{-m}-1}
+= \frac{1+e^{-m}}{(1+e^{-m}) e^{-m}}
+= \frac{1}{e^{-m}} \\
+&= e^{m} \\
+\\
+\ln \left( \frac{P(Y=1)}{1-P(Y=1)} \right) &= \ln \left(e^{m} \right) = m \\
+&= \left(\beta_{0_k} - \beta_{0_1}\right) + \left(\beta_{1_k} - \beta_{1_1}\right) X_i
+\end{align}
+$$
+
+CONTINUE HERE!!!  
+- Check this below. Is it correct?  
+- Does it make sense to have this at the beginning of this section?  
+- make smooth transition.
+
+
+
+In a multinomial mixed model, we typically use a logit link function for binary outcomes or a cumulative logit link function for ordinal outcomes. For example, if we use a logit link function, we have
+$$
+\text{logit}(p_{ijk}) = \eta_{ijk}
+$$
+where $\eta_{ijk}$ is the linear predictor for category $k$.
+
+The linear predictor is defined in terms of fixed effects and random effects for each category.
+$$
+\eta_{ijk} = (\mu_{ijk} + b_{ijk0}) + \mathbf{\Pi}_{X_i} (\mathbf{\beta}_{ik} + \mathbf{b}_{ijk}), \quad
+\left( \begin{array}{cc} b_{ijk0} \\ \mathbf{b}_{ijk} \end{array} \right) \sim N(\mathbf{0}, \mathbf{\tilde\Sigma}_{ik})
+$$
+with separate random effects for each category. 
+
+
+
+
+
+TODO: 
+- Discuss specific cases of GLMMs (logit, exp, categorical vs. softmax).
+- Finally come to the general formula that can be used to represent additive BNs with mixed effect models. See also notation in Delucchi et al. 2022.
+
+# Mixed-effect models for IA rupture
+
+## rupture ~ age + location + size + smoking + (1|study_source)
+
+Let's first use a model with smoking as binary variable and leaving IA size unscaled.
+```{r}
+s <- Sys.time()
+randint_mod <- glmer(IAruptured ~ age_diag_scaled + IAlocation_group + IAsize_diag_log + smoking_current_notcurrent + (1|study_source),
+                     data = df45_scaled, 
+                     family = "binomial")
+e <- Sys.time()
+dt <- difftime(e, s, units = "secs")
+message(paste("Model estimation was running for ", round(dt), "seconds."))
+
+randint_mod
+summary(randint_mod)
+```
+
+This has 8597 degrees of freedom in the residuals. 
+Smoking does not seem to be significantly correlated with IA rupture.
+IA size (unscaled) has only weak significance to correlate with IA rupture.
+
+We now use the multinomial smoking variable (current, former, no-smoker).
+This reduces our sample size from 8604 to 7569 patients because not all study sources
+collected this level of detail.
+Additionally, we also centre IA size.
+```{r}
+s <- Sys.time()
+randint_mod <- glmer(IAruptured ~ age_diag_scaled + IAlocation_group + IAsize_diag_log_scaled + smoking_current_former_no + (1|study_source),
+                     data = df46_scaled, 
+                     family = "binomial")
+e <- Sys.time()
+dt <- difftime(e, s, units = "secs")
+message(paste("Model estimation was running for ", round(dt), "seconds."))
+
+randint_mod
+summary(randint_mod)
+```
+
+As expected, the significance could be improved for all variables. 
+
+TODO: Provide interpretation (see Pinhero and Bates 2000)
+
+## rupture ~ age + location + size + smoking + (1 + age + location + size + smoking|study_source)
+
+Let's fit IA rupture as a "maximal" mixed-effects model with random-intercept and random slopes.
+For this we use the better of the two parsimonious models above with 3-level smoking and centered IAsize.
+
+```{r}
+s <- Sys.time()
+maxrand_mod <- glmer(IAruptured ~ age_diag_scaled + IAlocation_group + IAsize_diag_log_scaled + smoking_current_former_no + (1 + age_diag_scaled + IAlocation_group + IAsize_diag_log_scaled + smoking_current_former_no|study_source),
+                     data = df46_scaled, 
+                     family = "binomial")
+e <- Sys.time()
+dt <- difftime(e, s, units = "secs")
+message(paste("Model estimation was running for ", round(dt), "seconds."))
+maxrand_mod
+summary(maxrand_mod)
+```
+
+
+TODO: Provide interpretation (see Pinhero and Bates 2000). Specifically random-effects
+TODO: Mention that we have a singular fit. Link to the issue of complexity from above.
+TODO: Mention that it is difficult to understand the random effects. Link to the issue of complexity form above.
+
